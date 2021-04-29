@@ -20,12 +20,12 @@ namespace Utils
     /*
      * Injection helpers
      */ 
-    IRBuilder<> GetBuilder(
+    llvm::IRBuilder<> GetBuilder(
         Function *F, 
         Instruction *InsertionPoint
     );
 
-    IRBuilder<> GetBuilder(
+    llvm::IRBuilder<> GetBuilder(
         Function *F, 
         BasicBlock *InsertionPoint
     );

@@ -44,12 +44,12 @@ Function *Utils::GetMethod(
  * the correct debug location --- necessary for injections 
  * into the Nautilus bitcode
  */
-IRBuilder<> Utils::GetBuilder(
+llvm::IRBuilder<> Utils::GetBuilder(
     Function *F, 
     Instruction *InsertionPoint
 )
 {
-    IRBuilder<> Builder{InsertionPoint};
+    llvm::IRBuilder<> Builder{InsertionPoint};
     Instruction *FirstInstWithDBG = nullptr;
 
     for (auto &I : instructions(F))
@@ -67,12 +67,12 @@ IRBuilder<> Utils::GetBuilder(
 }
 
 
-IRBuilder<> Utils::GetBuilder(
+llvm::IRBuilder<> Utils::GetBuilder(
     Function *F, 
     BasicBlock *InsertionPoint
 )
 {
-    IRBuilder<> Builder{InsertionPoint};
+    llvm::IRBuilder<> Builder{InsertionPoint};
     Instruction *FirstInstWithDBG = nullptr;
 
     for (auto &I : instructions(F))
