@@ -1,0 +1,164 @@
+#!/bin/bash
+
+# Requirements:
+# * noelle
+# * gclang
+
+# Environment variables that can be set to change the default:
+# ICLANG_PASS
+# ICLANG_PASS_FLAGS
+
+PROG="iclang"
+
+# Other settings
+CC="gclang"
+GET_BC="get-bc"
+LLVM_DIS="llvm-dis"
+
+NOELLE_NORM="noelle-norm"
+NOELLE_LOAD="noelle-load"
+
+
+if [[ -z "${ICLANG_PASS}" ]]; then
+    PASS_LIB="~/CAT/lib/ICS.so"
+    PASS_FLAGS="-ics"
+else
+    PASS_LIB="${ICLANG_PASS}"
+    PASS_FLAGS="${ICLANG_PASS_FLAGS}"
+fi
+
+echo "Using noelle pass: $PASS_LIB"
+echo "With flags: $PASS_FLAGS"
+
+# Setup the environment
+export GLLVM_OBJCOPY=arm-none-eabi-objcopy
+
+function pecho() {
+    echo "${PROG}: $1"
+}
+
+function run() {
+    cmd="${1//\"/\\\"}"
+    pecho "$cmd"
+    eval "$cmd"
+}
+
+function apply_pass() {
+    local bitcode_input="$1"
+
+    ## C -> LLVMIR
+    #llvmir_orig="$obj_dir/$obj_filename-orig.ll"
+    #cmd="$CC -Xclang -disable-O0-optnone -emit-llvm -S $other_args -c $source_file -o $llvmir_orig"
+    #echo "$cmd"
+    #$cmd
+
+    # LLVMIR > Normalize
+    local llvm_norm="$obj_dir/$obj_filename-norm.ll"
+    run "$NOELLE_NORM -S $bitcode_input -o $llvm_norm"
+
+    # Norm LLVMIR > pass LLVMIR
+    local llvm_pass="$obj_dir/$obj_filename-pass.ll"
+    local llvm_pass_output="$obj_dir/$obj_filename-pass.txt"
+    run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -S  $llvm_norm -o $llvm_pass 2>&1 | tee $llvm_pass_output"
+
+    # pass LLVMIR > elf
+
+    local compile_args_dir="$(dirname $(readlink -f "$obj_file"))"
+    local compile_args="$(<${compile_args_dir}/compile_args.txt)"
+    local obj_pass="$obj_dir/$obj_filename-pass.obj"
+
+    # Remove unneeded args
+    compile_args="${compile_args//-MD/}"
+    compile_args="${compile_args//-MMD/}"
+    compile_args="${compile_args//-MP/}"
+    compile_args=$(echo "${compile_args}" | sed -E 's/-MT\s+\S+//g')
+    compile_args=$(echo "${compile_args}" | sed -E 's/-MF\s+\S+//g')
+    compile_args=$(echo "${compile_args}" | sed -E 's/-I\S+//g')
+
+    run "clang $compile_args -c $llvm_pass -o $obj_pass"
+    run "clang $link_args $obj_pass -o $obj_dir/$output_file"
+}
+
+
+pass_args="$@"
+
+while (( "$#" )); do
+    case $1 in
+        -c)
+            source_file="$2"
+
+            shift
+            shift
+            ;;
+        -o)
+            output_file="$2"
+
+            shift
+            shift
+            ;;
+        *.obj)
+            obj_file="$1"
+            other_args+="$1 "
+            shift
+            ;;
+        *)
+            other_args+="$1 "
+            link_args+="$1 "
+            shift
+            ;;
+    esac
+done
+
+# Stop on error
+set -e
+
+if [ -n "$output_file" ]; then
+    obj_filename=$(basename -- "$output_file")
+    obj_extension="${obj_filename##*.}"
+    obj_filename="${obj_filename%.*}"
+    obj_dir="$(dirname $(readlink -f "$output_file"))"
+
+    if [ -n "$source_file" ]; then
+        pecho "compiling"
+
+        src_filename=$(basename -- "$source_file")
+        src_extension="${src_filename##*.}"
+        src_filename="${src_filename%.*}"
+        src_dir="$(dirname $(readlink -f "$source_file"))"
+
+        # Save the compile arguments of later
+        compile_args_file="${obj_dir}/compile_args.txt"
+        compile_args="$other_args"
+        pecho "writing compile arguments to: $compile_args_file"
+        echo "$compile_args" > "$compile_args_file"
+
+        # Remove the opt flag
+        pecho "Pass args: $pass_args"
+        pass_args=$(echo "${pass_args}" | sed -E 's/-O\S?//g')
+        run "$CC $pass_args -O1 -Xclang -disable-llvm-passes"
+
+
+    else
+        pecho "linking"
+
+        # Create the original elf file where we will extract the LLVM bitcode from
+        orig_elf_file="$obj_filename.orig.elf"
+        run "$CC $other_args -o ${obj_dir}/${orig_elf_file}"
+
+        # Extract the bitcode
+        bc_file="${obj_filename}.bc"
+        run "$GET_BC -m -S -o ${obj_dir}/${bc_file} ${obj_dir}/${orig_elf_file}"
+
+        # Convert it to human readable
+        $LLVM_DIS "${obj_dir}/${bc_file}"
+
+        # Apply the pass
+        # Directly writes the elf file
+        apply_pass "${obj_dir}/${bc_file}"
+    fi
+else
+    # Just pass
+    run "$CC $pass_args"
+fi
+
+exit 0
