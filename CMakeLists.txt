@@ -1,32 +1,35 @@
-# Sources
-set(CATPassSrc 
-  CatPass.cpp
-  src/Utils.cpp
-  src/Configurations.cpp
-)
+# Project
+cmake_minimum_required(VERSION 3.4.3)
+project(ICS)
 
-# Compilation flags
-set_source_files_properties(${CATPassSrc} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
+# Programming languages to use
+enable_language(C CXX)
 
-# Name of the LLVM pass
-set(CATPassName "ICS")
-
-# configure LLVM 
+# Find and link with LLVM
 find_package(LLVM REQUIRED CONFIG)
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
-set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
-set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -Weverything")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Weverything")
 
+set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+
+# Link with LLVM
+include_directories(${LLVM_INCLUDE_DIRS})
+add_definitions(${LLVM_DEFINITIONS})
+add_definitions(
+-D__STDC_LIMIT_MACROS
+-D__STDC_CONSTANT_MACROS
+)
+link_directories(${LLVM_LIBRARY_DIRS})
+
+# Prepare the pass to be included in the source tree
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-include(HandleLLVMOptions)
 include(AddLLVM)
 
-message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
+# Pass
+add_subdirectory(driver)
 
-include_directories(${LLVM_INCLUDE_DIRS} 
-    /home/extra/noelle/install/include
-    /home/extra/noelle/install/include/svf
-)
-
-# Declare the LLVM pass to compile
-add_llvm_library(${CATPassName} MODULE ${CATPassSrc})
+# Install
+#install(PROGRAMS bin/cat-c DESTINATION bin)

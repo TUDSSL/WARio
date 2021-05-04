@@ -1,5 +1,13 @@
+export CC=clang
+export CXX=clang++
 
-all:
-	./scripts/pass_build.sh ICS.cpp 
+all: configure
+	cd build; $(MAKE);
 
-.PHONY: all
+configure:
+	[ ! -d build ] && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug ../ || echo "already configured";
+
+clean:
+	rm -rf build ;
+
+.PHONY: clean configure

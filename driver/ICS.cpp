@@ -1,4 +1,4 @@
-#include "include/Utils.hpp"
+#include "Utils.hpp"
 
 namespace
 {
@@ -12,7 +12,7 @@ struct CAT : public ModulePass
     {
         /*
          * Debugging
-         */  
+         */
         Utils::ExitOnInit();
 
 
@@ -24,13 +24,13 @@ struct CAT : public ModulePass
     {
         /*
          * Debugging
-         */  
+         */
         Utils::ExitOnInit();
 
- 
+
         /*
-         * Fetch NOELLE 
-         */ 
+         * Fetch NOELLE
+         */
         auto &N = getAnalysis<Noelle>();
 
 
@@ -45,17 +45,17 @@ struct CAT : public ModulePass
 
 
     void getAnalysisUsage(AnalysisUsage &AU) const override
-    {   
+    {
         /*
-         * Declare NOELLE dependence 
+         * Declare NOELLE dependence
          */
         AU.addRequired<Noelle>();
         return;
-    } 
+    }
 
 };
-    
-    
+
+
 char CAT::ID = 0;
 static RegisterPass<CAT> X("ics", "Intermittent computing scheduling");
 

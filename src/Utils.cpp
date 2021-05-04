@@ -4,7 +4,7 @@ using namespace Utils;
 
 /*
  * ExitOnInit
- * 
+ *
  * Register pass, execute doInitialization method but do not perform
  * any analysis or transformation --- exit in runOnModule --- mostly
  * for testing scenarios
@@ -28,7 +28,7 @@ Function *Utils::GetMethod(
     /*
      * Fetch function with @Name from @M --- sanity
      * check that the function exists
-     */ 
+     */
     Function *F = M->getFunction(Name);
     errs() << "Fetching " << Name << " ... \n";
     assert(!!F && "Utils::GetMethod: Can't fetch!");
@@ -39,13 +39,13 @@ Function *Utils::GetMethod(
 
 /*
  * GetBuilder
- * 
- * Generates a specific IRBuilder instance that is fitted with 
- * the correct debug location --- necessary for injections 
+ *
+ * Generates a specific IRBuilder instance that is fitted with
+ * the correct debug location --- necessary for injections
  * into the Nautilus bitcode
  */
 llvm::IRBuilder<> Utils::GetBuilder(
-    Function *F, 
+    Function *F,
     Instruction *InsertionPoint
 )
 {
@@ -68,7 +68,7 @@ llvm::IRBuilder<> Utils::GetBuilder(
 
 
 llvm::IRBuilder<> Utils::GetBuilder(
-    Function *F, 
+    Function *F,
     BasicBlock *InsertionPoint
 )
 {
@@ -96,7 +96,7 @@ bool Utils::IsInstrumentable(Function &F)
      * Perform check
      */
     if (false
-        || (F.isIntrinsic()) 
+        || (F.isIntrinsic())
         || (F.empty()))
         return false;
 
@@ -109,19 +109,19 @@ bool Utils::Verify(Module &M)
 {
     /*
      * Check pass settings
-     */  
+     */
     if (NoVerify) return true;
 
 
     /*
      * Run LLVM verifier on each function of @M
-     */ 
+     */
     bool Failed = false;
     for (auto &F : M)
     {
         if (verifyFunction(F, &(errs())))
         {
-            DEBUG_ERRS << "Failed verification: " 
+            DEBUG_ERRS << "Failed verification: "
                        << F.getName() << "\n"
                        << F << "\n";
 
@@ -140,22 +140,22 @@ void Utils::SetInstrumentationMetadata(
     const std::string MDLiteral
 )
 {
-    /*  
+    /*
      * Build metadata node using @MDTypeString
-     */ 
-    MDNode *TheNode = 
+     */
+    MDNode *TheNode =
         MDNode::get(
             I->getContext(),
             MDString::get(
-                I->getContext(), 
+                I->getContext(),
                 MDTypeString
             )
-        );  
+        );
 
 
-    /*  
+    /*
      * Set metadata with @MDLiteral
-     */ 
+     */
     I->setMetadata(
         MDLiteral,
         TheNode
