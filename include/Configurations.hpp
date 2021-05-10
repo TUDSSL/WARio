@@ -36,9 +36,11 @@
 #include <set>
 #include <cassert>
 
+#include "LoopWriteScheduler.hpp"
+
 /*
  * Debugging
- */ 
+ */
 #define DEBUG_INFO(str) do { if (Debug) { errs() << str; } } while (0)
 #define OBJ_INFO(obj) do { if (Debug) { obj->print(errs()); errs() << "\n"; } } while (0)
 #define VERIFY_DEBUG_INFO(str) do { if (!NoVerify) { errs() << str; } } while (0)
@@ -51,7 +53,7 @@ using namespace llvm;
 
 /*
  * Command line options for pass
- */ 
+ */
 extern cl::opt<bool> NoVerify;
 
 extern cl::opt<bool> InitExit;

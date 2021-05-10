@@ -3,6 +3,7 @@ set(PassSrc
     ICS.cpp
     ${CMAKE_SOURCE_DIR}/src/Utils.cpp
     ${CMAKE_SOURCE_DIR}/src/Configurations.cpp
+    ${CMAKE_SOURCE_DIR}/src/LoopWriteScheduler.cpp
 )
 
 # Compilation flags

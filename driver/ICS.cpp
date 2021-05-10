@@ -33,6 +33,11 @@ struct CAT : public ModulePass
          */
         auto &N = getAnalysis<Noelle>();
 
+        /*
+         * Schedule writes in loops together
+         */
+        LoopWriteScheduler::Schedule(N, M);
+
 
         /*
          * Run verifier on each function instrumented
