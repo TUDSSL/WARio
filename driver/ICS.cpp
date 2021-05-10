@@ -22,6 +22,8 @@ struct CAT : public ModulePass
 
     bool runOnModule(Module &M) override
     {
+        bool modified = false;
+
         /*
          * Debugging
          */
@@ -36,7 +38,7 @@ struct CAT : public ModulePass
         /*
          * Schedule writes in loops together
          */
-        LoopWriteScheduler::Schedule(N, M);
+        modified = LoopWriteScheduler::Schedule(N, M);
 
 
         /*
@@ -45,7 +47,7 @@ struct CAT : public ModulePass
         Utils::Verify(M);
 
 
-        return false;
+        return modified;
     }
 
 

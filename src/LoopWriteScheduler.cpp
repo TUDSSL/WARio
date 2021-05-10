@@ -142,8 +142,71 @@ void findLoadsDependingOnRescheduledStores(
     }
 }
 
+void insertLoadChecks(
+    map<Instruction *, list<Instruction *>> &affectedLoadStoresMap,
+    Function *F) {
+
+    errs() << "\n";
+    for (auto rload : affectedLoadStoresMap) {
+        auto load = rload.first;
+        auto block = load->getParent();
+        errs() << "Resolving load: " << *load << "\n";
+
+        // Get a builder
+        auto builder = Utils::GetBuilder(F, block);
+        builder.SetInsertPoint(load->getNextNode());
+        auto insert_point = load->getNextNode();
+
+        auto load_inst = dyn_cast<LoadInst>(load);
+        auto load_src = load_inst->getPointerOperand();
+        errs() << "Load src: " << *load_src << "\n";
+
+        // Add a check for each store location
+        Value *load_propagated = load_inst;
+        Value *first_select_inst = nullptr;
+        for (auto store : rload.second) {
+            auto store_inst = dyn_cast<StoreInst>(store);
+            auto store_src = store_inst->getValueOperand();
+            auto store_dst = store_inst->getPointerOperand();
+            errs() << "Load propagated: " << *load_propagated << "\n";
+            errs() << "Store src: " << *store_src << "\n";
+            errs() << "Store dst: " << *store_dst << "\n";
+
+            auto icmp_inst = builder.CreateICmpEQ(load_src, store_dst);
+            auto select_inst =
+                builder.CreateSelect(icmp_inst, store_src, load_propagated);
+
+            // Next select instruction uses the result of the previous select
+            // to propagate the load, or correct store value forward.
+            load_propagated = select_inst;
+
+            if (first_select_inst == nullptr)
+                first_select_inst = select_inst;
+        }
+
+        if (first_select_inst != nullptr) {
+
+        }
+        // Replace the use of the load (except the use in the select
+        // instruction) with the last select instruction
+        for (LoadInst::use_iterator UI = load_inst->use_begin(),
+                                    E = load_inst->use_end();
+                                    UI != E;) {
+            Use &U = *UI;
+            ++UI;
+            auto user = U.getUser();
+            if (user == first_select_inst) {
+                continue;
+            }
+            U.set(load_propagated);
+        }
+    }
+}
+
 bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
     errs() << "Running LoopWriteScheduler on: " << M.getName() << "\n";
+
+    bool modified = false;
 
     /*
      * Fetch the entry point.
@@ -203,7 +266,7 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
          * a WAR store.
          */
         map<Instruction *, list<Instruction *>> affectedLoadStoresMap;
-        findLoadsDependingOnRescheduledStores(warRescheduleInst, instDep.warDep,
+        findLoadsDependingOnRescheduledStores(warRescheduleInst, instDep.rawDep,
                                               affectedLoadStoresMap);
 
         /*
@@ -222,7 +285,7 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
         }
 
         /*
-         * Find the WAR store inseartion point in the latch block
+         * Find the WAR store insertion point in the latch block
          */
         Instruction *storeInsertPoint;
         for (Instruction &inst : *latch) {
@@ -293,57 +356,19 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
 
         /*
          * Instrument the loads to check if it loads a value that "should" have
-         * been written, bat will be postponed
+         * been written, but has been postponed
          */
-        errs() << "\n";
+        insertLoadChecks(affectedLoadStoresMap, F);
 
-        list<Value *> keepLoadUses;
-        for (auto rload : affectedLoadStoresMap) {
-            auto load = rload.first;
-            auto block = load->getParent();
-            errs() << "Resolving load: " << *load << "\n";
+        modified = true;
 
-            // Get a builder
-            auto builder = Utils::GetBuilder(F, block);
-            builder.SetInsertPoint(load->getNextNode());
-            auto insert_point = load->getNextNode();
-
-            auto load_inst = dyn_cast<LoadInst>(load);
-            auto load_src = load_inst->getPointerOperand();
-            errs() << "Load src: " << *load_src << "\n";
-
-            for (auto store : rload.second) {
-                auto store_inst = dyn_cast<StoreInst>(store);
-                auto store_src = store_inst->getValueOperand();
-                auto store_dst = store_inst->getPointerOperand();
-                errs() << "Store src: " << *store_src << "\n";
-                errs() << "Store dst: " << *store_dst << "\n";
-
-                auto icmp_inst = builder.CreateICmpEQ(load_src, store_dst);
-                auto select_inst = builder.CreateSelect(icmp_inst, store_src, load_inst);
-
-                keepLoadUses.push_back(select_inst);
-
-#if 0
-                // Replace the uses in the basic block EXCEPT for the use in
-                // the select instruction
-                for (LoadInst::use_iterator UI = load_inst->use_begin(), E = load_inst->use_end(); UI != E;) {
-                    Use &U = *UI;
-                    ++UI;
-                    auto user = U.getUser();
-                    if (user == select_inst) {
-                        continue;
-                    }
-                    U.set(select_inst);
-                }
-#endif
-            }
-        }
-
-
+        /*
+         * Print the IR of the new version of the function (for debugging)
+         */
         errs() << "\n\nNew function:\n";
         errs() << *LS->getFunction();
     }
 
-    return false;
+    return modified;
 }
+
