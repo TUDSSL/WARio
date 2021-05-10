@@ -94,9 +94,10 @@ void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDepende
     SCCDAG->iterateOverSCCs(sccIterator);
 }
 
-// Collect the loop body instructions that have WAR and RAW violations
-//  -
-
+/*
+ * Order the WAR store instructions in the order that they appear in.
+ * This will be the order the reschedules stores will appear in.
+ */
 void orderWars(Noelle &noelle, LoopStructure *LS, BasicBlock *latch,
                InstructionDependecyMap &warDep,
                list<Instruction *> &warDepOrder) {
@@ -123,6 +124,22 @@ void orderWars(Noelle &noelle, LoopStructure *LS, BasicBlock *latch,
     warDepOrder.sort([&](Instruction *a, Instruction *b) {
                 return D.dominates(a, b);
             });
+}
+
+void findLoadsDependingOnRescheduledStores(
+    list<Instruction *> &warRescheduleInst, InstructionDependecyMap &rawDep,
+    map<Instruction *, list<Instruction *>> &affectedLoadStoresMap) {
+
+    for (auto raw : rawDep) {
+        auto &load = raw.first;
+        auto &writes = raw.second;
+        for (auto war : warRescheduleInst) {
+            // If this RAW depends on a WAR that we will reschedule
+            if (find(writes.begin(), writes.end(), war) != writes.end()) {
+                affectedLoadStoresMap[load].push_back(war);
+            }
+        }
+    }
 }
 
 bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
@@ -158,51 +175,22 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
         InstructionDependencies instDep;
         collectInstructionDependencies(loop, instDep);
 
-#if 0
         /*
-         * Get Dominator information for the function
+         * WAR stores can only be rescheduled if they dominate the latch.
+         * We also place them in the latch.
          */
-        auto D = noelle.getDominators(LS->getFunction())->DT;
-
-        for (const auto &kv_a : instDep.warDep) {
-            errs() << "WAR instruction: " << *kv_a.first << "\n";
-            for (const auto &kv_b : instDep.warDep) {
-                if (kv_a.first != kv_b.first) {
-                    auto dom = D.dominates(kv_a.first, kv_b.first);
-                    if (dom)
-                        errs() << "  Dominates war: " << *kv_b.first << "\n";
-                    else
-                        errs() << "  DOES NOT dominate war: " << *kv_b.first
-                               << "\n";
-                }
-            }
-        }
-#endif
-
-#if 0
-        for (auto latch : LS->getLatches()) {
-            errs() << "Latch: " << *latch << "\n";
-        }
-
-        for (auto exit : LS->getLoopExitEdges()) {
-            errs() << "Exit block: " << *exit.first << " to " << *exit.second << "\n";
-        }
-#endif
-
-        // isCandidate checks if there is only one latch
         BasicBlock *latch = *LS->getLatches().begin();
 
+        /*
+         * Order the WAR stores correctly
+         */
         list<Instruction *> warDepOrder;
         orderWars(noelle, LS, latch, instDep.warDep, warDepOrder);
 
-#if 0
-        errs() << "WAR order that can be rescheduled (dominates latch)\n";
-        for (auto war : warDepOrder) {
-            errs() << *war << "\n";
-        }
-#endif
 
-        // Get the Instructrions to reschedule (remove stores in the latch)
+        /*
+         * If a WAR store is already in the latch we don't have to reschedule it.
+         */
         list<Instruction *> warRescheduleInst;
         for (auto war : warDepOrder) {
             if (war->getParent() != latch) {
@@ -210,57 +198,20 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
             }
         }
 
-#if 0
-        // Find the RAW dependencies that have to be resolved when we move a
-        // store WAR.
-        map<Instruction *, list<Instruction *>> resolveLoads;
-        for (auto raw : instDep.rawDep) {
-            auto &load = raw.first;
-            auto &writes = raw.second;
-            for (auto war : warRescheduleInst) {
-                // If this RAW depends on a WAR that we will reschedule
-                if (find(writes.begin(), writes.end(), war) != writes.end()) {
-                    resolveLoads[war].push_back(load);
-                }
-            }
-        }
+        /*
+         * Find the RAW load dependencies that have to be resolved when we move
+         * a WAR store.
+         */
+        map<Instruction *, list<Instruction *>> affectedLoadStoresMap;
+        findLoadsDependingOnRescheduledStores(warRescheduleInst, instDep.warDep,
+                                              affectedLoadStoresMap);
 
-        errs() << "WAR order that should be rescheduled\n";
-        for (auto war : warRescheduleInst) {
-            errs() << *war << "\n";
-            errs() << "  affected loads:\n";
-            for (auto load : resolveLoads[war]) {
-                errs() << "  " << *load << "\n";
-            }
-        }
-#endif
-        // Find the RAW dependencies that have to be resolved when we move a
-        // store WAR.
-        map<Instruction *, list<Instruction *>> resolveLoads;
-        map<Instruction *, list<Instruction *>> affectedWarLoads;
-        for (auto raw : instDep.rawDep) {
-            auto &load = raw.first;
-            auto &writes = raw.second;
-            for (auto war : warRescheduleInst) {
-                // If this RAW depends on a WAR that we will reschedule
-                if (find(writes.begin(), writes.end(), war) != writes.end()) {
-                    resolveLoads[load].push_back(war);
-                    affectedWarLoads[war].push_back(load);
-                }
-            }
-        }
-
-        errs() << "WAR order that should be rescheduled\n";
-        for (auto war : warRescheduleInst) {
-            errs() << *war << "\n";
-            errs() << "  affected loads:\n";
-            for (auto load : affectedWarLoads[war]) {
-                errs() << "  " << *load << "\n";
-            }
-        }
-
-        // Find the exit blocks that have to be modified if we reschedule
-        // the write
+        /*
+         * Find the exit blocks that need to be modified when we reschedule
+         * the WAR stores.
+         * This needs to be done because if the loop exits early (before the latch)
+         * the stores up to that point need to be written.
+         */
         map<Instruction *, pair<BasicBlock *, BasicBlock *>> scheduleExitEdges;
         for (auto exit : LS->getLoopExitEdges()) {
             for (auto war : warRescheduleInst) {
@@ -270,39 +221,58 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
             }
         }
 
+        /*
+         * Find the WAR store inseartion point in the latch block
+         */
+        Instruction *storeInsertPoint;
+        for (Instruction &inst : *latch) {
+            storeInsertPoint = &inst;
+          if (dyn_cast<StoreInst>(&inst)) {
+              break;
+          }
+        }
+
+        /*
+         * Print some information
+         */
+        errs() << "WAR order that should be rescheduled\n";
+        for (auto war : warRescheduleInst) {
+            errs() << *war << "\n";
+        }
+
+        errs() << "Loads that are affected by rescheduling the WAR stores\n";
+        for (auto kv : affectedLoadStoresMap) {
+            errs() << *kv.first << " due to stores:\n";
+            for (auto store : kv.second) {
+                errs() << *store << "\n";
+            }
+        }
+
         errs() << "Exit edges to modify\n";
         for (auto kv : scheduleExitEdges) {
             errs() << "WAR: " << *kv.first << "\nin edge:" << *kv.second.first
                    << " TO " << *kv.second.second << "\n";
         }
 
-        /*
-         * Modify the IR
-         */
-        // 1. Remove the store from its current block
-        // 2. Insert write in the latch (after the last load, before any other stores)
-        // 3. "Solve" the loads (insert checks if addresses overlap)
-        // 4. Add additional writebacks between the edge from a bock that had a write
-        //    moved and an exit
-
-        // Find where to place the writes
-        // TODO: Only break if the store is a WAR store
         errs() << "Latch block: " << *latch;
-        Instruction *insertPointLatch;
-        for (Instruction &inst : *latch) {
-            insertPointLatch = &inst;
-          if (dyn_cast<StoreInst>(&inst)) {
-              break;
-          }
-        }
-        errs() << "Insertion point (before) in latch: " << *insertPointLatch << "\n";
+        errs() << "Store insertion point (before) in latch: " << *storeInsertPoint << "\n";
 
+        /*
+         * Transform the IR
+         */
+
+        /*
+         * Move the WAR stores (ordered) to the insertion point
+         */
         for (auto war : warRescheduleInst) {
-            war->moveBefore(insertPointLatch);
+            war->moveBefore(storeInsertPoint);
         }
 
         /*
-         * Create a basic block for the writeback before exits
+         * Insert additional stores in the early exits (critical edges) of the
+         * loop.
+         * Each exit should write all postponed (rescheduled) stores up to that
+         * point before exiting the loop.
          */
         list<Instruction *> previousWrites;
         for (auto war : warRescheduleInst) {
@@ -328,7 +298,7 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
         errs() << "\n";
 
         list<Value *> keepLoadUses;
-        for (auto rload : resolveLoads) {
+        for (auto rload : affectedLoadStoresMap) {
             auto load = rload.first;
             auto block = load->getParent();
             errs() << "Resolving load: " << *load << "\n";
