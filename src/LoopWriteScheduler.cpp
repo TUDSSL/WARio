@@ -76,13 +76,13 @@ void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDepende
  * Order the WAR store instructions in the order that they appear in.
  * This will be the order the reschedules stores will appear in.
  */
-void orderWars(Noelle &noelle, LoopStructure *LS, BasicBlock *latch,
+void orderWars(Noelle &N, LoopStructure *LS, BasicBlock *latch,
                InstructionDependecyMap &warDep,
                list<Instruction *> &warDepOrder) {
     /*
      * Get Dominator information for the function
      */
-    auto D = noelle.getDominators(LS->getFunction())->DT;
+    auto D = N.getDominators(LS->getFunction())->DT;
 
     warDepOrder.clear();
 
@@ -217,7 +217,7 @@ bool LoopWriteScheduler::isCandidate(LoopStructure *LS) {
     return true;
 }
 
-bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
+bool LoopWriteScheduler::Schedule(Noelle &N, Module &M) {
     errs() << "Running LoopWriteScheduler::Schedule on: " << M.getName() << "\n";
 
     bool modified = false;
@@ -225,13 +225,13 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
     /*
      * Fetch the entry point.
      */
-    auto fm = noelle.getFunctionsManager();
+    auto fm = N.getFunctionsManager();
     auto mainF = fm->getEntryFunction();
 
     /*
      * Iterate over the loops
      */
-    auto loops = noelle.getLoops();
+    auto loops = N.getLoops();
     for (auto loop : *loops) {
 
         auto LS = loop->getLoopStructure();
@@ -262,7 +262,7 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
          * Order the WAR stores correctly
          */
         list<Instruction *> warDepOrder;
-        orderWars(noelle, LS, latch, instDep.warDep, warDepOrder);
+        orderWars(N, LS, latch, instDep.warDep, warDepOrder);
 
 
         /*

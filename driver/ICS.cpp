@@ -47,7 +47,6 @@ struct CAT : public ModulePass
         assert((LoopUnrollStep || LoopScheduleStep) &&
                "Either execute the ics-loop-unroll or the ics-loop-schedule "
                "step.");
-        errs() << "Loop unroll count: " << LoopUnrollCount << "\n";
 
         if (LoopUnrollStep == true) {
             /*

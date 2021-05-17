@@ -59,7 +59,7 @@ bool unrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
     return modified;
 }
 
-bool LoopUnroller::Unroll(Noelle &noelle, Module &M, map<Function *, LoopInfo *> LI_map, int count) {
+bool LoopUnroller::Unroll(Noelle &N, Module &M, map<Function *, LoopInfo *> LI_map, int count) {
     errs() << "Running LoopUnroller::Unroll on: " << M.getName() << "\n";
 
     bool modified = false;
@@ -67,13 +67,13 @@ bool LoopUnroller::Unroll(Noelle &noelle, Module &M, map<Function *, LoopInfo *>
     /*
      * Fetch the entry point.
      */
-    auto fm = noelle.getFunctionsManager();
+    auto fm = N.getFunctionsManager();
     auto mainF = fm->getEntryFunction();
 
     /*
      * Iterate over the loops
      */
-    auto loops = noelle.getLoops();
+    auto loops = N.getLoops();
     for (auto loop : *loops) {
 
         auto LS = loop->getLoopStructure();
