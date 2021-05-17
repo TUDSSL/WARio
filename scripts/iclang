@@ -44,26 +44,24 @@ function run() {
     eval "$cmd"
 }
 
-function apply_pass() {
+
+function apply_passes() {
     local bitcode_input="$1"
+    local basename="$obj_dir/$obj_filename"
 
-    ## C -> LLVMIR
-    #llvmir_orig="$obj_dir/$obj_filename-orig.ll"
-    #cmd="$CC -Xclang -disable-O0-optnone -emit-llvm -S $other_args -c $source_file -o $llvmir_orig"
-    #echo "$cmd"
-    #$cmd
+    # Unroll step
+    local passname="ics-loop-unroll"
+    run "$NOELLE_NORM -S $bitcode_input -o $basename-norm.ll"
+    run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -$passname -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
+    local llvm_pass="$basename-$passname.ll"
 
-    # LLVMIR > Normalize
-    local llvm_norm="$obj_dir/$obj_filename-norm.ll"
-    run "$NOELLE_NORM -S $bitcode_input -o $llvm_norm"
-
-    # Norm LLVMIR > pass LLVMIR
-    local llvm_pass="$obj_dir/$obj_filename-pass.ll"
-    local llvm_pass_output="$obj_dir/$obj_filename-pass.txt"
-    run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -S  $llvm_norm -o $llvm_pass 2>&1 | tee $llvm_pass_output"
+    # Schedule step
+    local passname="ics-loop-schedule"
+    run "$NOELLE_NORM -S $llvm_pass -o $basename-norm.ll"
+    run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -$passname -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
+    local llvm_pass="$basename-$passname.ll"
 
     # pass LLVMIR > elf
-
     local compile_args_dir="$(dirname $(readlink -f "$obj_file"))"
     local compile_args="$(<${compile_args_dir}/compile_args.txt)"
     local obj_pass="$obj_dir/$obj_filename-pass.obj"
@@ -155,7 +153,7 @@ if [ -n "$output_file" ]; then
 
         # Apply the pass
         # Directly writes the elf file
-        apply_pass "${obj_dir}/${bc_file}"
+        apply_passes "${obj_dir}/${bc_file}"
     fi
 else
     # Just pass
