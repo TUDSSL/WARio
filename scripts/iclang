@@ -34,6 +34,11 @@ echo "With flags: $PASS_FLAGS"
 # Setup the environment
 export GLLVM_OBJCOPY=arm-none-eabi-objcopy
 
+function exit_on_error() {
+    echo "$1"
+    exit -1
+}
+
 function pecho() {
     echo "${PROG}: $1"
 }
@@ -41,7 +46,7 @@ function pecho() {
 function run() {
     cmd="${1//\"/\\\"}"
     pecho "$cmd"
-    eval "$cmd"
+    eval "$cmd" || exit_on_error "An error occured running: $cmd"
 }
 
 
