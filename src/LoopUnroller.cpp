@@ -7,25 +7,15 @@ bool unrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
     bool modified = false;
     auto &loopFunction = *LS.getFunction();
 
-
-    // TODO: is a module pass, can just get the loop from header
-    //auto &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
-
-    // auto &DT =
-    // getAnalysis<DominatorTreeWrapperPass>(loopFunction).getDomTree(); auto
-    // &SE = getAnalysis<ScalarEvolutionWrapperPass>(loopFunction).getSE();
-    // auto &AC =
-    //    getAnalysis<AssumptionCacheTracker>().getAssumptionCache(loopFunction);
-
-    errs() << "Unrolling " << loopFunction.getName() << "\n";
+    errs() << "Unrolling " << loopFunction.getName() << " " << count << "x\n";
 
     auto header = LS.getHeader();
     auto llvmLoop = LI.getLoopFor(header);
 
     UnrollLoopOptions opts;
     opts.Count = count;
-    opts.TripCount = 0;     // SE.getSmallConstantTripCount(llvmLoop);
-    opts.TripMultiple = 1;  // SE.getSmallConstantTripMultiple(llvmLoop);
+    opts.TripCount = 0;
+    opts.TripMultiple = 1;
     opts.Force = true;
     opts.AllowRuntime = true;
     opts.AllowExpensiveTripCount = true;
@@ -35,12 +25,9 @@ bool unrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
     opts.ForgetAllSCEV = false;
     OptimizationRemarkEmitter ORE(&loopFunction); // might be useless
 
-    // auto unrolled =
-    //    llvm::UnrollLoop(llvmLoop, opts, &LI, &SE, &DT, &AC, &ORE, true);
     auto unrolled = llvm::UnrollLoop(llvmLoop, opts, &LI, nullptr, nullptr,
                                      nullptr, &ORE, true);
 
-    // UnrollLoop(llvmLoop, ;
     errs() << "Done llvm unrolling\n";
     /*
      *    * Check if the loop unrolled.
@@ -58,7 +45,6 @@ bool unrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
 
         case LoopUnrollResult::Unmodified:
             errs() << "   Not unrolled\n";
-            // modified = false;
             break;
 
         default:
