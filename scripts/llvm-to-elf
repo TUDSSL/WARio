@@ -1,0 +1,20 @@
+#!/bin/bash
+
+in=$1
+
+set -e
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT="$DIR/.."
+
+# Compile
+clang -c -mthumb -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft --target=thumbv7em-unknown-none-gnu -ffunction-sections -fdata-sections -fomit-frame-pointer -Wall -std=c99 -O1 $in -o $in.obj
+
+# Link
+clang -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft --target=thumbv7em-unknown-none-eabi -nodefaultlibs -Wl,--Bstatic -Wl,-lc_nano -Wl,-lnosys -L/usr/arm-none-eabi/lib/thumb/v7e-m/nofp -L/usr/lib/gcc/arm-none-eabi/10.2.0/thumb/v7e-m/nofp/ -L$ROOT/test/arm-code/list-reverse/config-m4 -Wl,--gc-sections,--entry,Reset_Handler -T $ROOT/test/arm-code/list-reverse/config-m4/linkerscript.ld -lc -lm $in.obj -o $in.elf
+
+# Disassemble
+arm-none-eabi-objdump -d $in.elf > $in.s
+
+# Cleanup
+rm $in.obj #$in.elf

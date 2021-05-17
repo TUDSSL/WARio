@@ -1,0 +1,621 @@
+/home/vkortbeek/devel/arm-emu/ICEmu/bin/../build/ICEmu -c /home/vkortbeek/devel/arm-emu/ICEmu/bin/../example/cfg/cfg_armv7.json  -p /home/vkortbeek/devel/arm-emu/ICEmu/bin/../build/plugins/cycle_count_plugin.so -p /home/vkortbeek/devel/arm-emu/ICEmu/bin/../build/plugins/display_instructions_plugin.so list-reverse-manual.ll.elf 
+
+ICEmu ARM Emulator
+Elf file: list-reverse-manual.ll.elf
+Entrypoint: 0xc19d
+Segments:
+  Name = ROMEM : Origin = 0xc000, Length = 983040
+    Load  orig: 0xc000 length: 1f8
+  Name = RWMEM : Origin = 0x10000000, Length = 393216
+  Name = NVMEM : Origin = 0x51000000, Length = 524288
+  Name = SYSTEM_CONTROL_REGISTERS : Origin = 0xe000e000, Length = 3840
+
+Loading plugin: /home/vkortbeek/devel/arm-emu/ICEmu/bin/../build/plugins/cycle_count_plugin.so (argument)
+Loading plugin: /home/vkortbeek/devel/arm-emu/ICEmu/bin/../build/plugins/display_instructions_plugin.so (argument)
+Starting emulation
+[instr] 0x0000c19c: ldr  r0, [pc, #0x30]
+[instr] 0x0000c19e: ldr  r1, [pc, #0x34]
+[instr] 0x0000c1a0: str  r1, [r0]
+[instr] 0x0000c1a2: ldr.w  sp, [r1]
+[instr] 0x0000c1a6: ldr  r0, [pc, #0x30]
+[instr] 0x0000c1a8: ldr  r1, [pc, #0x30]
+[instr] 0x0000c1aa: ldr  r2, [pc, #0x34]
+[instr] 0x0000c1ac: ldr  r3, [r0], #4
+[instr] 0x0000c1b0: str  r3, [r1], #4
+[instr] 0x0000c1b4: cmp  r1, r2
+[instr] 0x0000c1b6: blt  #0xc1ac
+[instr] 0x0000c1b8: ldr  r0, [pc, #0x28]
+[instr] 0x0000c1ba: ldr  r1, [pc, #0x2c]
+[instr] 0x0000c1bc: mov.w  r2, #0
+[instr] 0x0000c1c0: cmp  r0, r1
+[instr] 0x0000c1c2: it  lt
+[instr] 0x0000c1c8: blt  #0xc1c0
+[instr] 0x0000c1ca: bl  #0xc100
+[instr] 0x0000c100: push  {r4, lr}
+[instr] 0x0000c102: sub  sp, #0xd0
+[instr] 0x0000c104: movs  r0, #0x2a
+[instr] 0x0000c106: mov  r4, sp
+[instr] 0x0000c108: strh.w  r0, [sp, #4]
+[instr] 0x0000c10c: add  r0, sp, #8
+[instr] 0x0000c10e: movs  r1, #0x19
+[instr] 0x0000c110: mov  r2, r4
+[instr] 0x0000c112: bl  #0xc128
+[instr] 0x0000c128: push  {r7, lr}
+[instr] 0x0000c12a: cmp  r1, #0
+[instr] 0x0000c12c: it  eq
+[instr] 0x0000c130: mov.w  ip, #0
+[instr] 0x0000c134: mov.w  lr, #1
+[instr] 0x0000c138: movs  r3, #0
+[instr] 0x0000c13a: nop  
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c13c: str  r0, [r2]
+[instr] 0x0000c13e: strh.w  lr, [r0, #4]
+[instr] 0x0000c142: strh  r3, [r0, #6]
+[instr] 0x0000c144: adds  r3, #1
+[instr] 0x0000c146: str.w  ip, [r0]
+[instr] 0x0000c14a: cmp  r1, r3
+[instr] 0x0000c14c: mov  r2, r0
+[instr] 0x0000c14e: add.w  r0, r0, #8
+[instr] 0x0000c152: bne  #0xc13c
+[instr] 0x0000c154: pop  {r7, pc}
+[instr] 0x0000c116: mov  r0, r4
+[instr] 0x0000c118: bl  #0xc158
+[instr] 0x0000c158: b  #0xc164
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c16a: b  #0xc15c
+[instr] 0x0000c15c: ldrh  r1, [r0, #4]
+[instr] 0x0000c15e: adds  r1, #1
+[instr] 0x0000c160: strh  r1, [r0, #4]
+[instr] 0x0000c162: ldr  r0, [r0]
+[instr] 0x0000c164: cmp  r0, #0
+[instr] 0x0000c166: it  eq
+[instr] 0x0000c168: bx  lr
+[instr] 0x0000c11c: mov  r0, r4
+[instr] 0x0000c11e: bl  #0xc16c
+[instr] 0x0000c16c: cbz  r0, #0xc18c
+[instr] 0x0000c16e: movs  r2, #0
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c170: ldr  r1, [r0]
+[instr] 0x0000c172: cbz  r1, #0xc192
+[instr] 0x0000c174: ldr  r3, [r1]
+[instr] 0x0000c176: cmp  r0, r1
+[instr] 0x0000c178: it  eq
+[instr] 0x0000c17c: str  r2, [r0]
+[instr] 0x0000c17e: str  r0, [r1]
+[instr] 0x0000c180: cmp  r3, #0
+[instr] 0x0000c182: mov  r0, r3
+[instr] 0x0000c184: mov  r2, r1
+[instr] 0x0000c186: bne  #0xc170
+[instr] 0x0000c188: mov  r0, r1
+[instr] 0x0000c18a: bx  lr
+[instr] 0x0000c122: movs  r0, #0
+[instr] 0x0000c124: add  sp, #0xd0
+[instr] 0x0000c126: pop  {r4, pc}
+Stopping the emulator, reason: Breakpoint instruction
+Emulation ended
+Result register: 0
+Emulation time: 0.00294302s
+The program ran for: 1043 clock cycles (estimate)
+The program ran for: 601 instructions
