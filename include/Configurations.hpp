@@ -66,4 +66,6 @@ extern cl::opt<bool> Debug;
 
 extern cl::opt<bool> LoopUnrollStep;
 
+extern cl::opt<unsigned int> LoopUnrollCount;
+
 extern cl::opt<bool> LoopScheduleStep;

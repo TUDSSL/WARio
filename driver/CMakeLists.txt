@@ -4,6 +4,7 @@ set(PassSrc
     ${CMAKE_SOURCE_DIR}/src/Utils.cpp
     ${CMAKE_SOURCE_DIR}/src/Configurations.cpp
     ${CMAKE_SOURCE_DIR}/src/LoopWriteScheduler.cpp
+    ${CMAKE_SOURCE_DIR}/src/LoopUnroller.cpp
 )
 
 # Compilation flags

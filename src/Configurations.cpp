@@ -28,6 +28,12 @@ cl::opt<bool> LoopUnrollStep(
     cl::desc("Execute the ICS loop unroll step")
 );
 
+cl::opt<unsigned int> LoopUnrollCount(
+    "ics-loop-unroll-count",
+    cl::init(2),
+    cl::desc("The ICS loop unroll count (default = 2)")
+);
+
 cl::opt<bool> LoopScheduleStep(
     "ics-loop-schedule",
     cl::init(false),
