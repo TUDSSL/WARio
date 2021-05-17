@@ -13,8 +13,8 @@ endforeach()
 add_executable(${PROJECT_NAME}
     main.c
     list.c
-    #printf.c
-    #printfmap.c
+    printf.c
+    printfmap.c
     ${STARTUP_CODE}
     )
 
