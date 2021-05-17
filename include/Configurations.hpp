@@ -27,6 +27,10 @@
 #include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/IR/DataLayout.h"
 
+#include "llvm/Transforms/Utils/LoopUtils.h"
+#include "llvm/Transforms/Utils/UnrollLoop.h"
+
+
 #include "Noelle.hpp"
 
 #include <string>
@@ -60,4 +64,6 @@ extern cl::opt<bool> InitExit;
 
 extern cl::opt<bool> Debug;
 
+extern cl::opt<bool> LoopUnrollStep;
 
+extern cl::opt<bool> LoopScheduleStep;

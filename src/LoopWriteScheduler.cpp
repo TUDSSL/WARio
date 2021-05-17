@@ -5,28 +5,6 @@
 using namespace llvm;
 using namespace LoopWriteScheduler;
 
-bool LoopWriteScheduler::isCandidate(LoopStructure *LS) {
-    auto n_subloops = LS->getNumberOfSubLoops();
-
-    // For testing, should be removed before using on other LLVMIR
-    if (LS->getFunction()->getName() != "list_reverse") {
-        return false;
-    }
-
-    if (n_subloops != 0) {
-        return false;
-    }
-
-    auto latches = LS->getLatches();
-    if (latches.size() > 1) {
-        errs() << "Loop has multiple latches, not a candidate\n";
-        return false;
-    }
-
-    // Is a candidate
-    return true;
-}
-
 
 void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDependencies &instDep) {
     auto sccManager = loop->getSCCManager();
@@ -203,8 +181,31 @@ void insertLoadChecks(
     }
 }
 
+
+bool LoopWriteScheduler::isCandidate(LoopStructure *LS) {
+    auto n_subloops = LS->getNumberOfSubLoops();
+
+    // For testing, should be removed before using on other LLVMIR
+    if (LS->getFunction()->getName() != "list_reverse") {
+        return false;
+    }
+
+    if (n_subloops != 0) {
+        return false;
+    }
+
+    auto latches = LS->getLatches();
+    if (latches.size() > 1) {
+        errs() << "Loop has multiple latches, not a candidate\n";
+        return false;
+    }
+
+    // Is a candidate
+    return true;
+}
+
 bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
-    errs() << "Running LoopWriteScheduler on: " << M.getName() << "\n";
+    errs() << "Running LoopWriteScheduler::Schedule on: " << M.getName() << "\n";
 
     bool modified = false;
 
