@@ -130,6 +130,9 @@ void insertLoadChecks(
         auto block = load->getParent();
         errs() << "Resolving load: " << *load << "\n";
 
+        // Add metadata
+        Utils::SetInstrumentationMetadata(load, "ics_scheduler", "ics_resolved_load");
+
         // Get a builder
         auto builder = Utils::GetBuilder(F, block);
         builder.SetInsertPoint(load->getNextNode());
@@ -154,6 +157,14 @@ void insertLoadChecks(
             auto select_inst =
                 builder.CreateSelect(icmp_inst, store_src, load_propagated);
 
+            // Add metadata
+            Utils::SetInstrumentationMetadata(cast<ICmpInst>(icmp_inst),
+                                              "ics_scheduler",
+                                              "ics_resolved_load_icmp");
+            Utils::SetInstrumentationMetadata(cast<SelectInst>(select_inst),
+                                              "ics_scheduler",
+                                              "ics_resolved_load_select");
+
             // Next select instruction uses the result of the previous select
             // to propagate the load, or correct store value forward.
             load_propagated = select_inst;
@@ -176,6 +187,8 @@ void insertLoadChecks(
             if (user == first_select_inst) {
                 continue;
             }
+            // Add metadata
+            Utils::SetInstrumentationMetadata(cast<Instruction>(user), "ics_scheduler", "ics_resolved_load_use");
             U.set(load_propagated);
         }
     }
@@ -326,13 +339,6 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
          */
 
         /*
-         * Move the WAR stores (ordered) to the insertion point
-         */
-        for (auto war : warRescheduleInst) {
-            war->moveBefore(storeInsertPoint);
-        }
-
-        /*
          * Insert additional stores in the early exits (critical edges) of the
          * loop.
          * Each exit should write all postponed (rescheduled) stores up to that
@@ -346,14 +352,32 @@ bool LoopWriteScheduler::Schedule(Noelle &noelle, Module &M) {
             auto builder = Utils::GetBuilder(F, block);
 
             builder.SetInsertPoint(block->getFirstNonPHI());
-            for (auto pwrite : previousWrites) {
-                builder.Insert(pwrite->clone());
-            }
-            builder.Insert(war->clone());
 
             // This WAR also has to be inserted in the next exit
             previousWrites.push_back(war);
+
+            // Insert all postponed writes untill now in the early exit
+            for (auto pwrite : previousWrites) {
+                auto clone_write = pwrite->clone();
+
+                // Add metadata
+                Utils::SetInstrumentationMetadata(clone_write, "ics_scheduler", "ics_write_early_exit");
+
+                // Insert the write
+                builder.Insert(clone_write);
+            }
         }
+
+        /*
+         * Move the WAR stores (ordered) to the insertion point
+         */
+        for (auto war : warRescheduleInst) {
+            auto war_bb = war->getParent();
+            war->moveBefore(storeInsertPoint);
+            // Add metadata
+            Utils::SetInstrumentationMetadata(war, "ics_scheduler", "ics_moved_write");
+        }
+
 
         /*
          * Instrument the loads to check if it loads a value that "should" have

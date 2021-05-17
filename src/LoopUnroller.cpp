@@ -12,6 +12,10 @@ bool unrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
     auto header = LS.getHeader();
     auto llvmLoop = LI.getLoopFor(header);
 
+    // Add metadata
+    string meta = "ics_unroll_" + to_string(count);
+    Utils::SetInstrumentationMetadata(LS.getEntryInstruction(), "ics_unroll", meta);
+
     UnrollLoopOptions opts;
     opts.Count = count;
     opts.TripCount = 0;
