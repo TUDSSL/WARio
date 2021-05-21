@@ -1,0 +1,4 @@
+Intermittent computing scheduling project.
+
+Loop scheduling optimization pass.
+Unrolls loops and clusters writes.
