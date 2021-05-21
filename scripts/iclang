@@ -21,7 +21,7 @@ NOELLE_LOAD="noelle-load"
 
 if [[ -z "${ICLANG_PASS}" ]]; then
     DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-    PASS_LIB="$DIR/../build/ICS.so"
+    PASS_LIB="$DIR/../passes/loop-scheduler/build/ICS.so"
     PASS_FLAGS="-ics"
 else
     PASS_LIB="${ICLANG_PASS}"
