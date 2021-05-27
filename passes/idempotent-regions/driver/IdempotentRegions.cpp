@@ -1,6 +1,8 @@
 #include "Utils.hpp"
 #include "llvm/IR/Function.h"
 
+#include "IdempotentRegionAnalysis.hpp"
+
 namespace {
 struct CAT : public ModulePass {
   static char ID;
@@ -30,6 +32,13 @@ struct CAT : public ModulePass {
     auto &N = getAnalysis<Noelle>();
 
     /*
+     * Get the idempotent region cuts
+     * i.e., the end of regions (checkpoint locations)
+     */
+    IdempotentRegionAnalysis IRA;
+    auto &Cuts = IRA.run(N, M);
+
+    /*
      * Run verifier on each function instrumented
      */
     Utils::Verify(M);
@@ -47,7 +56,7 @@ struct CAT : public ModulePass {
 };
 
 char CAT::ID = 0;
-static RegisterPass<CAT> X("ics", "Intermittent computing scheduling");
+static RegisterPass<CAT> X("idemp", "Intermittent computing scheduling");
 
 static CAT *_PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(

@@ -5,18 +5,16 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT="$DIR/.."
 
-if [ "$#" -ne 2 ]; then
-    echo "usage: pass-apply in.ll out.ll"
+if [ "$#" -lt 3 ]; then
+    echo "usage: pass-apply pass-flags in.ll out.ll"
     exit -1
 fi
-
-llvm_norm="$1"
-llvm_pass="$2"
 
 NOELLE_NORM="noelle-norm"
 NOELLE_LOAD="noelle-load"
 
-PASS_LIB="$ROOT/build/ICS.so"
-PASS_FLAGS="-ics"
+PASS_LIB="$ROOT/passes/idempotent-regions/build/idemp-regions.so"
+#PASS_FLAGS="-idemp-regions"
 
-$NOELLE_LOAD "-load $PASS_LIB $PASS_FLAGS -ics-loop-unroll -S  $llvm_norm -o $llvm_pass"
+#$NOELLE_LOAD "-load $PASS_LIB $PASS_FLAGS -ics-loop-unroll -S  $llvm_norm -o $llvm_pass"
+$NOELLE_LOAD "-load $PASS_LIB $PASS_FLAGS -S  $@"

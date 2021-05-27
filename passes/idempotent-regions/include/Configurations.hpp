@@ -67,3 +67,9 @@ extern cl::opt<bool> LoopUnrollStep;
 extern cl::opt<unsigned int> LoopUnrollCount;
 
 extern cl::opt<bool> LoopScheduleStep;
+
+#ifdef DEBUG_PRINT
+#define dbg() errs()
+#else
+#define dbg() if (true) {} else errs()
+#endif
