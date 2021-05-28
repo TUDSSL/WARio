@@ -80,7 +80,7 @@ void WarAnalysis::getForcedCuts(Noelle &N, Function &F, CutsTy &ForcedCuts) {
   for (auto &I : instructions(&F)) {
     if (forcesCut(I)) {
       dbg() << "Adding forced cut: " << I << "\n";
-      ForcedCuts.push_back(&I);
+      ForcedCuts.insert(&I);
     }
   }
 }
@@ -144,6 +144,77 @@ void WarAnalysis::removeCutDependencies(Noelle &N, Function &F, InstructionDepen
   }
 }
 
+/*
+ * Search in reverse
+ * From To -> From
+ */
+
+bool WarAnalysis::hasUncutPath(Noelle &N, Function &F, CutsTy &ForcedCuts, Instruction *From, Instruction *To) {
+  auto DT = N.getDominators(&F)->DT;
+
+  auto FBB = From->getParent();
+  auto TBB = To->getParent();
+
+  const BasicBlock::iterator FromIt(From);
+  const BasicBlock::iterator ToIt(To);
+
+  dbg() << "Checking Uncut Path from: " << *From << " to: " << *To << "\n";
+  dbg() << "From BB: " << *FBB << "TO BB: " << *TBB << "\n";
+
+  vector<BasicBlock *> WorkList;
+  unordered_set<BasicBlock *> VisitedBB;
+
+  WorkList.push_back(TBB);
+  while (WorkList.size()) {
+    /*
+     * Get the last BasicBlock from the WorkList
+     */
+    auto BB = WorkList.back();
+    WorkList.pop_back();
+
+    dbg() << "Visiting BB: " << *BB << "\n";
+
+    auto E = BB->begin();
+    auto Cursor = ((BB == TBB) && VisitedBB.find(TBB) == VisitedBB.end())
+                      ? ToIt
+                      : BB->end();
+
+    if (Cursor == BB->end())
+      dbg() << "Seach start: " << "Block END" << "\n";
+    else
+      dbg() << "Seach start: " << *Cursor << "\n";
+    dbg() << "Search end E: " << *E << "\n";
+
+    /*
+     * The Cursor initially points to either the To instruction of the BB->end()
+     * Both do not need to be checked.
+     * If the Cursor is already at the last instruction, there is nothing
+     * to check
+     */
+    bool IsCut = false;
+    while (Cursor-- != E) {
+      auto CursorInst = cast<Instruction>(Cursor);
+      dbg() << "Cursor at: " << *CursorInst << "\n";
+      if (ForcedCuts.find(CursorInst) != ForcedCuts.end()) {
+        dbg() << "WAR cut by: " << *CursorInst << "\n";
+        IsCut = true;
+        break;
+      } else if (CursorInst == From) {
+        dbg() << "Found a path\n";
+        return true;
+      }
+    }
+
+    if (!IsCut) {
+      // Search in the predecessor BasicBlocks if we did not already visit them.
+      for (auto P : predecessors(BB))
+        if (VisitedBB.insert(P).second) WorkList.push_back(P);
+    }
+  }
+
+  return false;
+}
+
 ReadWritePairsTy &WarAnalysis::run(Noelle &N, Module &M) {
   dbg() << "Running WarAnalysis on: " << M.getName() << "\n";
 
@@ -177,8 +248,48 @@ ReadWritePairsTy &WarAnalysis::run(Noelle &N, Module &M) {
     }
 
     /*
+     * Move the WARs to a Vector
+     */
+    ReadWritePairsTy Wars;
+    for (auto war : D.WarDepMap)
+      for (auto r : war.second)
+        Wars.push_back(ReadWritePairTy(cast<Instruction>(r), war.first));
+
+    /*
+     * Collect forced cut locations
+     */
+    CutsTy ForcedCuts;
+    getForcedCuts(N, *F, ForcedCuts);
+
+    /*
+     * Go trough all the paths backwards from the
+     * WAR Write to the Read. We do a DFS, when we reach a intstruction
+     * in the ForcedCuts we stop searching.
+     * If we manage to reach the Read, we need to solve the WAR.
+     * If we don't reach the Read, all the WARs are already resolved by forced
+     * cuts.
+     *
+     * We are done searching if we reach the WAR read, the original start
+     * possition (write), or if we reach the beginning of the function.
+     */
+    ReadWritePairsTy UncutWars;
+    for (auto RW : Wars)
+      if (hasUncutPath(N, *F, ForcedCuts, RW.first, RW.second))
+        UncutWars.push_back(RW);
+
+    dbg() << "UncutWars:\n";
+    for (auto W : UncutWars)
+      dbg() << "  [WAR] read: " << *W.first << " write: " << *W.second << "\n";
+
+    /*
+     * Checked by the test framework
+     */
+    dbg() << "$WAR_COUNT: " << Wars.size() << "\n";
+    dbg() << "$UNCUT_WAR_COUNT: " << UncutWars.size() << "\n";
+
+    /*
      * Removing the cut dependencies like this might not be needed.
-     * We can also do this whike we create the paths.
+     * We can also do this while we create the paths.
      * We can start with a superset of all the WAR violations and make paths
      * that also reduces them down to only "uncut" ones.
      */
@@ -197,6 +308,7 @@ ReadWritePairsTy &WarAnalysis::run(Noelle &N, Module &M) {
     }
 #endif
 
+#if 0
     /*
      * Collect the Paths
      */
@@ -266,6 +378,7 @@ ReadWritePairsTy &WarAnalysis::run(Noelle &N, Module &M) {
         }
       }
     }
+#endif
   }
   return WarViolations;
 }

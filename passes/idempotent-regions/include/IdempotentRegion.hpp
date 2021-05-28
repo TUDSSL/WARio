@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Configurations.hpp"
+#include <unordered_set>
 
 using namespace llvm;
 
@@ -11,5 +12,5 @@ namespace IdempotentRegion {
   typedef std::vector<ReadWritePairTy> ReadWritePairsTy;
   typedef std::vector<IdempotentPathTy> IdempotentPathsTy;
 
-  typedef std::vector<Instruction *> CutsTy;
+  typedef std::unordered_set<Instruction *> CutsTy;
 }
