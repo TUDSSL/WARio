@@ -281,7 +281,6 @@ ReadWritePairsTy &WarAnalysis::run(Noelle &N, Module &M) {
     assert((F != nullptr) && "F = nullptr");
 
     dbg() << "Function: " << F->getName() << "\n";
-    //if (F->getName() != "main") continue;
     if (F->getInstructionCount() == 0) continue;
 
     /*
@@ -350,96 +349,6 @@ ReadWritePairsTy &WarAnalysis::run(Noelle &N, Module &M) {
     dbg() << "$PATH_COUNT: " << Paths.size() << "\n";
     for (auto &P : Paths) dbg() << "$PATH_SIZE: " << P.size() << "\n";
 
-
-    /*
-     * Removing the cut dependencies like this might not be needed.
-     * We can also do this while we create the paths.
-     * We can start with a superset of all the WAR violations and make paths
-     * that also reduces them down to only "uncut" ones.
-     */
-#if 0
-    CutsTy ForcedCuts;
-    getForcedCuts(N, *F, ForcedCuts);
-
-    removeCutDependencies(N, *F, D, ForcedCuts);
-
-    dbg() << "Updated WARs:\n";
-    for (auto war : D.WarDepMap) {
-      dbg() << "WAR: " << *war.first << "\n";
-      for (auto r : war.second) {
-        dbg() << "  needs: " << *r << "\n";
-      }
-    }
-#endif
-
-#if 0
-    /*
-     * Collect the Paths
-     */
-    auto DT = N.getDominators(F)->DT;
-    IdempotentPathsTy IdempotentPaths;
-
-    for (auto RW : UncutWars) {
-      auto Load = RW.first;
-      auto Store = RW.second;
-
-      BasicBlock::iterator LoadIt(Load);
-
-      // Increase the size and get the pointer to the last (new) one
-      IdempotentPaths.resize(IdempotentPaths.size() + 1);
-      auto Path = IdempotentPaths.back();
-
-      // The WAR sore is the first Instruction in the path
-      Path.push_back(Store);
-
-      // The rest of the path is other stores that dominate the WAR store
-      // but do not dominate the load.
-      BasicBlock::iterator Cursor(Store);
-      auto SBB = Store->getParent();
-      auto LBB = Load->getParent();
-
-      if (SBB == LBB && DT.dominates(Load, Store)) {
-        while (--Cursor != LoadIt) {
-          if (isa<StoreInst>(Cursor)) {
-            Path.push_back(cast<Instruction>(Cursor));
-          }
-        }
-        dbg() << "Local: " << *Store << " has path:\n";
-        for (auto n : Path) {
-          dbg() << "  " << *n << "\n";
-        }
-
-        continue;
-      }
-
-      // Non-local case
-      auto BB = SBB;
-
-      auto DTN = DT.getNode(BB);
-      auto LoadDTN = DT.getNode(LBB);
-      while (!DT.dominates(DTN, LoadDTN)) {
-        dbg() << "Scanning dominating block: " << *BB << "\n";
-        auto E = BB->begin();
-        while (Cursor != E) {
-          if (isa<StoreInst>(--Cursor)) {
-            Path.push_back(cast<Instruction>(Cursor));
-          }
-        }
-
-        // Move the Cursor to the end of the imediate Dominator of BB
-        DTN = DTN->getIDom();
-        if (DTN == nullptr) {
-          break;
-        }
-        BB = DTN->getBlock();
-        Cursor = BB->end();
-      }
-      dbg() << "Non-Local: " << *Store << " has path:\n";
-      for (auto n : Path) {
-        dbg() << "  " << *n << "\n";
-      }
-    }
-#endif
   }
   return WarViolations;
 }
