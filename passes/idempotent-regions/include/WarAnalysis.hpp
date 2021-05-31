@@ -22,6 +22,7 @@ class WarAnalysis {
   void getForcedCuts(Noelle &N, Function &F, IdempotentRegion::CutsTy &ForcedCuts);
   void removeCutDependencies(Noelle &N, Function &F, InstructionDependencies &D, IdempotentRegion::CutsTy &ForcedCuts);
   bool hasUncutPath(Noelle &N, Function &F, IdempotentRegion::CutsTy &ForcedCuts, Instruction *From, Instruction *To);
+  void findPaths(Noelle &N, Function &F, IdempotentRegion::ReadWritePairsTy &Wars, IdempotentRegion::IdempotentPathsTy &Paths);
 
  public:
   IdempotentRegion::ReadWritePairsTy &run(Noelle &N, Module &M);
