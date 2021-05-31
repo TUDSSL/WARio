@@ -1,4 +1,5 @@
 #include "Configurations.hpp"
+#include "Utils.hpp"
 #include "WarAnalysis.hpp"
 
 using namespace IdempotentRegion;
@@ -166,9 +167,12 @@ bool WarAnalysis::hasUncutPath(CutsTy &Cuts, Instruction *From, Instruction *To)
 }
 
 void WarAnalysis::collectUncutWars() {
-  for (auto RW : AllWars)
+  for (auto RW : AllWars) {
     if (hasUncutPath(ForcedCuts, RW.first, RW.second))
       UncutWars.push_back(RW);
+    else
+      PrecutWars.push_back(RW);
+  }
 }
 
 void WarAnalysis::collectDominatingPaths() {
@@ -218,6 +222,9 @@ void WarAnalysis::collectDominatingPaths() {
 PathsTy &WarAnalysis::run() {
   dbg() << "Running WarAnalysis on function: " << F.getName() << "\n";
 
+  /*****************************************************************************
+   * Run the analysis for the function
+   ****************************************************************************/
   /*
    * Collect all the WAR violations (detected by Noelle)
    */
@@ -238,6 +245,20 @@ PathsTy &WarAnalysis::run() {
    */
   collectDominatingPaths();
 
+  /*****************************************************************************
+   * Attach Metadata
+   ****************************************************************************/
+  // Attach metadata to pre-cut wars
+  for (auto &W : PrecutWars) {
+    Utils::SetInstrumentationMetadata(W.second, "idemp", "idemp_precut_war");
+  }
+
+  // Attach metadata to uncut wars
+  for (auto &W : UncutWars) {
+    Utils::SetInstrumentationMetadata(W.second, "idemp", "idemp_uncut_war");
+  }
+
+  // TODO: Attach metadata to paths p:cnt?
 
   /*****************************************************************************
    * Print debugging/testing information
@@ -268,6 +289,14 @@ PathsTy &WarAnalysis::run() {
   }
 
   /*
+   * Print Precut Wars
+   */
+  dbg() << "\nPrecut Wars:\n";
+  for (const auto &W : PrecutWars) {
+    dbg() << "  [WAR] read: " << *W.first << " write: " << *W.second << "\n";
+  }
+
+  /*
    * Print Uncut Wars
    */
   dbg() << "\nUncut Wars:\n";
@@ -291,7 +320,7 @@ PathsTy &WarAnalysis::run() {
   dbg() << "$WAR_COUNT: " << AllWars.size() << "\n";
   dbg() << "$UNCUT_WAR_COUNT: " << UncutWars.size() << "\n";
   dbg() << "$PATH_COUNT: " << Paths.size() << "\n";
-  for (auto &P : Paths) dbg() << "$PATH_SIZE: " << P.size() << "\n";
+  for (const auto &P : Paths) dbg() << "$PATH_SIZE: " << P.size() << "\n";
 
   /*
    * Return the dominating paths
@@ -299,94 +328,3 @@ PathsTy &WarAnalysis::run() {
   return Paths;
 }
 
-#if 0
-ReadWritePairsTy &WarAnalysis::run() {
-  dbg() << "Running WarAnalysis on: " << F.getName() << "\n";
-
-  /*
-   * Fetch the entry point.
-   */
-  auto fm = N.getFunctionsManager();
-  auto pcf = fm->getProgramCallGraph();
-
-  /*
-   * Iterate over all functions
-   */
-  for (auto node : pcf->getFunctionNodes()) {
-    auto F = node->getFunction();
-    assert((F != nullptr) && "F = nullptr");
-
-    dbg() << "Function: " << F->getName() << "\n";
-    if (F->getInstructionCount() == 0) continue;
-
-    /*
-     * Collect all the WAR violations
-     */
-    InstructionDependencies D;
-    collectInstructionDependencies(N, *F, D);
-
-    for (auto war : D.WarDepMap) {
-      dbg() << "WAR: " << *war.first << "\n";
-      for (auto r : war.second)
-        dbg() << "  needs: " << *r << "\n";
-    }
-
-    /*
-     * Move the WARs to a Vector
-     */
-    ReadWritePairsTy Wars;
-    for (auto war : D.WarDepMap)
-      for (auto r : war.second)
-        Wars.push_back(ReadWritePairTy(cast<Instruction>(r), war.first));
-
-    /*
-     * Collect forced cut locations
-     */
-    CutsTy ForcedCuts;
-    getForcedCuts(N, *F, ForcedCuts);
-
-    /*
-     * Go trough all the paths backwards from the
-     * WAR Write to the Read. We do a DFS, when we reach a intstruction
-     * in the ForcedCuts we stop searching.
-     * If we manage to reach the Read, we need to solve the WAR.
-     * If we don't reach the Read, all the WARs are already resolved by forced
-     * cuts.
-     *
-     * We are done searching if we reach the WAR read, the original start
-     * possition (write), or if we reach the beginning of the function.
-     */
-    collectUncutWars();
-    //ReadWritePairsTy UncutWars;
-    //for (auto RW : Wars)
-    //  if (hasUncutPath(N, *F, ForcedCuts, RW.first, RW.second))
-    //    UncutWars.push_back(RW);
-
-    dbg() << "UncutWars:\n";
-    for (auto &W : UncutWars)
-      dbg() << "  [WAR] read: " << *W.first << " write: " << *W.second << "\n";
-
-    IdempotentPathsTy Paths;
-    findPaths(N, *F, UncutWars, Paths);
-
-    dbg() << "WAR Paths:\n";
-    for (auto &P : Paths) {
-      dbg() << "  Path: ";
-      for (auto W : P) {
-        dbg() << "  " << *W << "\n";
-      }
-      dbg() << "\n";
-    }
-
-    /*
-     * Checked by the test framework
-     */
-    dbg() << "$WAR_COUNT: " << Wars.size() << "\n";
-    dbg() << "$UNCUT_WAR_COUNT: " << UncutWars.size() << "\n";
-    dbg() << "$PATH_COUNT: " << Paths.size() << "\n";
-    for (auto &P : Paths) dbg() << "$PATH_SIZE: " << P.size() << "\n";
-
-  }
-  return WarViolations;
-}
-#endif

@@ -38,15 +38,12 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M) {
     /*
      * Get the optimized checkpoint locations
      */
+    HittingSet HS;
+    auto CheckpointLocations = HS.run(Paths);
 
+    /*
+     * Store the Checkpoint Locations in the Function map
+     */
+    CheckpointLocationsMap[F] = std::move(CheckpointLocations);
   }
-
-  //WarAnalysis WA;
-  //auto ReadWritePairs = WA.run(N, M);
-
-  //IdempotentPathAnalysis IPA;
-  //auto IdempotentPaths = IPA.run(N, M, ReadWritePairs);
-
-  //auto Cuts = HS.run(IdempotentPaths);
-
 }

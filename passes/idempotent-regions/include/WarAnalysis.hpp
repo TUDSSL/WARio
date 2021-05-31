@@ -14,6 +14,8 @@ class WarAnalysis {
 
   IdempotentRegion::ReadWritePairsTy AllWars;
   IdempotentRegion::ReadWritePairsTy UncutWars;
+  IdempotentRegion::ReadWritePairsTy PrecutWars;
+
   IdempotentRegion::CutsTy ForcedCuts;
   IdempotentRegion::PathsTy Paths;
 
