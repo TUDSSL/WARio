@@ -7,5 +7,5 @@ class HittingSet {
    IdempotentRegion::CutsTy Cuts;
 
  public:
-   IdempotentRegion::CutsTy &run(IdempotentRegion::IdempotentPathsTy &IdempotentPaths);
+   IdempotentRegion::CutsTy &run(IdempotentRegion::PathsTy &IdempotentPaths);
 };

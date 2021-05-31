@@ -3,13 +3,20 @@
 
 using namespace IdempotentRegion;
 
+bool WarAnalysis::forcesCut(Instruction &I) {
+  if (const LoadInst *L = dyn_cast<LoadInst>(&I)) return L->isVolatile();
+  if (const StoreInst *S = dyn_cast<StoreInst>(&I)) return S->isVolatile();
+  if (const CallInst *CI = dyn_cast<CallInst>(&I)) return !(CI->isTailCall());
+  return (isa<InvokeInst>(I) || isa<VAArgInst>(&I) || isa<FenceInst>(&I) ||
+          isa<AtomicCmpXchgInst>(&I) || isa<AtomicRMWInst>(&I));
+}
+
 /*
  * Create a map with WAR and RAW dependencies for the instructiond in
  * function F.
  * TODO: Maybe use getdependencies?
  */
-void WarAnalysis::collectInstructionDependencies(
-    Noelle &N, Function &F, WarAnalysis::InstructionDependencies &D) {
+void WarAnalysis::collectInstructionDependencies() {
   auto FDG = N.getFunctionDependenceGraph(&F);
 
   list<Value *> war_deps;
@@ -57,23 +64,25 @@ void WarAnalysis::collectInstructionDependencies(
     dbg() << "Instruction" << I << " depends on:\n";
 
     FDG->iterateOverDependencesTo(&I, false, true, false, iterDep);
-    if (war_deps.size() > 0) D.addWar(&I, war_deps);
-    if (raw_deps.size() > 0) D.addRaw(&I, raw_deps);
+    if (war_deps.size() > 0) WarDepMap[&I] = war_deps;
+    if (raw_deps.size() > 0) RawDepMap[&I] = raw_deps;
 
     war_deps.clear();
     raw_deps.clear();
   }
+
+  /*
+   * Create a WAR vector
+   */
+  for (auto &kv : WarDepMap) {
+    auto Write = kv.first;
+    for (auto Read : kv.second) {
+      AllWars.push_back(ReadWritePairTy(cast<Instruction>(Read), Write));
+    }
+  }
 }
 
-bool WarAnalysis::forcesCut(Instruction &I) {
-  if (const LoadInst *L = dyn_cast<LoadInst>(&I)) return L->isVolatile();
-  if (const StoreInst *S = dyn_cast<StoreInst>(&I)) return S->isVolatile();
-  if (const CallInst *CI = dyn_cast<CallInst>(&I)) return !(CI->isTailCall());
-  return (isa<InvokeInst>(I) || isa<VAArgInst>(&I) || isa<FenceInst>(&I) ||
-          isa<AtomicCmpXchgInst>(&I) || isa<AtomicRMWInst>(&I));
-}
-
-void WarAnalysis::getForcedCuts(Noelle &N, Function &F, CutsTy &ForcedCuts) {
+void WarAnalysis::collectForcedCuts() {
   /*
    * Iterate over all instructions in the function.
    */
@@ -86,70 +95,11 @@ void WarAnalysis::getForcedCuts(Noelle &N, Function &F, CutsTy &ForcedCuts) {
 }
 
 /*
- * Remove Instruction dependencies that have a forced cut inbetween them.
- * i.e., for a WAR <read,write>, if the cut dominates the write but not the
- * read.
- */
-void WarAnalysis::removeCutDependencies(Noelle &N, Function &F, InstructionDependencies &D,
-                                        CutsTy &ForcedCuts) {
-  /*
-   * Get dominator information
-   */
-  auto Dom = N.getDominators(&F)->DT;
-
-  /*
-   * Iterate trough all the forced cuts
-   */
-  list<Instruction *> RemoveWarList;
-
-  for (auto &war_kv : D.WarDepMap) {
-    auto write = war_kv.first;
-    auto reads = war_kv.second;
-
-    list<Value *> RemoveReadList; // reads that need to be removed
-    for (const auto &cut : ForcedCuts) {
-      if (Dom.dominates(cut, write)) { // if the cut dominates the write
-        for (const auto &read : reads) {
-          auto read_inst = cast<Instruction>(read);
-          if (!Dom.dominates(cut, read_inst)) { // but not the read
-            dbg() << "Removing WAR read: " << *write << " read: " << *read_inst << " - was cut by: " << *cut << "\n";
-            RemoveReadList.push_back(read); // remove the WAR
-          }
-        }
-      }
-    }
-
-    /*
-     * Remove the already resolved WARs
-     */
-    for (auto &r : RemoveReadList) {
-      reads.remove(r);
-    }
-
-    /*
-     * Mark the WAR for removal if all the reads are resolved by forced cuts
-     */
-    if (reads.size() == 0) {
-      dbg() << "Removing WAR: " << *write << " - all reads cut\n";
-      RemoveWarList.push_back(write);
-    }
-  }
-
-  /*
-   * Remove all the WARs with an empty read list
-   * All the WARs where resolved for these by the forced cuts
-   */
-  for (auto &r : RemoveWarList) {
-    D.WarDepMap.erase(r);
-  }
-}
-
-/*
  * Search in reverse
  * From To -> From
  */
 
-bool WarAnalysis::hasUncutPath(Noelle &N, Function &F, CutsTy &ForcedCuts, Instruction *From, Instruction *To) {
+bool WarAnalysis::hasUncutPath(CutsTy &Cuts, Instruction *From, Instruction *To) {
   auto DT = N.getDominators(&F)->DT;
 
   auto FBB = From->getParent();
@@ -195,7 +145,7 @@ bool WarAnalysis::hasUncutPath(Noelle &N, Function &F, CutsTy &ForcedCuts, Instr
     while (Cursor-- != E) {
       auto CursorInst = cast<Instruction>(Cursor);
       dbg() << "Cursor at: " << *CursorInst << "\n";
-      if (ForcedCuts.find(CursorInst) != ForcedCuts.end()) {
+      if (Cuts.find(CursorInst) != Cuts.end()) {
         dbg() << "WAR cut by: " << *CursorInst << "\n";
         IsCut = true;
         break;
@@ -215,11 +165,17 @@ bool WarAnalysis::hasUncutPath(Noelle &N, Function &F, CutsTy &ForcedCuts, Instr
   return false;
 }
 
-void WarAnalysis::findPaths(Noelle &N, Function &F, ReadWritePairsTy &Wars, IdempotentPathsTy &Paths) {
+void WarAnalysis::collectUncutWars() {
+  for (auto RW : AllWars)
+    if (hasUncutPath(ForcedCuts, RW.first, RW.second))
+      UncutWars.push_back(RW);
+}
+
+void WarAnalysis::collectDominatingPaths() {
 
   auto DT = N.getDominators(&F)->DT;
 
-  for (auto RW : Wars) {
+  for (auto RW : UncutWars) {
     // Get a reference to the Path vector for this WAR
     Paths.resize(Paths.size()+1);
     auto &Path = Paths.back();
@@ -256,16 +212,96 @@ void WarAnalysis::findPaths(Noelle &N, Function &F, ReadWritePairsTy &Wars, Idem
       Cursor = BB->end();
 
     } while (DT.dominates(LoadBB, BB)); // Every node dominates itself
-
-    dbg() << "WAR Path for: " << *Store << ":\n";
-    for (auto P : Path) {
-      dbg() << "  " << *P << "\n";
-    }
   }
 }
 
-ReadWritePairsTy &WarAnalysis::run(Noelle &N, Module &M) {
-  dbg() << "Running WarAnalysis on: " << M.getName() << "\n";
+PathsTy &WarAnalysis::run() {
+  dbg() << "Running WarAnalysis on function: " << F.getName() << "\n";
+
+  /*
+   * Collect all the WAR violations (detected by Noelle)
+   */
+  collectInstructionDependencies();
+
+  /*
+   * Collect the Forced cuts
+   */
+  collectForcedCuts();
+
+  /*
+   * Collect the Uncut WAR violations
+   */
+  collectUncutWars();
+
+  /*
+   * Collect the possible *dominating* Paths from a WAR read to a WAR write
+   */
+  collectDominatingPaths();
+
+
+  /*****************************************************************************
+   * Print debugging/testing information
+   ****************************************************************************/
+  /*
+   * Print the WAR violations
+   */
+  dbg() << "\nWrite after Reads:\n";
+  for (const auto &war : WarDepMap) {
+    dbg() << "  WAR: " << *war.first << "\n";
+    for (auto r : war.second) dbg() << "    needs: " << *r << "\n";
+  }
+
+  /*
+   * Print Uncut Wars
+   */
+  dbg() << "\nAll Wars:\n";
+  for (const auto &W : AllWars) {
+    dbg() << "  [WAR] read: " << *W.first << " write: " << *W.second << "\n";
+  }
+
+  /*
+   * Print the forced cut locations
+   */
+  dbg() << "\nForced cuts:\n";
+  for (const auto &cut : ForcedCuts) {
+    dbg() << *cut << "\n";
+  }
+
+  /*
+   * Print Uncut Wars
+   */
+  dbg() << "\nUncut Wars:\n";
+  for (const auto &W : UncutWars) {
+    dbg() << "  [WAR] read: " << *W.first << " write: " << *W.second << "\n";
+  }
+
+  /*
+   * WAR Paths
+   */
+  dbg() << "\nWar Paths:\n";
+  for (const auto &P : Paths) {
+    dbg() << "  Path: ";
+    for (const auto &W : P) dbg() << "  " << *W << "\n";
+    dbg() << "\n";
+  }
+
+  /*
+   * Automated testing output
+   */
+  dbg() << "$WAR_COUNT: " << AllWars.size() << "\n";
+  dbg() << "$UNCUT_WAR_COUNT: " << UncutWars.size() << "\n";
+  dbg() << "$PATH_COUNT: " << Paths.size() << "\n";
+  for (auto &P : Paths) dbg() << "$PATH_SIZE: " << P.size() << "\n";
+
+  /*
+   * Return the dominating paths
+   */
+  return Paths;
+}
+
+#if 0
+ReadWritePairsTy &WarAnalysis::run() {
+  dbg() << "Running WarAnalysis on: " << F.getName() << "\n";
 
   /*
    * Fetch the entry point.
@@ -320,10 +356,11 @@ ReadWritePairsTy &WarAnalysis::run(Noelle &N, Module &M) {
      * We are done searching if we reach the WAR read, the original start
      * possition (write), or if we reach the beginning of the function.
      */
-    ReadWritePairsTy UncutWars;
-    for (auto RW : Wars)
-      if (hasUncutPath(N, *F, ForcedCuts, RW.first, RW.second))
-        UncutWars.push_back(RW);
+    collectUncutWars();
+    //ReadWritePairsTy UncutWars;
+    //for (auto RW : Wars)
+    //  if (hasUncutPath(N, *F, ForcedCuts, RW.first, RW.second))
+    //    UncutWars.push_back(RW);
 
     dbg() << "UncutWars:\n";
     for (auto &W : UncutWars)
@@ -352,3 +389,4 @@ ReadWritePairsTy &WarAnalysis::run(Noelle &N, Module &M) {
   }
   return WarViolations;
 }
+#endif

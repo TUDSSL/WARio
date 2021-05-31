@@ -3,10 +3,9 @@ set(PassSrc
     IdempotentRegions.cpp
     ${CMAKE_SOURCE_DIR}/src/Utils.cpp
     ${CMAKE_SOURCE_DIR}/src/Configurations.cpp
-    ${CMAKE_SOURCE_DIR}/src/IdempotentRegionAnalysis.cpp
     ${CMAKE_SOURCE_DIR}/src/WarAnalysis.cpp
-    ${CMAKE_SOURCE_DIR}/src/IdempotentPathAnalysis.cpp
     ${CMAKE_SOURCE_DIR}/src/HittingSet.cpp
+    ${CMAKE_SOURCE_DIR}/src/IdempotentRegionAnalysis.cpp
 )
 
 # Compilation flags

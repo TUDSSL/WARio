@@ -1,29 +1,38 @@
 #pragma once
 
 #include "IdempotentRegion.hpp"
+#include "Configurations.hpp"
 
 class WarAnalysis {
  private:
+  Noelle &N;
+  Function &F;
+
   typedef map<Instruction *, list<Value *>> InstructionDependencyMapTy;
+  InstructionDependencyMapTy WarDepMap;
+  InstructionDependencyMapTy RawDepMap;
 
-  IdempotentRegion::ReadWritePairsTy WarViolations;
+  IdempotentRegion::ReadWritePairsTy AllWars;
+  IdempotentRegion::ReadWritePairsTy UncutWars;
+  IdempotentRegion::CutsTy ForcedCuts;
+  IdempotentRegion::PathsTy Paths;
 
-  struct InstructionDependencies {
-    InstructionDependencyMapTy WarDepMap;
-    InstructionDependencyMapTy RawDepMap;
-
-    void addWar(Instruction *inst, list<Value *> &deps) { WarDepMap[inst] = deps; }
-
-    void addRaw(Instruction *inst, list<Value *> &deps) { RawDepMap[inst] = deps; }
-  };
-
-	void collectInstructionDependencies(Noelle &N, Function &F, InstructionDependencies &D);
   bool forcesCut(Instruction &I);
-  void getForcedCuts(Noelle &N, Function &F, IdempotentRegion::CutsTy &ForcedCuts);
-  void removeCutDependencies(Noelle &N, Function &F, InstructionDependencies &D, IdempotentRegion::CutsTy &ForcedCuts);
-  bool hasUncutPath(Noelle &N, Function &F, IdempotentRegion::CutsTy &ForcedCuts, Instruction *From, Instruction *To);
-  void findPaths(Noelle &N, Function &F, IdempotentRegion::ReadWritePairsTy &Wars, IdempotentRegion::IdempotentPathsTy &Paths);
+  bool hasUncutPath(IdempotentRegion::CutsTy &Cuts, Instruction *From, Instruction *To);
+
+	void collectInstructionDependencies();
+  void collectForcedCuts();
+  void collectUncutWars();
+  void collectDominatingPaths();
 
  public:
-  IdempotentRegion::ReadWritePairsTy &run(Noelle &N, Module &M);
+  WarAnalysis(Noelle &N, Function &F) : N(N), F(F) {}
+  IdempotentRegion::PathsTy &run();
+
+  /*
+   * Getters
+   */
+  IdempotentRegion::ReadWritePairsTy &getUncutWars() { return UncutWars; }
+  IdempotentRegion::CutsTy &getForcedCuts() { return ForcedCuts; }
+  IdempotentRegion::PathsTy &getPaths() { return Paths; }
 };

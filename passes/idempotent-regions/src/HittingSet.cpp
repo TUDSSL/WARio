@@ -3,7 +3,7 @@
 
 using namespace IdempotentRegion;
 
-CutsTy &HittingSet::run(IdempotentPathsTy &IdempotentPaths) {
+CutsTy &HittingSet::run(PathsTy &IdempotentPaths) {
   errs() << "Running HittingSet\n";
 
   return Cuts;

@@ -36,7 +36,7 @@ struct CAT : public ModulePass {
      * i.e., the end of regions (checkpoint locations)
      */
     IdempotentRegionAnalysis IRA;
-    auto &Cuts = IRA.run(N, M);
+    IRA.run(N, M);
 
     /*
      * Run verifier on each function instrumented

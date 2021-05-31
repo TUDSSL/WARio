@@ -11,5 +11,5 @@ class IdempotentRegionAnalysis {
     HittingSet HS;
 
   public:
-    IdempotentRegion::CutsTy &run(Noelle &N, Module &M);
+    void run(Noelle &N, Module &M);
 };
