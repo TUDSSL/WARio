@@ -5,10 +5,10 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT="$DIR/.."
 
-if [ "$#" -lt 3 ]; then
-    echo "usage: pass-apply pass-flags in.ll out.ll"
-    exit -1
-fi
+#if [ "$#" -lt 3 ]; then
+#    echo "usage: pass-apply pass-flags in.ll out.ll"
+#    exit -1
+#fi
 
 NOELLE_NORM="noelle-norm"
 NOELLE_LOAD="noelle-load"
