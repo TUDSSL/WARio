@@ -4,8 +4,8 @@ c_file="$1"
 out_file="$2"
 
 #clang -O1 -Xclang -disable-llvm-passes -S -emit-llvm war_same_bb.c -o war_same_bb.ll
-clang -O1 -Xclang -disable-llvm-passes -S -emit-llvm "$c_file" -o "tmp_$c_file.ll"
-noelle-norm -S "tmp_$c_file.ll" -o "$out_file"
+clang -O1 -Xclang -disable-llvm-passes -S -emit-llvm "$c_file" -o "$c_file.tmp.ll"
+noelle-norm -S "$c_file.tmp.ll" -o "$out_file"
 
 # Cleanup
-rm "tmp_$c_file.ll"
+rm "$c_file.tmp.ll"
