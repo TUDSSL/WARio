@@ -38,3 +38,4 @@ class WarAnalysis {
   IdempotentRegion::CutsTy &getForcedCuts() { return ForcedCuts; }
   IdempotentRegion::PathsTy &getPaths() { return Paths; }
 };
+

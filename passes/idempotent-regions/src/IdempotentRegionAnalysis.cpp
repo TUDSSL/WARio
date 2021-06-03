@@ -1,6 +1,8 @@
 #include "IdempotentRegion.hpp"
 #include "WarAnalysis.hpp"
+
 #include "HittingSet.hpp"
+#include "HittingSetBruteForce.hpp"
 
 #include "IdempotentRegionAnalysis.hpp"
 
@@ -38,8 +40,14 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M) {
     /*
      * Get the optimized checkpoint locations
      */
-    HittingSet HS;
-    auto CheckpointLocations = HS.run(Paths);
+    HittingSet HS(Paths);
+    auto CheckpointLocations = HS.run();
+
+    /*
+     * Run a Brute Force solver to get the best possible checkpoint locations
+     */
+    //HittingSetBruteForce HSBF(Paths);
+    //auto CheckpointLocationsBF = HSBF.run();
 
     /*
      * Store the Checkpoint Locations in the Function map

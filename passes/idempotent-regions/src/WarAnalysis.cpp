@@ -78,7 +78,7 @@ void WarAnalysis::collectInstructionDependencies() {
   for (auto &kv : WarDepMap) {
     auto Write = kv.first;
     for (auto Read : kv.second) {
-      AllWars.push_back(ReadWritePairTy(cast<Instruction>(Read), Write));
+      AllWars.push_back(ReadWritePairTy{cast<Instruction>(Read), Write});
     }
   }
 }
@@ -123,7 +123,7 @@ bool WarAnalysis::hasUncutPath(CutsTy &Cuts, Instruction *From, Instruction *To)
     auto BB = WorkList.back();
     WorkList.pop_back();
 
-    dbg() << "Visiting BB: " << *BB << "\n";
+    dbg() << "\nVisiting BB: " << *BB << "\n";
 
     auto E = BB->begin();
     auto Cursor = ((BB == TBB) && VisitedBB.find(TBB) == VisitedBB.end())
@@ -168,7 +168,7 @@ bool WarAnalysis::hasUncutPath(CutsTy &Cuts, Instruction *From, Instruction *To)
 
 void WarAnalysis::collectUncutWars() {
   for (auto RW : AllWars) {
-    if (hasUncutPath(ForcedCuts, RW.first, RW.second))
+    if (hasUncutPath(ForcedCuts, RW.read, RW.write))
       UncutWars.push_back(RW);
     else
       PrecutWars.push_back(RW);
@@ -184,8 +184,8 @@ void WarAnalysis::collectDominatingPaths() {
     Paths.resize(Paths.size()+1);
     auto &Path = Paths.back();
 
-    auto Load = RW.first;
-    auto Store = RW.second;
+    auto Load = RW.read;
+    auto Store = RW.write;
 
     auto LoadBB = Load->getParent();
     auto StoreBB = Store->getParent();
@@ -198,7 +198,7 @@ void WarAnalysis::collectDominatingPaths() {
     Path.push_back(Store);
 
     do {
-      dbg() << "Visiting Block: " << *BB << "\n";
+      dbg() << "\nVisiting BB: " << *BB << "\n";
       while (Cursor-- != BB->begin()) {
         dbg() << "Cursor: " << *Cursor << "\n";
         if (auto I = dyn_cast<StoreInst>(Cursor)){
@@ -250,12 +250,12 @@ PathsTy &WarAnalysis::run() {
    ****************************************************************************/
   // Attach metadata to pre-cut wars
   for (auto &W : PrecutWars) {
-    Utils::SetInstrumentationMetadata(W.second, "idemp", "idemp_precut_war");
+    Utils::SetInstrumentationMetadata(W.write, "idemp", "idemp_precut_war");
   }
 
   // Attach metadata to uncut wars
   for (auto &W : UncutWars) {
-    Utils::SetInstrumentationMetadata(W.second, "idemp", "idemp_uncut_war");
+    Utils::SetInstrumentationMetadata(W.write, "idemp", "idemp_uncut_war");
   }
 
   // TODO: Attach metadata to paths p:cnt?
@@ -277,7 +277,7 @@ PathsTy &WarAnalysis::run() {
    */
   dbg() << "\nAll Wars:\n";
   for (const auto &W : AllWars) {
-    dbg() << "  [WAR] read: " << *W.first << " write: " << *W.second << "\n";
+    dbg() << "  [WAR] " << W << "\n";
   }
 
   /*
@@ -293,7 +293,7 @@ PathsTy &WarAnalysis::run() {
    */
   dbg() << "\nPrecut Wars:\n";
   for (const auto &W : PrecutWars) {
-    dbg() << "  [WAR] read: " << *W.first << " write: " << *W.second << "\n";
+    dbg() << "  [WAR] " << W << "\n";
   }
 
   /*
@@ -301,7 +301,7 @@ PathsTy &WarAnalysis::run() {
    */
   dbg() << "\nUncut Wars:\n";
   for (const auto &W : UncutWars) {
-    dbg() << "  [WAR] read: " << *W.first << " write: " << *W.second << "\n";
+    dbg() << "  [WAR] " << W << "\n";
   }
 
   /*
