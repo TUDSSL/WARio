@@ -1,0 +1,56 @@
+Current implementaion only uses Writes in the hitting set.
+But this reduces optimizarions in cases like:
+
+```
+#define READ(v_) tmp = v_
+#define WRITE(v_) v_ = 1
+
+int war_1;
+int war_2;
+
+int main(void) {
+  int tmp;
+
+  READ(war_1);
+  READ(war_2);
+
+  // Better Cut
+
+  if (tmp > 10) {
+    // CUT
+    WRITE(war_1);
+  }
+
+  // CUT
+  WRITE(war_2);
+
+  return 1;
+}
+```
+
+Here there will be two cuts,
+
+Same holds here, but is less bas as it would result in the same runtime (just more code)
+```
+int war_1;
+int war_2;
+
+int main(void) {
+  int tmp;
+
+  READ(war_1);
+  READ(war_2);
+
+  // Better Cut
+
+  if (tmp > 10) {
+    // Cut
+    WRITE(war_1);
+  } else {
+    // Cut
+    WRITE(war_2);
+  }
+
+  return 1;
+}
+```
