@@ -12,6 +12,7 @@ bool WarAnalysis::forcesCut(Instruction &I) {
           isa<AtomicCmpXchgInst>(&I) || isa<AtomicRMWInst>(&I));
 }
 
+
 /*
  * Create a map with WAR and RAW dependencies for the instructiond in
  * function F.
@@ -75,14 +76,41 @@ void WarAnalysis::collectInstructionDependencies() {
     raw_deps.clear();
   }
 
+}
+
+void WarAnalysis::collectWarDependencies() {
+  dbg() << "Collecting WAR depencies\n";
+
+  auto FDG = N.getFunctionDependenceGraph(&F);
+  auto DT = N.getDominators(&F)->DT;
+  auto FirstInst = F.getEntryBlock().getFirstNonPHI();
+
   /*
-   * Create a WAR vector
+   * Iteratre trough the found WARs and eliminate WARs that must go trough
+   * another WAR.
    */
   for (auto &kv : WarDepMap) {
     auto Write = kv.first;
-    for (auto Read : kv.second) {
-      AllWars.push_back(ReadWritePairTy{cast<Instruction>(Read), Write});
-    }
+    auto Reads = kv.second;
+
+    dbg() << "Analyzing write: " << *Write << "\n";
+
+    auto IterInst = [&](Instruction *I) -> pair<bool, bool> {
+      bool Stop = false;
+      bool StopPath = false;
+
+      if (auto Read = dyn_cast<LoadInst>(I)) {
+        if (find(Reads.begin(), Reads.end(), Read) != Reads.end()) {
+          dbg() << "  WAR Read: " << *Read << " found\n";
+          AllWars.push_back(ReadWritePairTy{Read, Write});
+          StopPath = true;
+        }
+      }
+
+      return pair<bool, bool>(Stop, StopPath);
+    };
+
+    Utils::ReverseIterateOverInstructions(FirstInst, Write, IterInst);
   }
 }
 
@@ -191,12 +219,18 @@ PathsTy &WarAnalysis::run() {
   collectInstructionDependencies();
 
   /*
+   * Remove the redundant WAR violations from the ones found using Noelle
+   */
+  collectWarDependencies();
+
+  /*
    * Collect the Forced cuts
    */
   collectForcedCuts();
 
   /*
    * Collect the Uncut WAR violations
+   * NB. This could be done in the collectWarDependencies step
    */
   collectUncutWars();
 
@@ -208,6 +242,11 @@ PathsTy &WarAnalysis::run() {
   /*****************************************************************************
    * Attach Metadata
    ****************************************************************************/
+  for (auto &W : AllWars) {
+    Utils::SetInstrumentationMetadata(W.write, "idemp", "idemp_war_wr");
+    Utils::SetInstrumentationMetadata(W.read, "idemp", "idemp_war_rd");
+  }
+
   // Attach metadata to pre-cut wars
   for (auto &W : PrecutWars) {
     Utils::SetInstrumentationMetadata(W.write, "idemp", "idemp_precut_war");

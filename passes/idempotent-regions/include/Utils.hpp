@@ -46,6 +46,6 @@ bool ReverseIterateOverInstructions(
     Instruction *From, Instruction *To,
     std::function<std::pair<bool, bool>(Instruction *I)>
         FucntionToInvokePerInstruction,
-    bool DebugPrint = true);
+    bool DebugPrint = false);
 
 }  // namespace Utils

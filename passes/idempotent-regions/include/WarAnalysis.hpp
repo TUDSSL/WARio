@@ -32,6 +32,8 @@ class WarAnalysis {
   void collectUncutWars();
   void collectDominatingPaths();
 
+  void collectWarDependencies();
+
  public:
   WarAnalysis(Noelle &N, Function &F) : N(N), F(F) {}
   IdempotentRegion::PathsTy &run();
