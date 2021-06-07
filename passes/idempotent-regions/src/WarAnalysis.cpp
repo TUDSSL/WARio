@@ -102,7 +102,6 @@ void WarAnalysis::collectForcedCuts() {
  * Search in reverse
  * From To -> From
  */
-#if 1
 bool WarAnalysis::hasUncutPath(CutsTy &Cuts, Instruction *From, Instruction *To) {
 
   auto IterInst = [&](Instruction *I) -> pair<bool, bool> {
@@ -120,76 +119,8 @@ bool WarAnalysis::hasUncutPath(CutsTy &Cuts, Instruction *From, Instruction *To)
     return pair<bool, bool>(Stop, StopPath);
   };
 
-  return Utils::IterateOverInstructions(From, To, IterInst);
+  return Utils::ReverseIterateOverInstructions(From, To, IterInst);
 }
-
-#else
-bool WarAnalysis::hasUncutPath(CutsTy &Cuts, Instruction *From, Instruction *To) {
-  auto &DT = N.getDominators(&F)->DT;
-
-  auto FBB = From->getParent();
-  auto TBB = To->getParent();
-
-  const BasicBlock::iterator FromIt(From);
-  const BasicBlock::iterator ToIt(To);
-
-  dbg() << "Checking Uncut Path from: " << *From << " to: " << *To << "\n";
-  dbg() << "From BB: " << *FBB << "TO BB: " << *TBB << "\n";
-
-  vector<BasicBlock *> WorkList;
-  unordered_set<BasicBlock *> VisitedBB;
-
-  WorkList.push_back(TBB);
-  while (WorkList.size()) {
-    /*
-     * Get the last BasicBlock from the WorkList
-     */
-    auto BB = WorkList.back();
-    WorkList.pop_back();
-
-    dbg() << "\nVisiting BB: " << *BB << "\n";
-
-    auto E = BB->begin();
-    auto Cursor = ((BB == TBB) && VisitedBB.find(TBB) == VisitedBB.end())
-                      ? ToIt
-                      : BB->end();
-
-    if (Cursor == BB->end())
-      dbg() << "Seach start: " << "Block END" << "\n";
-    else
-      dbg() << "Seach start: " << *Cursor << "\n";
-    dbg() << "Search end E: " << *E << "\n";
-
-    /*
-     * The Cursor initially points to either the To instruction of the BB->end()
-     * Both do not need to be checked.
-     * If the Cursor is already at the last instruction, there is nothing
-     * to check
-     */
-    bool IsCut = false;
-    while (Cursor-- != E) {
-      auto CursorInst = cast<Instruction>(Cursor);
-      dbg() << "Cursor at: " << *CursorInst << "\n";
-      if (Cuts.find(CursorInst) != Cuts.end()) {
-        dbg() << "WAR cut by: " << *CursorInst << "\n";
-        IsCut = true;
-        break;
-      } else if (CursorInst == From) {
-        dbg() << "Found a path\n";
-        return true;
-      }
-    }
-
-    if (!IsCut) {
-      // Search in the predecessor BasicBlocks if we did not already visit them.
-      for (auto P : predecessors(BB))
-        if (VisitedBB.insert(P).second) WorkList.push_back(P);
-    }
-  }
-
-  return false;
-}
-#endif
 
 void WarAnalysis::collectUncutWars() {
   for (auto RW : AllWars) {

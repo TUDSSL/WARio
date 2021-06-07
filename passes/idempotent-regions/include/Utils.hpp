@@ -42,8 +42,10 @@ void SetInstrumentationMetadata(Instruction *I, const std::string MDTypeString,
  * Function returns true if the iteration ends earlier.
  * It returns false otherwise.
  */
-bool IterateOverInstructions(
+bool ReverseIterateOverInstructions(
     Instruction *From, Instruction *To,
-    std::function<std::pair<bool,bool>(Instruction *I)> FucntionToInvokePerInstruction);
+    std::function<std::pair<bool, bool>(Instruction *I)>
+        FucntionToInvokePerInstruction,
+    bool DebugPrint = true);
 
 }  // namespace Utils

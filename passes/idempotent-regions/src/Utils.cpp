@@ -118,9 +118,10 @@ void Utils::SetInstrumentationMetadata(Instruction *I,
   return;
 }
 
-bool Utils::IterateOverInstructions(
+bool Utils::ReverseIterateOverInstructions(
     Instruction *From, Instruction *To,
-    std::function<std::pair<bool,bool>(Instruction *I)> FucntionToInvokePerInstruction) {
+    std::function<std::pair<bool,bool>(Instruction *I)> FucntionToInvokePerInstruction,
+    bool DebugPrint) {
 
   auto FBB = From->getParent();
   auto TBB = To->getParent();
@@ -128,8 +129,10 @@ bool Utils::IterateOverInstructions(
   const BasicBlock::iterator FromIt(From);
   const BasicBlock::iterator ToIt(To);
 
-  dbg() << "Checking Uncut Path from: " << *From << " to: " << *To << "\n";
-  dbg() << "From BB: " << *FBB << "TO BB: " << *TBB << "\n";
+  if (DebugPrint) {
+    dbg() << "Checking Uncut Path from: " << *From << " to: " << *To << "\n";
+    dbg() << "From BB: " << *FBB << "TO BB: " << *TBB << "\n";
+  }
 
   vector<BasicBlock *> WorkList;
   unordered_set<BasicBlock *> VisitedBB;
@@ -142,18 +145,21 @@ bool Utils::IterateOverInstructions(
     auto BB = WorkList.back();
     WorkList.pop_back();
 
-    dbg() << "\nVisiting BB: " << *BB << "\n";
+    if (DebugPrint)
+      dbg() << "\nVisiting BB: " << *BB << "\n";
 
     auto E = BB->begin();
     auto Cursor = ((BB == TBB) && VisitedBB.find(TBB) == VisitedBB.end())
                       ? ToIt
                       : BB->end();
 
-    if (Cursor == BB->end())
-      dbg() << "Seach start: " << "Block END" << "\n";
-    else
-      dbg() << "Seach start: " << *Cursor << "\n";
-    dbg() << "Search end E: " << *E << "\n";
+    if (DebugPrint) {
+      if (Cursor == BB->end())
+        dbg() << "Seach start: " << "Block END" << "\n";
+      else
+        dbg() << "Seach start: " << *Cursor << "\n";
+      dbg() << "Search end E: " << *E << "\n";
+    }
 
     bool StopPath = false;
     bool Stop = false;
