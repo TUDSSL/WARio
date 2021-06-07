@@ -16,9 +16,11 @@ namespace IdempotentRegion {
   typedef std::vector<Instruction *> PathTy;
 
   typedef std::vector<ReadWritePairTy> ReadWritePairsTy;
-  typedef std::vector<PathTy> PathsTy;
+  typedef std::list<PathTy> PathsTy;
 
   typedef std::unordered_set<Instruction *> CutsTy;
+
+  typedef std::map<const ReadWritePairTy *, const PathTy *> WarPathMapTy;
 
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Configurations.hpp"
+#include <functional>
 
 using namespace llvm;
 
@@ -31,5 +32,18 @@ bool Verify(Module &M);
  */
 void SetInstrumentationMetadata(Instruction *I, const std::string MDTypeString,
                                 const std::string MDLiteral);
+
+/*
+ * Iteration Helper
+ *
+ * FunctionToInvokePerInstruction returns [bool, bool]
+ * Stop, StopPath
+ *
+ * Function returns true if the iteration ends earlier.
+ * It returns false otherwise.
+ */
+bool IterateOverInstructions(
+    Instruction *From, Instruction *To,
+    std::function<std::pair<bool,bool>(Instruction *I)> FucntionToInvokePerInstruction);
 
 }  // namespace Utils

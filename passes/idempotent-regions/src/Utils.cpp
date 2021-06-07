@@ -1,4 +1,5 @@
 #include "Utils.hpp"
+#include <functional>
 
 using namespace Utils;
 
@@ -117,3 +118,59 @@ void Utils::SetInstrumentationMetadata(Instruction *I,
   return;
 }
 
+bool Utils::IterateOverInstructions(
+    Instruction *From, Instruction *To,
+    std::function<std::pair<bool,bool>(Instruction *I)> FucntionToInvokePerInstruction) {
+
+  auto FBB = From->getParent();
+  auto TBB = To->getParent();
+
+  const BasicBlock::iterator FromIt(From);
+  const BasicBlock::iterator ToIt(To);
+
+  dbg() << "Checking Uncut Path from: " << *From << " to: " << *To << "\n";
+  dbg() << "From BB: " << *FBB << "TO BB: " << *TBB << "\n";
+
+  vector<BasicBlock *> WorkList;
+  unordered_set<BasicBlock *> VisitedBB;
+
+  WorkList.push_back(TBB);
+  while (WorkList.size()) {
+    /*
+     * Get the last BasicBlock from the WorkList
+     */
+    auto BB = WorkList.back();
+    WorkList.pop_back();
+
+    dbg() << "\nVisiting BB: " << *BB << "\n";
+
+    auto E = BB->begin();
+    auto Cursor = ((BB == TBB) && VisitedBB.find(TBB) == VisitedBB.end())
+                      ? ToIt
+                      : BB->end();
+
+    if (Cursor == BB->end())
+      dbg() << "Seach start: " << "Block END" << "\n";
+    else
+      dbg() << "Seach start: " << *Cursor << "\n";
+    dbg() << "Search end E: " << *E << "\n";
+
+    bool StopPath = false;
+    bool Stop = false;
+    while (Cursor-- != E) {
+      auto CursorInst = cast<Instruction>(Cursor);
+      tie(Stop, StopPath) = FucntionToInvokePerInstruction(CursorInst);
+
+      if (Stop) return true;
+      if (StopPath) break;
+    }
+
+    if (!StopPath) {
+      // Search in the predecessor BasicBlocks if we did not already visit them.
+      for (auto P : predecessors(BB))
+        if (VisitedBB.insert(P).second) WorkList.push_back(P);
+    }
+  }
+
+  return false;
+}

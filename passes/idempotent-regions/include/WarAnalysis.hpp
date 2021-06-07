@@ -4,17 +4,22 @@
 #include "Configurations.hpp"
 
 class WarAnalysis {
+ public:
+  typedef map<Instruction *, list<Value *>> InstructionDependencyMapTy;
+
  private:
   Noelle &N;
   Function &F;
 
-  typedef map<Instruction *, list<Value *>> InstructionDependencyMapTy;
   InstructionDependencyMapTy WarDepMap;
   InstructionDependencyMapTy RawDepMap;
 
   IdempotentRegion::ReadWritePairsTy AllWars;
   IdempotentRegion::ReadWritePairsTy UncutWars;
   IdempotentRegion::ReadWritePairsTy PrecutWars;
+
+  // A map from a WAR to the resulting Path
+  IdempotentRegion::WarPathMapTy WarPathMap;
 
   IdempotentRegion::CutsTy ForcedCuts;
   IdempotentRegion::PathsTy Paths;
@@ -37,5 +42,8 @@ class WarAnalysis {
   IdempotentRegion::ReadWritePairsTy &getUncutWars() { return UncutWars; }
   IdempotentRegion::CutsTy &getForcedCuts() { return ForcedCuts; }
   IdempotentRegion::PathsTy &getPaths() { return Paths; }
+
+  const IdempotentRegion::WarPathMapTy &getWarPathMap() { return WarPathMap; }
+  const InstructionDependencyMapTy &getRawDepMap() { return RawDepMap; }
 };
 

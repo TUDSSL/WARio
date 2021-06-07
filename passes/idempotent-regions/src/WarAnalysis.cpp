@@ -19,9 +19,12 @@ bool WarAnalysis::forcesCut(Instruction &I) {
  */
 void WarAnalysis::collectInstructionDependencies() {
   auto FDG = N.getFunctionDependenceGraph(&F);
+  auto DT = N.getDominators(&F)->DT;
 
   list<Value *> war_deps;
   list<Value *> raw_deps;
+
+  Instruction *I;
 
   auto iterDep = [&](Value *src, DGEdge<Value> *dependence) -> bool {
     if (dependence == nullptr) return false;
@@ -39,7 +42,7 @@ void WarAnalysis::collectInstructionDependencies() {
          * remove the need for a cut. This can only be the case if it MUST
          * write.
          */
-        if (dependence->isMustDependence()) {
+          if (dependence->isMustDependence()) {
           // TODO the Write must also dominate the read!!
           dbg() << "             needs [RAW]";
           dbg() << "  " << *src << "\n";
@@ -99,9 +102,30 @@ void WarAnalysis::collectForcedCuts() {
  * Search in reverse
  * From To -> From
  */
-
+#if 1
 bool WarAnalysis::hasUncutPath(CutsTy &Cuts, Instruction *From, Instruction *To) {
-  auto DT = N.getDominators(&F)->DT;
+
+  auto IterInst = [&](Instruction *I) -> pair<bool, bool> {
+    bool Stop = false;
+    bool StopPath = false;
+
+    if (Cuts.find(I) != Cuts.end()) {
+      dbg() << "WAR cut by: " << *I << "\n";
+      StopPath = true;
+    } else if (I == From) {
+      dbg() << "Found a path\n";
+      Stop = true;
+    }
+
+    return pair<bool, bool>(Stop, StopPath);
+  };
+
+  return Utils::IterateOverInstructions(From, To, IterInst);
+}
+
+#else
+bool WarAnalysis::hasUncutPath(CutsTy &Cuts, Instruction *From, Instruction *To) {
+  auto &DT = N.getDominators(&F)->DT;
 
   auto FBB = From->getParent();
   auto TBB = To->getParent();
@@ -165,6 +189,7 @@ bool WarAnalysis::hasUncutPath(CutsTy &Cuts, Instruction *From, Instruction *To)
 
   return false;
 }
+#endif
 
 void WarAnalysis::collectUncutWars() {
   for (auto RW : AllWars) {
@@ -176,10 +201,11 @@ void WarAnalysis::collectUncutWars() {
 }
 
 void WarAnalysis::collectDominatingPaths() {
+  dbg() << "\nCollecting Dominating Paths\n";
 
   auto DT = N.getDominators(&F)->DT;
 
-  for (auto RW : UncutWars) {
+  for (auto &RW : UncutWars) {
     // Get a reference to the Path vector for this WAR
     Paths.resize(Paths.size()+1);
     auto &Path = Paths.back();
@@ -216,6 +242,9 @@ void WarAnalysis::collectDominatingPaths() {
       Cursor = BB->end();
 
     } while (DT.dominates(LoadBB, BB)); // Every node dominates itself
+
+    // Add the Path to the WarPathMap
+    WarPathMap[&RW] = &Path;
   }
 }
 
@@ -302,6 +331,9 @@ PathsTy &WarAnalysis::run() {
   dbg() << "\nUncut Wars:\n";
   for (const auto &W : UncutWars) {
     dbg() << "  [WAR] " << W << "\n";
+    dbg() << "    Covered by Path: ";
+    for (const auto &I : *WarPathMap[&W]) dbg() << "      " << *I << "\n";
+    dbg() << "\n";
   }
 
   /*

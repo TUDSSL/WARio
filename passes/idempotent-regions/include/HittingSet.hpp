@@ -7,7 +7,7 @@ class HittingSet {
  protected:
    typedef map<Instruction *, unsigned int> HitCountMapTy;
 
-   IdempotentRegion::PathsTy &IdempotentPaths;
+   const IdempotentRegion::PathsTy &IdempotentPaths;
    IdempotentRegion::CutsTy Cuts;
 
    PlacementCost PC;
@@ -23,7 +23,7 @@ class HittingSet {
  public:
   bool isValid() { return Valid; }
 
-  HittingSet(IdempotentRegion::PathsTy &IdempotentPaths)
+  HittingSet(const IdempotentRegion::PathsTy &IdempotentPaths)
       : IdempotentPaths(IdempotentPaths) {}
 
   IdempotentRegion::CutsTy &run(bool PrintDebug = true);
