@@ -8,6 +8,7 @@ set(PassSrc
     ${CMAKE_SOURCE_DIR}/src/HittingSet.cpp
     ${CMAKE_SOURCE_DIR}/src/HittingSetBruteForce.cpp
     ${CMAKE_SOURCE_DIR}/src/IdempotentRegionAnalysis.cpp
+    ${CMAKE_SOURCE_DIR}/src/ProtectingWriteAnalysis.cpp
 )
 
 # Compilation flags

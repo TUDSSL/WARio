@@ -1,5 +1,6 @@
 #include "IdempotentRegion.hpp"
 #include "WarAnalysis.hpp"
+#include "ProtectingWriteAnalysis.hpp"
 
 #include "HittingSet.hpp"
 #include "HittingSetBruteForce.hpp"
@@ -36,6 +37,9 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M) {
      */
     WarAnalysis WA(N, *F);
     auto Paths = WA.run();
+
+    ProtectingWriteAnalysis PWA(N, *F, WA);
+    auto ConditionalPaths = PWA.run();
 
     /*
      * Get the optimized checkpoint locations
