@@ -21,7 +21,7 @@ IFS=$'\n'
 expected=( $(grep -E -o '(\$.*$)' $f) )
 
 # Run the test case
-$SCRIPT_DIR/run-test.sh "$f" > "$f.pass.txt" 2>&1
+$SCRIPT_DIR/run-test "$f" > "$f.pass.txt" 2>&1
 
 for exp in ${expected[@]}; do
   if grep -Fxq -m1 "$exp" "$f.pass.txt" ; then
