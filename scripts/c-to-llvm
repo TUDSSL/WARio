@@ -3,8 +3,10 @@
 c_file="$1"
 out_file="$2"
 
-#clang -O1 -Xclang -disable-llvm-passes -S -emit-llvm war_same_bb.c -o war_same_bb.ll
-clang -O1 -Xclang -disable-llvm-passes -S -emit-llvm "$c_file" -o "$c_file.tmp.ll"
+FLAGS="-mthumb -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft --target=thumbv7em-unknown-none-gnu"
+
+#clang -O1 -Xclang -disable-llvm-passes -S -emit-llvm "$c_file" -o "$c_file.tmp.ll"
+clang $FLAGS -O1 -Xclang -disable-llvm-passes -S -emit-llvm "$c_file" -o "$c_file.tmp.ll"
 noelle-norm -S "$c_file.tmp.ll" -o "$out_file"
 
 # Cleanup

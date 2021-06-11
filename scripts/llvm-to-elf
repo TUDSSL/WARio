@@ -2,19 +2,49 @@
 
 in=$1
 
+# Get the input argument
+if [ "$#" -eq  "0" ]; then
+    echo "No arguments supplied"
+    echo "Usage: llvm-to-elf input.ll [output.elf]"
+    exit 1
+fi
+
+# Get the optional output elf file name
+if [ -z "$2" ]; then
+    out="$1.elf"
+    echo "Output file: $out"
+else
+    out="$2"
+fi
+
+
 set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT="$DIR/.."
 
-# Compile
-clang -c -mthumb -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft --target=thumbv7em-unknown-none-gnu -ffunction-sections -fdata-sections -fomit-frame-pointer -Wall -std=c99 -O1 $in -o $in.obj
+CFLAGS="-mthumb -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft --target=thumbv7em-unknown-none-gnu" #-ffunction-sections -fdata-sections -fomit-frame-pointer -Wall -std=c99"
+OPT="-O1"
+
+# Find libgcc from the gcc arm toolchain
+libgcc_loc=$(arm-none-eabi-gcc -print-libgcc-file-name)
+libgcc_loc=$(dirname "$libgcc_loc")
+
+LDFLAGS="-mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft --target=thumbv7em-unknown-none-eabi -nodefaultlibs -Wl,--Bstatic -Wl,-lc_nano -Wl,-lnosys -Wl,--gc-sections,--entry,Reset_Handler"
+LIBLOCS="-L/usr/arm-none-eabi/lib/thumb/v7e-m/nofp -L$libgcc_loc/thumb/v7e-m/nofp/"
+LINKERSCRIPT="$ROOT/toolchain-arm/linkerscript.ld"
+
+# Compile the .ll file
+clang -c $CFLAGS $OPT $in -o $in.obj
+
+# Compile startup.c
+clang -c $CFLAGS $OPT $ROOT/toolchain-arm/startup.c -o startup.obj
 
 # Link
-clang -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft --target=thumbv7em-unknown-none-eabi -nodefaultlibs -Wl,--Bstatic -Wl,-lc_nano -Wl,-lnosys -L/usr/arm-none-eabi/lib/thumb/v7e-m/nofp -L/usr/lib/gcc/arm-none-eabi/10.2.0/thumb/v7e-m/nofp/ -L$ROOT/test/arm-code/list-reverse/config-m4 -Wl,--gc-sections,--entry,Reset_Handler -T $ROOT/test/arm-code/list-reverse/config-m4/linkerscript.ld -lc -lm $in.obj -o $in.elf
+clang $LDFLAGS $LIBLOCS  -T $LINKERSCRIPT -lc -lm $in.obj startup.obj -o $out
 
 # Disassemble
 arm-none-eabi-objdump -d $in.elf > $in.s
 
 # Cleanup
-rm $in.obj #$in.elf
+rm $in.obj startup.obj
