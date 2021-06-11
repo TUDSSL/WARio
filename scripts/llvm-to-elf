@@ -44,7 +44,7 @@ clang -c $CFLAGS $OPT $ROOT/toolchain-arm/startup.c -o startup.obj
 clang $LDFLAGS $LIBLOCS  -T $LINKERSCRIPT -lc -lm $in.obj startup.obj -o $out
 
 # Disassemble
-arm-none-eabi-objdump -d $in.elf > $in.s
+arm-none-eabi-objdump -d $out > $in.s
 
 # Cleanup
 rm $in.obj startup.obj
