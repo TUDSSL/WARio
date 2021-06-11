@@ -15,15 +15,7 @@ cl::opt<bool> InitExit(
 cl::opt<bool> Debug("debug", cl::init(false),
                     cl::desc("Turn on debugging outputs/prints"));
 
-cl::opt<bool> LoopUnrollStep("ics-loop-unroll", cl::init(false),
-                             cl::desc("Execute the ICS loop unroll step"));
-
-cl::opt<unsigned int> LoopUnrollCount(
-    "ics-loop-unroll-count", cl::init(2),
-    cl::desc("The ICS loop unroll count (default = 2)"));
-
-cl::opt<bool> LoopScheduleStep(
-    "ics-loop-schedule", cl::init(false),
-    cl::desc("Execute the ICS loop WAR store schedule step"));
-
+// TODO: set this to false when done with testing __checkpoint_count
+cl::opt<bool> InsertCheckpointCount("cp-count", cl::init(true),
+                    cl::desc("Turn on the insertion of __checkpoint_count"));
 

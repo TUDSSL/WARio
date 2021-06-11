@@ -65,6 +65,8 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M) {
   /*
    * Perform instrumentation
    */
-  auto CPCI = CheckpointCountInserter(M, CheckpointLocationsMap);
-  CPCI.run();
+  if (InsertCheckpointCount) {
+    auto CPCI = CheckpointCountInserter(M, CheckpointLocationsMap);
+    CPCI.run();
+  }
 }
