@@ -1,4 +1,5 @@
 #include "IdempotentRegion.hpp"
+#include "Utils.hpp"
 #include "WarAnalysis.hpp"
 #include "ProtectingWriteAnalysis.hpp"
 
@@ -6,6 +7,7 @@
 #include "HittingSetBruteForce.hpp"
 
 #include "IdempotentRegionAnalysis.hpp"
+#include "CheckpointCountInserter.hpp"
 
 using namespace IdempotentRegion;
 
@@ -58,4 +60,11 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M) {
      */
     CheckpointLocationsMap[F] = std::move(CheckpointLocations);
   }
+
+
+  /*
+   * Perform instrumentation
+   */
+  auto CPCI = CheckpointCountInserter(M, CheckpointLocationsMap);
+  CPCI.run();
 }
