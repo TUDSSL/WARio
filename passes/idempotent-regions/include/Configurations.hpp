@@ -62,11 +62,7 @@ extern cl::opt<bool> InitExit;
 
 extern cl::opt<bool> Debug;
 
-extern cl::opt<bool> LoopUnrollStep;
-
-extern cl::opt<unsigned int> LoopUnrollCount;
-
-extern cl::opt<bool> LoopScheduleStep;
+extern cl::opt<bool> InsertCheckpointCount;
 
 #ifdef DEBUG_PRINT
 #define dbg() errs()
