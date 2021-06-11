@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Configurations.hpp"
+#include "llvm/IR/GlobalVariable.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
 #include <functional>
 
 using namespace llvm;
@@ -34,6 +37,15 @@ void SetInstrumentationMetadata(Instruction *I, const std::string MDTypeString,
                                 const std::string MDLiteral);
 
 /*
+ * Global Variable helper
+ */
+GlobalVariable *GetOrInsertGlobalInteger(llvm::Module *M,
+                                               llvm::IntegerType *Type,
+                                               const std::string Name,
+                                               uint64_t Initial = 0,
+                                               size_t Alignment = 4);
+
+/*
  * Iteration Helper
  *
  * FunctionToInvokePerInstruction returns [bool, bool]
@@ -47,5 +59,6 @@ bool ReverseIterateOverInstructions(
     std::function<std::pair<bool, bool>(Instruction *I)>
         FucntionToInvokePerInstruction,
     bool DebugPrint = false);
+
 
 }  // namespace Utils

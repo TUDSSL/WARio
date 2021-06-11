@@ -1,5 +1,7 @@
 #include "Utils.hpp"
+#include "llvm/IR/DerivedTypes.h"
 #include <functional>
+#include <string>
 
 using namespace Utils;
 
@@ -116,6 +118,22 @@ void Utils::SetInstrumentationMetadata(Instruction *I,
   I->setMetadata(MDLiteral, TheNode);
 
   return;
+}
+
+GlobalVariable *Utils::GetOrInsertGlobalInteger(llvm::Module *M,
+                                               llvm::IntegerType *Type,
+                                               const std::string Name,
+                                               uint64_t Initial,
+                                               size_t Alignment) {
+  M->getOrInsertGlobal(Name, Type);
+  auto G = M->getNamedGlobal(Name);
+  G->setLinkage(GlobalValue::CommonLinkage);
+  G->setDSOLocal(true);
+  G->setAlignment(Alignment);
+  G->setInitializer(
+      ConstantInt::get(M->getContext(), APInt(Type->getBitWidth(), Initial)));
+
+  return G;
 }
 
 bool Utils::ReverseIterateOverInstructions(
