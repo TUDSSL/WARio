@@ -4,7 +4,13 @@
 
 using namespace IdempotentRegion;
 
+/*
+ * TODO: Ratchet also cuts intrinsic calls, but I assume thats uninteded?
+ * Figure out if there needs to be two versions!
+ */
 bool WarAnalysis::forcesCut(Instruction &I) {
+  if (isa<IntrinsicInst>(I)) return false; // intrinsics never create a cut! (TODO: CHECK THIS)
+
   if (const LoadInst *L = dyn_cast<LoadInst>(&I)) return L->isVolatile();
   if (const StoreInst *S = dyn_cast<StoreInst>(&I)) return S->isVolatile();
   if (const CallInst *CI = dyn_cast<CallInst>(&I)) return !(CI->isTailCall());
@@ -66,16 +72,17 @@ void WarAnalysis::collectInstructionDependencies() {
    * Iterate over all instructions in the function.
    */
   for (auto &I : instructions(&F)) {
-    dbg() << "Instruction" << I << " depends on:\n";
+    if (isa<StoreInst>(I) || isa<LoadInst>(I)) {
+      dbg() << "Instruction" << I << " depends on:\n";
 
-    FDG->iterateOverDependencesTo(&I, false, true, false, iterDep);
-    if (war_deps.size() > 0) WarDepMap[&I] = war_deps;
-    if (raw_deps.size() > 0) RawDepMap[&I] = raw_deps;
+      FDG->iterateOverDependencesTo(&I, false, true, false, iterDep);
+      if (war_deps.size() > 0) WarDepMap[&I] = war_deps;
+      if (raw_deps.size() > 0) RawDepMap[&I] = raw_deps;
 
-    war_deps.clear();
-    raw_deps.clear();
+      war_deps.clear();
+      raw_deps.clear();
+    }
   }
-
 }
 
 void WarAnalysis::collectWarDependencies() {
