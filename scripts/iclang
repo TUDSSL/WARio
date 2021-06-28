@@ -28,6 +28,8 @@ else
     PASS_FLAGS="${ICLANG_PASS_FLAGS}"
 fi
 
+WAR_PASS_LIB="$DIR/../passes/idempotent-regions/build/idemp-regions.so"
+
 echo "Using noelle pass: $PASS_LIB"
 echo "With flags: $PASS_FLAGS"
 
@@ -49,22 +51,48 @@ function run() {
     eval "$cmd" || exit_on_error "An error occured running: $cmd"
 }
 
+# $1 - pass-lib
+# $2 - passname
+# $3 - basename
+# $4 - input-llvmir
+# $5 - pass-args
+# return output-llvmir
+
+function apply_pass() {
+    local passlib="$1"
+    local passname="$2"
+    local basename="$3"
+    local input_ir="$4"
+    local passargs="$5"
+
+    run "$NOELLE_NORM -S $input_ir -o $basename-norm.ll"
+    run "$NOELLE_LOAD -load $passlib -$passname $passargs -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
+    apply_pass_output="$basename-$passname.ll"
+}
+
 
 function apply_passes() {
     local bitcode_input="$1"
     local basename="$obj_dir/$obj_filename"
 
-    # Unroll step
-    local passname="ics-loop-unroll"
-    run "$NOELLE_NORM -S $bitcode_input -o $basename-norm.ll"
-    run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -$passname -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
-    local llvm_pass="$basename-$passname.ll"
+    local ir="$bitcode_input"
 
-    # Schedule step
-    local passname="ics-loop-schedule"
-    run "$NOELLE_NORM -S $llvm_pass -o $basename-norm.ll"
-    run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -$passname -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
-    local llvm_pass="$basename-$passname.ll"
+    ## Commented out for debugging
+    ## # Unroll step
+    ## local passname="ics-loop-unroll"
+    ## run "$NOELLE_NORM -S $llvm_pass -o $basename-norm.ll"
+    ## run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -$passname -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
+    ## local llvm_pass="$basename-$passname.ll"
+
+    ## # Schedule step
+    ## local passname="ics-loop-schedule"
+    ## run "$NOELLE_NORM -S $llvm_pass -o $basename-norm.ll"
+    ## run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -$passname -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
+    ## local llvm_pass="$basename-$passname.ll"
+
+    # WAR step
+    apply_pass $WAR_PASS_LIB "idemp" "$basename" "$ir"
+    local ir="$apply_pass_output"
 
     # pass LLVMIR > elf
     local compile_args_dir="$(dirname $(readlink -f "$obj_file"))"
@@ -79,8 +107,21 @@ function apply_passes() {
     compile_args=$(echo "${compile_args}" | sed -E 's/-MF\s+\S+//g')
     compile_args=$(echo "${compile_args}" | sed -E 's/-I\S+//g')
 
-    run "clang $compile_args -c $llvm_pass -o $obj_pass"
-    run "clang $link_args $obj_pass -o $obj_dir/$output_file"
+    # Compile and link the final IR file
+    run "clang $compile_args -mllvm -no-stack-slot-sharing -c $ir -o $obj_pass"
+    run "clang $link_args $obj_pass -o $output_file"
+
+    ## Debug output
+    # Output the dissasembly
+    arm-none-eabi-objdump -S "$output_file" >> "$output_file.S"
+
+    # Compile the uninstrumented IR file with the same arguments
+    local obj_orig="$obj_dir/$obj_filename-orig.obj"
+    local output_orig="$obj_dir/$obj_filename.uninstr.$obj_extension"
+
+    run "clang $compile_args -c $bitcode_input -o $obj_orig"
+    run "clang $link_args $obj_orig -o $output_orig"
+    arm-none-eabi-objdump -S "$output_orig" >> "$output_orig.S"
 }
 
 
@@ -146,7 +187,7 @@ if [ -n "$output_file" ]; then
         pecho "linking"
 
         # Create the original elf file where we will extract the LLVM bitcode from
-        orig_elf_file="$obj_filename.orig.elf"
+        orig_elf_file="$obj_filename.gclang.elf"
         run "$CC $other_args -o ${obj_dir}/${orig_elf_file}"
 
         # Extract the bitcode
