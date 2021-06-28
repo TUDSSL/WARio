@@ -1,0 +1,10 @@
+#!/bin/bash
+# Pass the .elf file (and optional extra arguments) to this script
+
+# Run the ICEmu emulator with the appropriate flags
+icemu \
+    -p mock_putc_plugin.so \
+    -p mock_clockfunc_plugin.so \
+    -p final_value_plugin.so -a final-value=__checkpoint_count \
+    -p checkpoint_verification_plugin.so -a cpval-checkpoint-variable=__checkpoint_count -a cpval-uncaught-war-file=% \
+    "$@"
