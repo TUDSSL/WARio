@@ -1,0 +1,8 @@
+Checking whether the ASM compiler is GNU using "--version" did not match "(GNU assembler)|(GCC)|(Free Software Foundation)":
+Using noelle pass: /home/vkortbeek/devel/intermittent-compiler/intermittent-compiler-collection/scripts/../passes/loop-scheduler/build/ICS.so
+With flags: -ics
+iclang: gclang --version
+clang version 9.0.1 
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /home/vkortbeek/devel/noelle/code/llvm-9.0.1-install/bin
