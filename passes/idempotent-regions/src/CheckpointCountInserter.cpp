@@ -49,6 +49,7 @@ void CheckpointCountInserter::run() {
       // 3. Store checpoint_count
       auto CPStore = Builder.CreateStore(CPAdd, GlobalCheckpointCountVar);
       CPStore->setAlignment(GlobalCheckpointCountVar->getAlignment());
+      CPStore->setVolatile(true);
 
       // 4. Add metadata to all the inserted instructions
       Utils::SetInstrumentationMetadata(cast<Instruction>(CPLoad), "idemp",
