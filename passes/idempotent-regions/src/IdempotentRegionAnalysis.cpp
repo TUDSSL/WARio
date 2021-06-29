@@ -99,19 +99,15 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M, LoopInfoMapTy &LIM) {
     //CheckpointLocationsMap[F] = *CheckpointLocations;
     }
 
-  dbg() << "********************************************************************************\n";
-  dbg() << "* Instrumentation\n";
-  dbg() << "********************************************************************************\n";
+  //dbg() << "********************************************************************************\n";
+  //dbg() << "* Instrumentation\n";
+  //dbg() << "********************************************************************************\n";
 
-  /*
-   * Perform instrumentation
-   */
-  if (InsertCheckpointCount) {
-    auto CPCI = CheckpointCountInserter(M, CheckpointLocationsMap);
-    CPCI.run();
-  }
-
-  dbg() << "********************************************************************************\n";
-  dbg() << "* Done\n";
-  dbg() << "********************************************************************************\n";
+  ///*
+  // * Perform instrumentation
+  // */
+  //if (InsertCheckpointCount) {
+  //  auto CPCI = CheckpointCountInserter(M, CheckpointLocationsMap);
+  //  CPCI.run();
+  //}
 }

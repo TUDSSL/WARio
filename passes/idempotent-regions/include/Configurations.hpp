@@ -68,6 +68,8 @@ extern cl::opt<bool> UnitPlacementCost;
 
 extern cl::opt<bool> BruteForceHittingSet;
 
+extern cl::opt<bool> UseRatchetImplementation;
+
 #ifdef DEBUG_PRINT
 #define dbg() errs()
 #else

@@ -23,4 +23,8 @@ class IdempotentRegionAnalysis {
       if (CheckpointLocationsMap.find(F) != CheckpointLocationsMap.end())
         return &CheckpointLocationsMap[F];
     }
+
+    CheckpointLocationsMapTy &getCheckpointLocationsMap() {
+      return CheckpointLocationsMap;
+    }
 };

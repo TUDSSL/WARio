@@ -1,7 +1,9 @@
 #include "Utils.hpp"
 #include "llvm/IR/Function.h"
 
+#include "RatchetDriver.hpp"
 #include "IdempotentRegionAnalysis.hpp"
+#include "CheckpointCountInserter.hpp"
 
 namespace {
 struct CAT : public ModulePass {
@@ -16,6 +18,34 @@ struct CAT : public ModulePass {
     Utils::ExitOnInit();
 
     return false;
+  }
+
+  IdempotentRegionAnalysis::CheckpointLocationsMapTy runRatchet(Module &M, Noelle &N) {
+
+    IdempotentRegionAnalysis::CheckpointLocationsMapTy RatchetCheckpointLocationsMap;
+
+    auto FM = N.getFunctionsManager();
+    auto PCF = FM->getProgramCallGraph();
+    for (auto Node : PCF->getFunctionNodes()) {
+      Function *F = Node->getFunction();
+      assert(F != nullptr && "F == nullptr");
+      if (F->getInstructionCount() == 0) continue;
+
+      auto &AA = getAnalysis<AAResultsWrapperPass>(*F);
+      auto &DT = getAnalysis<DominatorTreeWrapperPass>(*F);
+      auto &LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
+
+      Ratchet R(this);
+      dbg() << "Running Ratchet on function: " << F->getName() << "\n";
+      auto Cuts = R.run(M, *F, AA.getAAResults(), DT.getDomTree(), LI);
+
+      /*
+       * Insert the cuts in the locations map
+       */
+      RatchetCheckpointLocationsMap[F] = std::move(Cuts);
+    }
+
+    return RatchetCheckpointLocationsMap;
   }
 
   bool runOnModule(Module &M) override {
@@ -46,8 +76,40 @@ struct CAT : public ModulePass {
      * Get the idempotent region cuts
      * i.e., the end of regions (checkpoint locations)
      */
+    IdempotentRegionAnalysis::CheckpointLocationsMapTy CPL;
     IdempotentRegionAnalysis IRA;
-    IRA.run(N, M, LIM);
+
+    if (UseRatchetImplementation) {
+      /*
+       * Run the Ratchet analysis (unchanged)
+       */
+      CPL = runRatchet(M, N);
+    } else {
+      /*
+       * Run the improved idempotent region analysis
+       */
+      IRA.run(N, M, LIM);
+      CPL = IRA.getCheckpointLocationsMap();
+    }
+
+    /*
+     * Instrumentation
+     */
+    dbg() << "********************************************************************************\n";
+    dbg() << "* Instrumentation\n";
+    dbg() << "********************************************************************************\n";
+
+    /*
+     * Insert debug checkpoints
+     */
+    if (InsertCheckpointCount) {
+      auto CPCI = CheckpointCountInserter(M, CPL);
+      CPCI.run();
+    }
+
+    dbg() << "********************************************************************************\n";
+    dbg() << "* Verify\n";
+    dbg() << "********************************************************************************\n";
 
     /*
      * Run verifier on each function instrumented
@@ -67,6 +129,12 @@ struct CAT : public ModulePass {
      * Declare LoopInfo dependence
      */
     AU.addRequired<LoopInfoWrapperPass>();
+
+    /*
+     * Declare AA dependence (Ratchet)
+     */
+    AU.addRequired<AAResultsWrapperPass>();
+    AU.addRequired<DominatorTreeWrapperPass>();
 
     return;
   }

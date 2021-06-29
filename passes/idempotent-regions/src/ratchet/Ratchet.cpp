@@ -69,10 +69,12 @@ static std::string getLocator(const Instruction &I) {
   return SS.str();
 }
 
+#if 0
 namespace {
   typedef std::pair<Instruction *, Instruction *> AntidependencePairTy;
   typedef SmallVector<Instruction *, 16> AntidependencePathTy;
 }
+#endif
 
 namespace llvm {
   static raw_ostream &operator<<(raw_ostream &OS, const AntidependencePairTy &P);
@@ -101,6 +103,7 @@ raw_ostream &llvm::operator<<(raw_ostream &OS, const AntidependencePathTy &P) {
 // CandidateInfo
 //===----------------------------------------------------------------------===//
 
+#if 0
 namespace {
   class CandidateInfo {
    public:
@@ -159,6 +162,7 @@ namespace {
 
   typedef std::vector<CandidateInfo *> WorklistTy;
 } // end anonymous namespace
+#endif
 
 CandidateInfo::CandidateInfo(Instruction *Candidate,
                              unsigned LoopDepth,
@@ -209,8 +213,9 @@ void CandidateInfo::remove(const AntidependencePathTy &Path) {
 // MemoryIdempotenceAnalysisImpl
 //===----------------------------------------------------------------------===//
 
+#if 0
 class llvm::MemoryIdempotenceAnalysisImpl {
- private:
+ public:
   // Constructor.
   MemoryIdempotenceAnalysisImpl(MemoryIdempotenceAnalysis *MIA) : MIA_(MIA) {}
 
@@ -237,8 +242,9 @@ class llvm::MemoryIdempotenceAnalysisImpl {
 
   // Other things we use.
   PredIteratorCache PredCache_;
+  Module *M_;
   Function *F_;
-  AliasAnalysis *AA_;
+  AAResults *AA_;
   DominatorTree *DT_;
   LoopInfo *LI_;
 
@@ -255,16 +261,24 @@ class llvm::MemoryIdempotenceAnalysisImpl {
   void processRedundantCandidate(CandidateInfo *RedundantInfo,
                                  WorklistTy *Worklist,
                                  const AntidependencePathTy &Path);
+
+ public:
+  bool run(Module &M, Function &F, AAResults &AA, DominatorTree &DT,
+           LoopInfo &LI);
 };
+#endif
 
 void MemoryIdempotenceAnalysisImpl::releaseMemory() {
   CutSet_.clear();
   CutMap_.clear();
   AntidependencePairs_.clear();
   AntidependencePaths_.clear();
+#if RATCHED_ORIG
   PredCache_.clear();
+#endif
 }
 
+#if 0
 static bool forcesCut(const Instruction &I) {
   // See comment at the head of forceCut() further below.
   if (const LoadInst *L = dyn_cast<LoadInst>(&I))
@@ -279,6 +293,17 @@ static bool forcesCut(const Instruction &I) {
           isa<AtomicCmpXchgInst>(&I) ||
           isa<AtomicRMWInst>(&I));
 }
+#else
+bool forcesCut(Instruction &I) {
+  if (isa<IntrinsicInst>(I)) return false; // intrinsics never create a cut! (TODO: CHECK THIS)
+
+  if (const LoadInst *L = dyn_cast<LoadInst>(&I)) return L->isVolatile();
+  if (const StoreInst *S = dyn_cast<StoreInst>(&I)) return S->isVolatile();
+  if (const CallInst *CI = dyn_cast<CallInst>(&I)) return !(CI->isTailCall());
+  return (isa<InvokeInst>(I) || isa<VAArgInst>(&I) || isa<FenceInst>(&I) ||
+          isa<AtomicCmpXchgInst>(&I) || isa<AtomicRMWInst>(&I));
+}
+#endif
 
 #if 0
 bool MemoryIdempotenceAnalysisImpl::run(Function &F) {
@@ -315,6 +340,42 @@ bool MemoryIdempotenceAnalysisImpl::run(Function &F) {
   DEBUG(print(dbgs()));
   return false;
 }
+#else
+MemoryIdempotenceAnalysisImpl::CutSet &MemoryIdempotenceAnalysisImpl::run(Module &M, Function &F, AAResults &AA, DominatorTree &DT, LoopInfo &LI) {
+  M_ = &M;
+  F_  = &F;
+  AA_ = &AA;
+  DT_ = &DT;
+  LI_ = &LI;
+  DEBUG(dbgs() << "\n*** MemoryIdempotenceAnalysis for Function "
+        << F_->getName() << " ***\n");
+
+  DEBUG(dbgs() << "\n** Computing Forced Cuts\n");
+  for (Function::iterator BB = F.begin(); BB != F.end(); ++BB)
+    for (BasicBlock::iterator I = BB->begin(); I != BB->end(); ++I)
+      if (forcesCut(*I))
+        forceCut(I);
+
+  DEBUG(dbgs() << "\n** Computing Memory Antidependence Pairs\n");
+  for (Function::iterator BB = F.begin(); BB != F.end(); ++BB)
+    for (BasicBlock::iterator I = BB->begin(); I != BB->end(); ++I)
+      //if (isa<StoreInst>(I) || isa<CallInst>(I) || isa<MemIntrinsic>(I))
+      if (isa<StoreInst>(I))
+        findAntidependencePairs(cast<Instruction>(I));
+
+  // Return early if there's nothing to analyze.
+  if (AntidependencePairs_.empty())
+    return CutSet_;
+
+  DEBUG(dbgs() << "\n** Computing Paths to Cut\n");
+  computeAntidependencePaths();
+
+  DEBUG(dbgs() << "\n** Computing Hitting Set\n");
+  computeHittingSet();
+
+  DEBUG(print(dbgs()));
+  return CutSet_;
+}
 #endif
 
 void MemoryIdempotenceAnalysisImpl::forceCut(BasicBlock::iterator I) {
@@ -322,11 +383,11 @@ void MemoryIdempotenceAnalysisImpl::forceCut(BasicBlock::iterator I) {
   // are one common case that we are handled after instruction selection; see
   // patchCallingConvention() in PatchMachineIdempotentRegions.  In the absence
   // of any actual hardware support, the others are just approximated here.
-  if (CallSite(cast<Instruction>(I)))
+  if (CallSite(cast<Instruction>(I)) && (CutFunctionCalls == false))
     return;
 
-  DEBUG(dbgs() << " Inserting forced cut at " << getLocator(*I) << "\n");
-  CutSet_.insert(cast<Instruction>(++I));
+  DEBUG(dbgs() << " Inserting forced cut at " << *I << "\n");
+  CutSet_.insert(cast<Instruction>(I));
 }
 
 void MemoryIdempotenceAnalysisImpl::findAntidependencePairs(Instruction *Write) {
@@ -375,7 +436,9 @@ bool MemoryIdempotenceAnalysisImpl::scanForAliasingLoad(BasicBlock::iterator I,
                                                         StoreInst *Store) {
 
   Value *Pointer = Store->getOperand(1);
-  unsigned PointerSize = AA_->getTypeStoreSize(Store->getOperand(0)->getType());
+  auto DL = M_->getDataLayout();
+  unsigned PointerSize = DL.getTypeStoreSize(Store->getOperand(0)->getType());
+  //unsigned PointerSize = AA_->getTypeStoreSize(Store->getOperand(0)->getType());
 
   while (I != E) {
     --I;
@@ -385,13 +448,16 @@ bool MemoryIdempotenceAnalysisImpl::scanForAliasingLoad(BasicBlock::iterator I,
 
     // Otherwise, check for an aliasing load.
     if (isa<LoadInst>(I)) {
-      if (AA_->getModRefInfo(I, Pointer, PointerSize) & AliasAnalysis::Ref) {
-        AntidependencePairTy Pair = AntidependencePairTy(I, Store);
+      auto MR = AA_->getModRefInfo(cast<LoadInst>(I), Pointer, PointerSize);
+      if (llvm::isMustSet(MR) || llvm::isRefSet(MR)) {
+        AntidependencePairTy Pair = AntidependencePairTy(cast<Instruction>(I), cast<Instruction>(Store));
         DEBUG(dbgs() << "  " << Pair << "\n");
         AntidependencePairs_.push_back(Pair);
         DEBUG(dbgs() << "JVDW: Alias Pair Locations\n");
-        DEBUG(dbgs() << "JVDW: Load:\t" << *AA_->getLocation(dyn_cast<LoadInst>(I)).Ptr << "\n");
-        DEBUG(dbgs() << "JVDW: Store:\t" << *AA_->getLocation(Store).Ptr << "\n");
+        DEBUG(dbgs() << "JVDW: Load:\t" << *I << "\n");
+        DEBUG(dbgs() << "JVDW: Store:\t" << *Store << "\n");
+        //DEBUG(dbgs() << "JVDW: Load:\t" << *AA_->getLocation(dyn_cast<LoadInst>(I)).Ptr << "\n");
+        //DEBUG(dbgs() << "JVDW: Store:\t" << *AA_->getLocation(Store).Ptr << "\n");
         //if (AA_->getLocation(dyn_cast<LoadInst>(I)).Ptr != AA_->getLocation(Store).Ptr)
         //  continue;
         return true;
@@ -404,7 +470,7 @@ bool MemoryIdempotenceAnalysisImpl::scanForAliasingLoad(BasicBlock::iterator I,
   if (I->getParent() == &I->getParent()->getParent()->getEntryBlock())
     if (isa<GlobalValue>(Store->getPointerOperand()))
     {
-        AntidependencePairTy Pair = AntidependencePairTy(I, Store);
+        AntidependencePairTy Pair = AntidependencePairTy(cast<Instruction>(I), cast<Instruction>(Store));
         DEBUG(dbgs() << "  " << Pair << "\n");
         AntidependencePairs_.push_back(Pair);
         return true;
@@ -418,24 +484,26 @@ void MemoryIdempotenceAnalysisImpl::computeAntidependencePaths() {
   // Compute an antidependence path for each antidependence pair.
   for (AntidependencePairs::iterator I = AntidependencePairs_.begin(),
        E = AntidependencePairs_.end(); I != E; ++I) {
-    BasicBlock::iterator Load, Store;
-    tie(Load, Store) = *I;
+    //BasicBlock::iterator Load, Store;
+    //tie(Load, Store) = *I;
+    BasicBlock::iterator Load(I->first);
+    BasicBlock::iterator Store(I->second);
 
     // Prepare a new antidependence path.
     AntidependencePaths_.resize(AntidependencePaths_.size() + 1);
     AntidependencePathTy &Path = AntidependencePaths_.back();
 
     // The antidependent store is always on the path.
-    Path.push_back(Store);
+    Path.push_back(cast<Instruction>(Store));
 
     // The rest of the path consists of other stores that dominate Store but do
     // not dominate Load.  Handle the block-local case quickly.
     BasicBlock::iterator Cursor = Store;
     BasicBlock *SBB = Store->getParent(), *LBB = Load->getParent();
-    if (SBB == LBB && DT_->dominates(Load, Store)) {
+    if (SBB == LBB && DT_->dominates(cast<Instruction>(Load), cast<Instruction>(Store))) {
       while (--Cursor != Load)
         if (isa<StoreInst>(Cursor))
-          Path.push_back(Cursor);
+          Path.push_back(cast<Instruction>(Cursor));
       DEBUG(dbgs() << " Local " << *I << " has path " << Path << "\n");
       continue;
     }
@@ -448,7 +516,7 @@ void MemoryIdempotenceAnalysisImpl::computeAntidependencePaths() {
       BasicBlock::iterator E = BB->begin();
       while (Cursor != E)
         if (isa<StoreInst>(--Cursor))
-          Path.push_back(Cursor);
+          Path.push_back(cast<Instruction>(Cursor));
 
       // Move the cursor to the end of BB's IDom block.
       DTNode = DTNode->getIDom();
@@ -592,14 +660,14 @@ void MemoryIdempotenceAnalysisImpl::processRedundantCandidate(
 void MemoryIdempotenceAnalysisImpl::print(raw_ostream &OS,
                                           const Module *M) const {
   OS << "\nMemoryIdempotenceAnalysis Cut Set:\n";
-  for (MemoryIdempotenceAnalysis::const_iterator I = MIA_->begin(),
-       E = MIA_->end(); I != E; ++I) {
-    Instruction *Cut = *I;
-    BasicBlock *CutBB = Cut->getParent();
-    OS << "Cut at " << getLocator(*Cut) << " at loop depth "
-      << LI_->getLoopDepth(CutBB) << "\n";
-  }
-  OS << "\n";
+  //for (MemoryIdempotenceAnalysis::const_iterator I = MIA_->begin(),
+  //     E = MIA_->end(); I != E; ++I) {
+  //  Instruction *Cut = *I;
+  //  BasicBlock *CutBB = Cut->getParent();
+  //  OS << "Cut at " << getLocator(*Cut) << " at loop depth "
+  //    << LI_->getLoopDepth(CutBB) << "\n";
+  //}
+  //OS << "\n";
 }
 
 #if 0

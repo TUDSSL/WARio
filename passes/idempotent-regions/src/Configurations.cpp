@@ -24,3 +24,6 @@ cl::opt<bool> UnitPlacementCost("cp-unit-placement-cost", cl::init(false),
 
 cl::opt<bool> BruteForceHittingSet("cp-brute-force-hitting-set", cl::init(false),
                     cl::desc("Brute force the hitting set"));
+
+cl::opt<bool> UseRatchetImplementation("cp-ratchet", cl::init(true),
+                    cl::desc("Run the original ratchet implementation"));
