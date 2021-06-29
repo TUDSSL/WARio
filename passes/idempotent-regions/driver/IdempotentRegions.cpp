@@ -32,11 +32,22 @@ struct CAT : public ModulePass {
     auto &N = getAnalysis<Noelle>();
 
     /*
+     * Collect LoopInfo per function (function pass)
+     */
+    IdempotentRegionAnalysis::LoopInfoMapTy LIM;
+    auto loops = N.getLoops();
+    for (auto loop : *loops) {
+      auto LS = loop->getLoopStructure();
+      auto F = LS->getFunction();
+      LIM[F] = &getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
+    }
+
+    /*
      * Get the idempotent region cuts
      * i.e., the end of regions (checkpoint locations)
      */
     IdempotentRegionAnalysis IRA;
-    IRA.run(N, M);
+    IRA.run(N, M, LIM);
 
     /*
      * Run verifier on each function instrumented
@@ -51,6 +62,12 @@ struct CAT : public ModulePass {
      * Declare NOELLE dependence
      */
     AU.addRequired<Noelle>();
+
+    /*
+     * Declare LoopInfo dependence
+     */
+    AU.addRequired<LoopInfoWrapperPass>();
+
     return;
   }
 };

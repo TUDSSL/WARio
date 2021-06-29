@@ -40,7 +40,6 @@ tuple<bool, bool> HittingSetBruteForce::combinations(int N, int K, const vector<
 CutsTy &HittingSetBruteForce::run() {
   errs() << "Running Bruteforce HittingSet\n";
 
-  PlacementCost PC;
   SolutionsTy PS;
 
   // Create the "universe"
@@ -49,12 +48,14 @@ CutsTy &HittingSetBruteForce::run() {
     for (auto &Point : Path) AllCutsSet.insert(Point);
   }
 
+  if (AllCutsSet.size() == 0) return Cuts;
+
   // Convert the set to a vector so it can be indexed
   vector<Instruction *> AllCuts(AllCutsSet.size());
   copy(AllCutsSet.begin(), AllCutsSet.end(), AllCuts.begin());
 
   // Find a solution using the HittingSet algorithm
-  HittingSet HS(IdempotentPaths);
+  HittingSet HS(IdempotentPaths, PC);
   auto CPS = HS.run(false);
   auto CPSCost = PC.cost(CPS);
 

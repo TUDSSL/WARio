@@ -10,7 +10,7 @@ class HittingSet {
    const IdempotentRegion::PathsTy &IdempotentPaths;
    IdempotentRegion::CutsTy Cuts;
 
-   PlacementCost PC;
+   PlacementCost &PC;
 
    bool verify(IdempotentRegion::CutsTy &Solution);
    bool Valid = false;
@@ -23,8 +23,8 @@ class HittingSet {
  public:
   bool isValid() { return Valid; }
 
-  HittingSet(const IdempotentRegion::PathsTy &IdempotentPaths)
-      : IdempotentPaths(IdempotentPaths) {}
+  HittingSet(const IdempotentRegion::PathsTy &IdempotentPaths, PlacementCost &PlacementCost)
+      : IdempotentPaths(IdempotentPaths), PC(PlacementCost) {}
 
   IdempotentRegion::CutsTy &run(bool PrintDebug = true);
 };

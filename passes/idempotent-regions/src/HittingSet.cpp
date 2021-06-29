@@ -47,17 +47,24 @@ CutsTy &HittingSet::run(bool PrintDebug) {
     // Calculate the priority Hits*Cost
     // Track the highest Priority
     Instruction *Candidate;
-    PlacementCost::CostTy CandidatePriority = 0;
+    double CandidatePriority = 0;
     for (const auto &kv : HitCountMap) {
       auto *I = kv.first;
       const auto &H = kv.second;
 
-      auto Priority = H * PC.cost(I);
+      double Priority = (double)H / (double)PC.cost(I);
       if (Priority > CandidatePriority) {
         Candidate = I;
         CandidatePriority = Priority;
       }
     }
+
+    // Debug Information
+    hsdbg() << "Candidate: " << *Candidate << "\n";
+    hsdbg() << "  Priority: " <<  CandidatePriority << "\n";
+    hsdbg() << "  Hits: " << HitCountMap[Candidate] << "\n";
+    hsdbg() << "  Cost: " <<  PC.cost(Candidate) << "\n";
+    hsdbg() << "  CostFactors: " <<  PC.costFactors(Candidate) << "\n";
 
     // Add the Candidate to the Cuts
     Cuts.insert(Candidate);
@@ -65,12 +72,6 @@ CutsTy &HittingSet::run(bool PrintDebug) {
     // Remove the Paths containing the Candidate from the RemainingPaths
     // Additionally updates the HitCountMap
     removeCutPaths(RemainingPaths, Candidate);
-
-    // Debug Information
-    hsdbg() << "Candidate: " << *Candidate << "\n";
-    hsdbg() << "  Hits: " << HitCountMap[Candidate] << "\n";
-    hsdbg() << "  Cost: " <<  PC.cost(Candidate) << "\n";
-    hsdbg() << "  Priority: " <<  CandidatePriority << "\n";
 
     // Increase the step count (debugging)
     ++step;

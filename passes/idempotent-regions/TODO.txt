@@ -54,3 +54,23 @@ int main(void) {
   return 1;
 }
 ```
+
+# Only keep the first WAR for the same write (i.e.) RRRW would keep the last RW
+
+# Pointer aliasing tests
+# goto statement
+# Multiple reads in a row tests (should take last one). e.g. RRRW
+
+# https://users.cs.northwestern.edu/~simonec/ATC.html#Material 
+
+
+
+## Notes
+* Without any forced cuts coremark:
+[checkpoint-verification][total-uncaught-wars] 6544
+[final-value] final value for: __checkpoint_count = 94176
+
+* With forced cuts coremark:
+[checkpoint-verification][total-uncaught-wars] 6090 (~500 less)
+[final-value] final value for: __checkpoint_count = 131679 (35000 more)
+

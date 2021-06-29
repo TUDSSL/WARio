@@ -11,11 +11,13 @@ class IdempotentRegionAnalysis {
     typedef IdempotentRegion::CutsTy CheckpointLocationsTy;
     typedef map<Function *, IdempotentRegion::CutsTy> CheckpointLocationsMapTy;
 
+    typedef map<Function *, LoopInfo *> LoopInfoMapTy;
+
   private:
     CheckpointLocationsMapTy CheckpointLocationsMap;
 
   public:
-    void run(Noelle &N, Module &M);
+    void run(Noelle &N, Module &M, LoopInfoMapTy &LIM);
 
     CheckpointLocationsTy *getCheckpointLocations(Function *F) {
       if (CheckpointLocationsMap.find(F) != CheckpointLocationsMap.end())

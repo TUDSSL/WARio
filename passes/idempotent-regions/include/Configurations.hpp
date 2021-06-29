@@ -64,6 +64,10 @@ extern cl::opt<bool> Debug;
 
 extern cl::opt<bool> InsertCheckpointCount;
 
+extern cl::opt<bool> UnitPlacementCost;
+
+extern cl::opt<bool> BruteForceHittingSet;
+
 #ifdef DEBUG_PRINT
 #define dbg() errs()
 #else

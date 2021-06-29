@@ -16,7 +16,7 @@ using namespace IdempotentRegion;
  * - Get Paths from Pars
  * - Compute Hitting set
  */
-void IdempotentRegionAnalysis::run(Noelle &N, Module &M) {
+void IdempotentRegionAnalysis::run(Noelle &N, Module &M, LoopInfoMapTy &LIM) {
 
   dbg() << "Running IdempotentRegionAnalysis on: " << M.getName() << "\n";
 
@@ -62,42 +62,42 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M) {
     auto ConditionalPaths = PWA.run();
 
     /*
+     * Build the base placement cost per instruction
+     */
+    PlacementCost PC(N, *F, LIM[F]);
+
+
+    /*
      * Get the optimized checkpoint locations
      */
-    HittingSet HS(Paths);
-    auto CheckpointLocations = HS.run();
+    CutsTy *CheckpointLocations;
 
-    /*
-     * Run a Brute Force solver to get the best possible checkpoint locations
-     */
-    //HittingSetBruteForce HSBF(Paths);
-    //auto CheckpointLocationsBF = HSBF.run();
+    HittingSet HS(Paths, PC);
+    HittingSetBruteForce HSBF(Paths, PC);
 
-    /*
-     * This might be a bad way, better add them before the call?
-     * That would be better as it happens before pushes to the stack
-     */
-#if 0
-    /*
-     * Add a checkpoint to the start of each function
-     */
-    auto FN = F->getName();
-    CheckpointLocations.insert(F->getEntryBlock().getFirstNonPHI());
-#else
+    if (!BruteForceHittingSet) {
+      CheckpointLocations = &HS.run();
+    } else {
+      /*
+       * Run a Brute Force solver to get the best possible checkpoint locations
+       */
+      CheckpointLocations = &HSBF.run();
+    }
+
     /*
      * Add a checkpoint before each forced cut (calls etc.)
      */
     for (auto &C : WA.getForcedCuts()) {
       dbg() << "Adding checkpoint before forced cut: " << *C << "\n";
-      CheckpointLocations.insert(C);
+      CheckpointLocations->insert(C);
     }
-#endif
 
     /*
      * Store the Checkpoint Locations in the Function map
      */
-    CheckpointLocationsMap[F] = std::move(CheckpointLocations);
-  }
+    CheckpointLocationsMap[F] = std::move(*CheckpointLocations);
+    //CheckpointLocationsMap[F] = *CheckpointLocations;
+    }
 
   dbg() << "********************************************************************************\n";
   dbg() << "* Instrumentation\n";
@@ -110,4 +110,8 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M) {
     auto CPCI = CheckpointCountInserter(M, CheckpointLocationsMap);
     CPCI.run();
   }
+
+  dbg() << "********************************************************************************\n";
+  dbg() << "* Done\n";
+  dbg() << "********************************************************************************\n";
 }
