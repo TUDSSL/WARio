@@ -20,6 +20,7 @@ struct CAT : public ModulePass {
     return false;
   }
 
+#if 0
   IdempotentRegionAnalysis::CheckpointLocationsMapTy runRatchet(Module &M, Noelle &N) {
 
     IdempotentRegionAnalysis::CheckpointLocationsMapTy RatchetCheckpointLocationsMap;
@@ -47,6 +48,7 @@ struct CAT : public ModulePass {
 
     return RatchetCheckpointLocationsMap;
   }
+#endif
 
   bool runOnModule(Module &M) override {
     bool modified = false;
@@ -73,23 +75,35 @@ struct CAT : public ModulePass {
     }
 
     /*
+     * Exclude functions (TODO: move to arguments)
+     */
+    set<string> ExcludeFunctions;
+    ExcludeFunctions.insert("Reset_Handler");
+    ExcludeFunctions.insert("HardFault_Handler");
+    ExcludeFunctions.insert("NMI_Handler");
+    ExcludeFunctions.insert("am_default_isr");
+
+    /*
      * Get the idempotent region cuts
      * i.e., the end of regions (checkpoint locations)
      */
-    IdempotentRegionAnalysis::CheckpointLocationsMapTy CPL;
-    IdempotentRegionAnalysis IRA;
+    IdempotentRegionAnalysis::CheckpointLocationsMapTy *CPL;
+
+    Ratchet R(ExcludeFunctions);
+    IdempotentRegionAnalysis IRA(ExcludeFunctions);
 
     if (UseRatchetImplementation) {
       /*
        * Run the Ratchet analysis (unchanged)
        */
-      CPL = runRatchet(M, N);
+      R.run(this, M, N);
+      CPL = &R.getCheckpointLocationsMap();
     } else {
       /*
        * Run the improved idempotent region analysis
        */
       IRA.run(N, M, LIM);
-      CPL = IRA.getCheckpointLocationsMap();
+      CPL = &IRA.getCheckpointLocationsMap();
     }
 
     /*
@@ -103,7 +117,7 @@ struct CAT : public ModulePass {
      * Insert debug checkpoints
      */
     if (InsertCheckpointCount) {
-      auto CPCI = CheckpointCountInserter(M, CPL);
+      auto CPCI = CheckpointCountInserter(M, *CPL);
       CPCI.run();
     }
 
@@ -116,7 +130,11 @@ struct CAT : public ModulePass {
      */
     Utils::Verify(M);
 
-    return modified;
+    dbg() << "********************************************************************************\n";
+    dbg() << "* Done\n";
+    dbg() << "********************************************************************************\n";
+
+    return true;
   }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {

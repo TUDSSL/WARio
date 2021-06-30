@@ -21,15 +21,6 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M, LoopInfoMapTy &LIM) {
   dbg() << "Running IdempotentRegionAnalysis on: " << M.getName() << "\n";
 
   /*
-   * Exclude functions (TODO: move to arguments)
-   */
-  set<string> ExcludeFunctions;
-  ExcludeFunctions.insert("Reset_Handler");
-  ExcludeFunctions.insert("HardFault_Handler");
-  ExcludeFunctions.insert("NMI_Handler");
-  ExcludeFunctions.insert("am_default_isr");
-
-  /*
    * Fetch the entry point.
    */
   auto FM = N.getFunctionsManager();
@@ -46,7 +37,7 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M, LoopInfoMapTy &LIM) {
     /*
      * Skip excluded functions
      */
-    if (ExcludeFunctions.find(F->getName()) != ExcludeFunctions.end()) continue;
+    if (ExcludeF.find(F->getName()) != ExcludeF.end()) continue;
 
     dbg() << "********************************************************************************\n";
     dbg() << "* Analyzing Function: " << F->getName() << "\n";

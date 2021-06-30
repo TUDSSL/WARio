@@ -14,9 +14,14 @@ class IdempotentRegionAnalysis {
     typedef map<Function *, LoopInfo *> LoopInfoMapTy;
 
   private:
+    set<string> ExcludeF; // Funtions to exclude from the analysis
     CheckpointLocationsMapTy CheckpointLocationsMap;
 
   public:
+    IdempotentRegionAnalysis(set<string> ExcludeFunctions = {}) {
+      ExcludeF= ExcludeFunctions;
+    }
+
     void run(Noelle &N, Module &M, LoopInfoMapTy &LIM);
 
     CheckpointLocationsTy *getCheckpointLocations(Function *F) {
