@@ -19,19 +19,20 @@ NOELLE_NORM="noelle-norm"
 NOELLE_LOAD="noelle-load"
 
 
-if [[ -z "${ICLANG_PASS}" ]]; then
-    DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-    PASS_LIB="$DIR/../passes/loop-scheduler/build/ICS.so"
-    PASS_FLAGS="-ics"
-else
-    PASS_LIB="${ICLANG_PASS}"
-    PASS_FLAGS="${ICLANG_PASS_FLAGS}"
-fi
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+#if [[ -z "${ICLANG_PASS}" ]]; then
+#    PASS_LIB="$DIR/../passes/loop-scheduler/build/ICS.so"
+#    PASS_FLAGS="-ics"
+#else
+#    PASS_LIB="${ICLANG_PASS}"
+#    PASS_FLAGS="${ICLANG_PASS_FLAGS}"
+#fi
 
 WAR_PASS_LIB="$DIR/../passes/idempotent-regions/build/idemp-regions.so"
 
-echo "Using noelle pass: $PASS_LIB"
-echo "With flags: $PASS_FLAGS"
+#echo "Using noelle pass: $PASS_LIB"
+echo "With flags: ${ICLANG_PASS_FLAGS}"
 
 # Setup the environment
 export GLLVM_OBJCOPY=arm-none-eabi-objcopy
@@ -66,7 +67,7 @@ function apply_pass() {
     local passargs="$5"
 
     run "$NOELLE_NORM -S $input_ir -o $basename-norm.ll"
-    run "$NOELLE_LOAD -load $passlib -$passname $passargs -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
+    run "$NOELLE_LOAD -load $passlib -$passname $passargs $ICLANG_PASS_FLAGS -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
     apply_pass_output="$basename-$passname.ll"
 }
 
