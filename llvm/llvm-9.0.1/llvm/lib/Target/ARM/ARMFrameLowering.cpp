@@ -63,6 +63,8 @@
 #include <utility>
 #include <vector>
 
+#include "llvm/CodeGen/IdempotenceOptions.h"
+
 #define DEBUG_TYPE "arm-frame-lowering"
 
 using namespace llvm;
@@ -2092,6 +2094,14 @@ void ARMFrameLowering::determineCalleeSaves(MachineFunction &MF,
     }
   }
 
+  if (IdempForceLRSpill == true) {
+    // Vito: Here we can force LR to always be on the stack, which is needed
+    // if we want to call a checkpoint function
+    errs() << "idemp: forcing LR spill for: " << MF.getName() << "\n";
+    ForceLRSpill = true;
+  }
+
+  //ForceLRSpill = true;
   if (ForceLRSpill) {
     SavedRegs.set(ARM::LR);
     AFI->setLRIsSpilledForFarJump(true);
