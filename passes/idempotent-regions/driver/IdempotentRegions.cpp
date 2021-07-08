@@ -4,6 +4,7 @@
 #include "RatchetDriver.hpp"
 #include "IdempotentRegionAnalysis.hpp"
 #include "CheckpointCountInserter.hpp"
+#include "CheckpointIntrinsicInserter.hpp"
 
 namespace {
 struct CAT : public ModulePass {
@@ -119,6 +120,11 @@ struct CAT : public ModulePass {
     if (InsertCheckpointCount) {
       auto CPCI = CheckpointCountInserter(M, *CPL);
       CPCI.run();
+    }
+
+    if (InsertCheckpointIntrinsic) {
+      auto CPII = CheckpointIntrinsicInserter(M, *CPL);
+      CPII.run();
     }
 
     dbg() << "********************************************************************************\n";

@@ -70,6 +70,8 @@ extern cl::opt<bool> BruteForceHittingSet;
 
 extern cl::opt<bool> UseRatchetImplementation;
 
+extern cl::opt<bool> InsertCheckpointIntrinsic;
+
 #ifdef DEBUG_PRINT
 #define dbg() errs()
 #else

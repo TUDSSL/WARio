@@ -27,3 +27,6 @@ cl::opt<bool> BruteForceHittingSet("cp-brute-force-hitting-set", cl::init(false)
 
 cl::opt<bool> UseRatchetImplementation("cp-ratchet", cl::init(false),
                     cl::desc("Run the original ratchet implementation"));
+
+cl::opt<bool> InsertCheckpointIntrinsic("cp-intrinsic", cl::init(true),
+                    cl::desc("Insert idemp intrinsic calls at checkpoint locations"));

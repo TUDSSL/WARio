@@ -10,6 +10,7 @@ set(PassSrc
     ${CMAKE_SOURCE_DIR}/src/IdempotentRegionAnalysis.cpp
     ${CMAKE_SOURCE_DIR}/src/ProtectingWriteAnalysis.cpp
     ${CMAKE_SOURCE_DIR}/src/CheckpointCountInserter.cpp
+    ${CMAKE_SOURCE_DIR}/src/CheckpointIntrinsicInserter.cpp
     ${CMAKE_SOURCE_DIR}/src/ratchet/Ratchet.cpp
 )
 
