@@ -1691,6 +1691,34 @@ public:
     return false;
   }
 
+public:
+  /// Return true if the current instrunction is a idempotent boundary
+  virtual bool isIdempBoundary(const MachineInstr &MI) const {
+    llvm_unreachable("Target didn't implement "
+                     "TargetInstrInfo::isIdempBoundary!");
+    return false;
+  }
+
+  /// Insert an idempotent boundary
+  virtual void insertIdempBoundary(MachineBasicBlock &MBB,
+                                MachineBasicBlock::iterator MI) const {
+    llvm_unreachable("Target didn't implement "
+                     "TargetInstrInfo::insertIdemBoundary!");
+  }
+
+  /// Insert a checkpoint
+  virtual void insertCheckpoint(MachineBasicBlock &MBB,
+                                MachineBasicBlock::iterator MI) const {
+    llvm_unreachable("Target didn't implement "
+                     "TargetInstrInfo::insertCheckpoint!");
+  }
+
+  /// replaceWithIdemPop - Replace a POP with an idempotent POP
+  virtual void replaceWithIdempPop(MachineFunction &MF) const {
+    llvm_unreachable("Target didn't implement "
+                     "TargetInstrInfo::replaceWithIdemPop!");
+  }
+
 private:
   unsigned CallFrameSetupOpcode, CallFrameDestroyOpcode;
   unsigned CatchRetOpcode;

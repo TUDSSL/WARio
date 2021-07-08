@@ -165,6 +165,10 @@ add_llvm_library(LLVMCodeGen
   WinEHPrepare.cpp
   XRayInstrumentation.cpp
 
+  MachineIdempotentRegions.cpp
+  MachineIdempotentRegionsR.cpp
+  IdempotenceOptions.cpp
+
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/CodeGen
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/CodeGen/PBQP

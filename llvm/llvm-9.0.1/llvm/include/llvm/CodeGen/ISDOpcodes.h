@@ -302,8 +302,8 @@ namespace ISD {
     STRICT_FRINT, STRICT_FNEARBYINT, STRICT_FMAXNUM, STRICT_FMINNUM,
     STRICT_FCEIL, STRICT_FFLOOR, STRICT_FROUND, STRICT_FTRUNC,
 
-    /// X = STRICT_FP_ROUND(Y, TRUNC) - Rounding 'Y' from a larger floating 
-    /// point type down to the precision of the destination VT.  TRUNC is a 
+    /// X = STRICT_FP_ROUND(Y, TRUNC) - Rounding 'Y' from a larger floating
+    /// point type down to the precision of the destination VT.  TRUNC is a
     /// flag, which is always an integer that is zero or one.  If TRUNC is 0,
     /// this is a normal rounding, if it is 1, this FP_ROUND is known to not
     /// change the value of Y.
@@ -660,6 +660,10 @@ namespace ISD {
     /// is the value to branch to, which must be of the same type as the
     /// target's pointer type.
     BRIND,
+
+    // IDEM - Idempotent region boundary instructions.  First operand is the
+    // chain and return value is chain.
+    IDEMP,
 
     /// BR_JT - Jumptable branch. The first operand is the chain, the second
     /// is the jumptable index, the last one is the jumptable entry index.

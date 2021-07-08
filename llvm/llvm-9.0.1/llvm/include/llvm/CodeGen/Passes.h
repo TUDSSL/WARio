@@ -156,6 +156,11 @@ namespace llvm {
   /// This pass perform post-ra machine sink for COPY instructions.
   extern char &PostRAMachineSinkingID;
 
+  // This pass inserts idempotent region boundaries (checkpoints) for
+  // intermittent computing
+  MachineFunctionPass *createMachineIdempotentRegions();
+  extern char &MachineIdempotentRegionsID;
+
   /// FastRegisterAllocation Pass - This pass register allocates as fast as
   /// possible. It is best suited for debug code where live ranges are short.
   ///

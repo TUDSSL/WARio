@@ -5872,6 +5872,10 @@ def : ARMPat<(atomic_store_32 ldst_so_reg:$ptr, GPR:$val),
 def : ARMPat<(atomic_store_32 addrmode_imm12:$ptr, GPR:$val),
              (STRi12 GPR:$val, addrmode_imm12:$ptr)>;
 
+//===----------------------------------------------------------------------===//
+// Idempotent region intrinsic (checkpoint location)
+//
+def IDEMP : IdempInst<"nop", [(Idemp)]>, Sched<[WriteALU]>;
 
 //===----------------------------------------------------------------------===//
 // Thumb Support

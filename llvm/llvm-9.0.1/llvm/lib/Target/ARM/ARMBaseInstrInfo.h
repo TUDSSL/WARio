@@ -451,6 +451,22 @@ public:
     // 3 - predicate reg
     return MI.getOperand(3).getReg();
   }
+
+public:
+  /// Return true if the current instrunction is a idempotent boundary
+  virtual bool isIdempBoundary(const MachineInstr &MI) const override;
+
+  /// Insert an idempotent boundary
+  virtual void insertIdempBoundary(MachineBasicBlock &MBB,
+                                MachineBasicBlock::iterator MI) const override;
+
+  /// Insert a checkpoint
+  virtual void insertCheckpoint(MachineBasicBlock &MBB,
+                                MachineBasicBlock::iterator MI) const override;
+
+  /// replaceWithIdemPop - Replace a POP with an idempotent POP
+  virtual void replaceWithIdempPop(MachineFunction &MF) const override;
+
 };
 
 /// Get the operands corresponding to the given \p Pred value. By default, the
@@ -619,6 +635,20 @@ void addUnpredicatedMveVpredROp(MachineInstrBuilder &MIB, unsigned DestReg);
 void addPredicatedMveVpredNOp(MachineInstrBuilder &MIB, unsigned Cond);
 void addPredicatedMveVpredROp(MachineInstrBuilder &MIB, unsigned Cond,
                               unsigned Inactive);
+
+//
+// Idempotence instr info
+//
+#if 0
+bool ARMBaseInstrInfo::isIdemBoundary(const MachineInstr *MI) const {
+  switch (MI->getOpcode()) {
+    case ARM::IDEMP:
+      return true;
+    default:
+      return false;
+  }
+}
+#endif
 
 } // end namespace llvm
 

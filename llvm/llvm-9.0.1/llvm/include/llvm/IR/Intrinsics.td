@@ -1232,6 +1232,9 @@ def int_preserve_struct_access_index : Intrinsic<[llvm_anyptr_ty],
                                                  [IntrNoMem, ImmArg<1>,
                                                   ImmArg<2>]>;
 
+//===------- Intrinsics that are used for idempotent regions -------===//
+def int_idemp         : Intrinsic<[]>;
+
 //===----------------------------------------------------------------------===//
 // Target-specific intrinsics
 //===----------------------------------------------------------------------===//

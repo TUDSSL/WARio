@@ -634,6 +634,9 @@ def SDT_assertext : SDTypeProfile<1, 1,
 def assertsext : SDNode<"ISD::AssertSext", SDT_assertext>;
 def assertzext : SDNode<"ISD::AssertZext", SDT_assertext>;
 
+//===----------------------------------------------------------------------===//
+// Idempotemce boundary
+def Idemp    : SDNode<"ISD::IDEMP", SDTNone, [SDNPHasChain, SDNPSideEffect]>;
 
 //===----------------------------------------------------------------------===//
 // Selection DAG Condition Codes

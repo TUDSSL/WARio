@@ -5349,3 +5349,30 @@ MachineInstr *llvm::findCMPToFoldIntoCBZ(MachineInstr *Br,
 
   return &*CmpMI;
 }
+
+
+/// Return true if the current instrunction is a idempotent boundary
+bool ARMBaseInstrInfo::isIdempBoundary(const MachineInstr &MI) const {
+  return (MI.getOpcode() == ARM::IDEMP);
+}
+
+/// Insert an idempotent boundary
+void ARMBaseInstrInfo::insertIdempBoundary(MachineBasicBlock &MBB,
+                              MachineBasicBlock::iterator MI) const {
+  BuildMI(MBB, MI, DebugLoc(), get(ARM::IDEMP));
+}
+
+/// Insert a checkpoint
+void ARMBaseInstrInfo::insertCheckpoint(MachineBasicBlock &MBB,
+                              MachineBasicBlock::iterator MI) const {
+  errs() << "TODO: Implement!\n";
+  llvm_unreachable("Target didn't implement "
+                   "TargetInstrInfo::insertCheckpoint!");
+}
+
+/// replaceWithIdemPop - Replace a POP with an idempotent POP
+void ARMBaseInstrInfo::replaceWithIdempPop(MachineFunction &MF) const {
+  errs() << "TODO: Implement!\n";
+  llvm_unreachable("Target didn't implement "
+                   "TargetInstrInfo::replaceWithIdemPop!");
+}
