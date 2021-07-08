@@ -32,7 +32,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 WAR_PASS_LIB="$DIR/../passes/idempotent-regions/build/idemp-regions.so"
 
 #echo "Using noelle pass: $PASS_LIB"
-echo "With flags: ${ICLANG_PASS_FLAGS}"
+echo "With pass flags: ${ICLANG_PASS_FLAGS}"
+echo "With codegen flags: ${ICLANG_CODEGEN_FLAGS}"
 
 # Setup the environment
 export GLLVM_OBJCOPY=arm-none-eabi-objcopy
@@ -109,12 +110,12 @@ function apply_passes() {
     compile_args=$(echo "${compile_args}" | sed -E 's/-I\S+//g')
 
     # Compile and link the final IR file
-    run "clang $compile_args -mllvm -no-stack-slot-sharing -c $ir -o $obj_pass"
+    run "clang $compile_args -mllvm -no-stack-slot-sharing $ICLANG_CODEGEN_FLAGS -c $ir -o $obj_pass"
     run "clang $link_args $obj_pass -o $output_file"
 
     ## Debug output
     # Output the dissasembly
-    arm-none-eabi-objdump -S "$output_file" >> "$output_file.S"
+    llvm-objdump -S "$output_file" >> "$output_file.S"
 
     # Compile the uninstrumented IR file with the same arguments
     local obj_orig="$obj_dir/$obj_filename-orig.obj"
@@ -122,7 +123,7 @@ function apply_passes() {
 
     run "clang $compile_args -c $bitcode_input -o $obj_orig"
     run "clang $link_args $obj_orig -o $output_orig"
-    arm-none-eabi-objdump -S "$output_orig" >> "$output_orig.S"
+    llvm-objdump -S "$output_orig" >> "$output_orig.S"
 }
 
 
