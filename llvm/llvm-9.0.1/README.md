@@ -35,3 +35,8 @@
   * Define the IdempInst instruction format
 * llvm/llvm-9.0.1/llvm/lib/Target/ARM/ARMInstrInfo.td
   * Define the IDEMP instruction
+
+* llvm/lib/Target/ARM/ARMFrameLowering.cpp
+  * Add an option to force LR to be pushed on the stack, this is needed because
+    we might introduce calls (to checkpoint). TODO, can we do this ONLY when we
+    know that we will insert a checkpoint call?
