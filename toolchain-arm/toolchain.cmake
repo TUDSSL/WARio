@@ -6,7 +6,8 @@ set(CMAKE_SYSTEM_PROCESSOR arm)
 # libgcc is required to compile with clang/llvm for now
 set(LIBGCC_BASE_DIR  $ENV{CMAKE_LIBGCC_BASE_DIR})
 
-set(CONFIG_DIR "${PROJECT_SOURCE_DIR}/config-m4")
+#set(CONFIG_DIR "${PROJECT_SOURCE_DIR}/config-m4")
+set(CONFIG_DIR "$ENV{ICLANG_ROOT}/toolchain-arm")
 
 set(OUTPUT_SUFFIX ".elf" CACHE STRING "")
 set(LINKER_SCRIPT "${CONFIG_DIR}/linkerscript.ld")
