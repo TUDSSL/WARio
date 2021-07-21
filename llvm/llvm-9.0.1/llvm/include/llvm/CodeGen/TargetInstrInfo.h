@@ -1708,7 +1708,8 @@ public:
 
   /// Insert a checkpoint
   virtual void insertCheckpoint(MachineBasicBlock &MBB,
-                                MachineBasicBlock::iterator MI) const {
+                                MachineBasicBlock::iterator MI,
+                                bool ForceSaveLR = false) const {
     llvm_unreachable("Target didn't implement "
                      "TargetInstrInfo::insertCheckpoint!");
   }

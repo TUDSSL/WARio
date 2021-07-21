@@ -46,6 +46,16 @@
 
 #include <stdint.h>
 
+#ifndef NO_CHECKPOINT_STARTUP
+__attribute ((weak))
+void __checkpoint_startup_checkpoint(void) {
+}
+
+__attribute ((weak))
+void __checkpoint_startup_restore(void) {
+}
+#endif /* NO_CHECKPOINT_STARTUP */
+
 //*****************************************************************************
 //
 // Forward declaration of interrupt handlers.
@@ -263,6 +273,15 @@ Reset_Handler(void)
 //          "dsb\n"
 //          "isb\n");
 //#endif
+
+#ifndef NO_CHECKPOINT_STARTUP
+    //
+    // If this is not a first boot, restore the last checkpoint
+    // Never returns if there is a checkpoint to restore
+    //
+    __asm("bl __checkpoint_startup_restore");
+#endif /* NO_CHECKPOINT_STARTUP */
+
     //
     // Copy the data segment initializers from flash to SRAM.
     //
@@ -286,10 +305,17 @@ Reset_Handler(void)
           "        strlt   r2, [r0], #4\n"
           "        blt     zero_loop");
 
+#ifndef NO_CHECKPOINT_STARTUP
+    //
+    // Only executes on the first boot, will create a checkpoint after the
+    // initialization of the .data and .bss section
+    //
+    __asm("bl __checkpoint_startup_checkpoint");
+#endif /* NO_CHECKPOINT_STARTUP */
+
     //
     // Call the application's entry point.
     //
-    //main();
     __asm("    bl   main\n");
 
     //

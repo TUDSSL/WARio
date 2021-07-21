@@ -18,6 +18,7 @@
 #include "ARMSubtarget.h"
 #include "MCTargetDesc/ARMAddressingModes.h"
 #include "MCTargetDesc/ARMBaseInfo.h"
+#include "MCTargetDesc/ARMMCTargetDesc.h"
 #include "Utils/ARMBaseInfo.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/STLExtras.h"
@@ -184,6 +185,12 @@ static void emitSPUpdate(bool isARM, MachineBasicBlock &MBB,
                          unsigned MIFlags = MachineInstr::NoFlags,
                          ARMCC::CondCodes Pred = ARMCC::AL,
                          unsigned PredReg = 0) {
+  if (IdempPop && (NumBytes > 0)) {
+    errs() << "idemp: inserting SP update checkpoint in: "
+           << MBB.getParent()->getName() << "\n";
+    TII.insertCheckpoint(MBB, MBBI);
+  }
+
   emitRegPlusImmediate(isARM, MBB, MBBI, dl, TII, ARM::SP, ARM::SP, NumBytes,
                        MIFlags, Pred, PredReg);
 }
@@ -832,6 +839,18 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
           // Use the first callee-saved register as a scratch register.
           assert(!MFI.getPristineRegs(MF).test(ARM::R4) &&
                  "No scratch register to restore SP from FP!");
+          //
+          // If a Frame Pointer is used, it's not possible to pop the callee
+          // saved registers of the stack before the sp if restored from the fp.
+          // If an interrupt triggers after reducing the stack there will be
+          // a WAR, so before that a checkpoint needs to happen.
+          // This means that if a function uses a frame pointer, two checkpoints
+          // are needed during the function return.
+          if (IdempPop) {
+            errs() << "idemp: inserting FP->SP update checkpoint in: "
+                   << MBB.getParent()->getName() << "\n";
+            TII.insertCheckpoint(MBB, MBBI);
+          }
           emitT2RegPlusImmediate(MBB, MBBI, dl, ARM::R4, FramePtr, -NumBytes,
                                  ARMCC::AL, 0, TII);
           BuildMI(MBB, MBBI, dl, TII.get(ARM::tMOVr), ARM::SP)
@@ -845,10 +864,16 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
               .addReg(FramePtr)
               .add(predOps(ARMCC::AL))
               .add(condCodeOp());
-        else
+        else {
+          if (IdempPop) {
+            errs() << "idemp: inserting FP->SP update (w/o bytes) checkpoint in: "
+                   << MBB.getParent()->getName() << "\n";
+            TII.insertCheckpoint(MBB, MBBI);
+          }
           BuildMI(MBB, MBBI, dl, TII.get(ARM::tMOVr), ARM::SP)
               .addReg(FramePtr)
               .add(predOps(ARMCC::AL));
+        }
       }
     } else if (NumBytes &&
                !tryFoldSPUpdateIntoPushPop(STI, MF, &*MBBI, NumBytes))
@@ -1090,15 +1115,45 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
       if (Reg == ARM::LR && !isTailCall && !isVarArg && !isInterrupt &&
           !isTrap && STI.hasV5TOps()) {
         if (MBB.succ_empty()) {
-          Reg = ARM::PC;
-          // Fold the return instruction into the LDM.
-          DeleteRet = true;
-          LdmOpc = AFI->isThumbFunction() ? ARM::t2LDMIA_RET : ARM::LDMIA_RET;
-          // We 'restore' LR into PC so it is not live out of the return block:
-          // Clear Restored bit.
-          Info.setRestored(false);
-        } else
-          LdmOpc = AFI->isThumbFunction() ? ARM::t2LDMIA_UPD : ARM::LDMIA_UPD;
+          //
+          // For an idempotent pop we can not use t2LDMIA_RET, because an
+          // interrupt can occure after we shrunk the stack but before we
+          // performed a checkpoint. Therefore causing a WAR when ISR data
+          // is automatically pushed to the stack. Replace t2LDMIA_RET
+          // with the pseudo instruction t2LDMIA_RET_IDEMP which will eventually
+          // output:
+          //    ldmia sp, {reglist}
+          //    bl __checkpoint
+          //    add sp, #reglist_in_bytes
+          //    bx lr
+          //
+          // instead of:
+          //    ldmia sp!, {reglist}
+          //
+          // For this we don't want to change lr with the pc register.
+          // we do want to delete the original return.
+          //
+          if (IdempPop) {
+            assert(AFI->isThumb2Function() &&
+                   "IdempPop is only implemented for thumb2 for now");
+
+            errs() << "idemp: replacing t2LDMIA_RET with idempotent pop in: "
+                   << MF.getName() << "\n";
+            LdmOpc = ARM::t2LDMIA_RET_IDEMP;
+            DeleteRet = true;
+          } else {
+            Reg = ARM::PC;
+            // Fold the return instruction into the LDM.
+            DeleteRet = true;
+            LdmOpc = AFI->isThumbFunction() ? ARM::t2LDMIA_RET : ARM::LDMIA_RET;
+            // We 'restore' LR into PC so it is not live out of the return block:
+            // Clear Restored bit.
+            Info.setRestored(false);
+          }
+        } else {
+          errs() << "Not the last BB for: " << MF.getName() << "\n";
+          LdmOpc = AFI->isThumbFunction() ? ARM::t2LDMIA_UPD_IDEMP : ARM::LDMIA_UPD;
+        }
       }
 
       // If NoGap is true, pop consecutive registers and then leave the rest
@@ -1119,6 +1174,13 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
     });
 
     if (Regs.size() > 1 || LdrOpc == 0) {
+      if (IdempPop) {
+        if (LdmOpc == ARM::t2LDMIA_UPD) {
+          errs() << "idemp: replacing t2LDMIA_UPD with t2LDMIA_UPD_IDEMP in: "
+                 << MF.getName() << "\n";
+          LdmOpc = ARM::t2LDMIA_UPD_IDEMP;
+        }
+      }
       MachineInstrBuilder MIB = BuildMI(MBB, MI, DL, TII.get(LdmOpc), ARM::SP)
                                     .addReg(ARM::SP)
                                     .add(predOps(ARMCC::AL));
@@ -1132,6 +1194,13 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
       }
       MI = MIB;
     } else if (Regs.size() == 1) {
+      if (IdempPop) {
+        if (LdrOpc == ARM::t2LDR_POST) {
+          errs() << "idemp: replacing t2LDR_POST with t2LDR_POST_IDEMP in: "
+                 << MF.getName() << "\n";
+          LdrOpc = ARM::t2LDR_POST_IDEMP;
+        }
+      }
       // If we adjusted the reg to PC from LR above, switch it back here. We
       // only do that for LDM.
       if (Regs[0] == ARM::PC)

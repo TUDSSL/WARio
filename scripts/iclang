@@ -31,12 +31,16 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 WAR_PASS_LIB="$DIR/../passes/idempotent-regions/build/idemp-regions.so"
 
+CHECKPOINT_ARCH_SRC="$DIR/../toolchain-arm/checkpoint/checkpoint.c"
+
 #echo "Using noelle pass: $PASS_LIB"
 echo "With pass flags: ${ICLANG_PASS_FLAGS}"
 echo "With codegen flags: ${ICLANG_CODEGEN_FLAGS}"
 
 # Setup the environment
 export GLLVM_OBJCOPY=arm-none-eabi-objcopy
+
+OBJDUMP=arm-none-eabi-objdump
 
 function exit_on_error() {
     echo "$1"
@@ -109,13 +113,18 @@ function apply_passes() {
     compile_args=$(echo "${compile_args}" | sed -E 's/-MF\s+\S+//g')
     compile_args=$(echo "${compile_args}" | sed -E 's/-I\S+//g')
 
-    # Compile and link the final IR file
+    # Compile the instrumented IR file
     run "clang $compile_args -mllvm -no-stack-slot-sharing $ICLANG_CODEGEN_FLAGS -c $ir -o $obj_pass"
-    run "clang $link_args $obj_pass -o $output_file"
+
+    # Compile the checkpoint library
+    run "clang $compile_args -c $CHECKPOINT_ARCH_SRC -o libcp.obj"
+
+    # Link the intrumented object
+    run "clang $link_args $obj_pass libcp.obj -o $output_file"
 
     ## Debug output
     # Output the dissasembly
-    llvm-objdump -S "$output_file" >> "$output_file.S"
+    $OBJDUMP -S "$output_file" >> "$output_file.S"
 
     # Compile the uninstrumented IR file with the same arguments
     local obj_orig="$obj_dir/$obj_filename-orig.obj"
@@ -123,7 +132,7 @@ function apply_passes() {
 
     run "clang $compile_args -c $bitcode_input -o $obj_orig"
     run "clang $link_args $obj_orig -o $output_orig"
-    llvm-objdump -S "$output_orig" >> "$output_orig.S"
+    $OBJDUMP -S "$output_orig" >> "$output_orig.S"
 }
 
 

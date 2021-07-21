@@ -7,6 +7,9 @@ namespace llvm {
 
   extern cl::opt<bool> IdempForceLRSpill;
   extern cl::opt<bool> IdempCodeGen;
+  extern cl::opt<bool> IdempPop;
+
+  extern cl::opt<bool> IdempNoCheckpointCall;
 
 } // namespace llvm
 

@@ -19,6 +19,7 @@
 #include "ARMSubtarget.h"
 #include "MCTargetDesc/ARMAddressingModes.h"
 #include "MCTargetDesc/ARMBaseInfo.h"
+#include "MCTargetDesc/ARMMCTargetDesc.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallSet.h"
@@ -62,6 +63,8 @@
 #include <new>
 #include <utility>
 #include <vector>
+
+#include "llvm/CodeGen/IdempotenceOptions.h"
 
 using namespace llvm;
 
@@ -1560,6 +1563,7 @@ void ARMBaseInstrInfo::expandMEMCPY(MachineBasicBlock::iterator MI) const {
   BB->erase(MI);
 }
 
+
 bool ARMBaseInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
   if (MI.getOpcode() == TargetOpcode::LOAD_STACK_GUARD) {
     assert(getSubtarget().getTargetTriple().isOSBinFormatMachO() &&
@@ -1572,6 +1576,102 @@ bool ARMBaseInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
   if (MI.getOpcode() == ARM::MEMCPY) {
     expandMEMCPY(MI);
     return true;
+  }
+
+  if (MI.getOpcode() == ARM::t2LDMIA_RET_IDEMP || MI.getOpcode() == ARM::t2LDMIA_UPD_IDEMP) {
+      assert(Subtarget.isThumb2() == true && "Only implemented for thumb2");
+      const ARMBaseInstrInfo *TII = Subtarget.getInstrInfo();
+
+      bool HasRet = (MI.getOpcode() == ARM::t2LDMIA_RET_IDEMP);
+      bool PopLR = false;
+
+      if (HasRet)
+        errs() << "Expanding LDMIA_RET_IDEMP in: "
+               << MI.getParent()->getParent()->getName() << "\n";
+      else
+        errs() << "Expanding LDMIA_IDEMP in: "
+               << MI.getParent()->getParent()->getName() << "\n";
+
+      DebugLoc DL = MI.getDebugLoc();
+      MachineBasicBlock *MBB = MI.getParent();
+
+      int size = 0;
+
+      auto &DestOp = MI.getOperand(1);
+      auto &PredOp = MI.getOperand(2);
+      auto &NoReg = MI.getOperand(3);
+      unsigned RegStart = 4;
+      unsigned RegEnd = MI.getNumOperands();
+
+      MachineInstrBuilder MIB = BuildMI(*MBB, MI, DL, get(ARM::t2LDMIA))
+                                    .add(DestOp)
+                                    .add(PredOp)
+                                    .add(NoReg);
+
+      for (auto i = RegStart; i<RegEnd; i++) {
+        auto &RegOp = MI.getOperand(i);
+        if (RegOp.isReg() && !RegOp.isImplicit())
+          size += 4;
+
+        if (RegOp.isReg() && RegOp.getReg() == ARM::LR) {
+          PopLR = true;
+        }
+
+        MIB.add(RegOp);
+        errs() << "RegOp: " << RegOp << "\n";
+      }
+
+      // If we pop LR, it will be live so we force save it
+      insertCheckpoint(*MBB, MI, PopLR);
+
+      // Add the SP increase
+      MachineBasicBlock::iterator MII(MI);
+      emitT2RegPlusImmediate(*MBB, MII, DL, ARM::SP, ARM::SP, size, ARMCC::AL,
+                             0, *TII, MachineInstr::FrameSetup);
+
+      if (HasRet)
+        BuildMI(*MBB, MI, DL, get(ARM::tBX_RET)).add(predOps(ARMCC::AL));
+  }
+
+  if (MI.getOpcode() == ARM::t2LDR_POST_IDEMP) {
+    errs() << "Expanding t2LDR_POST_IDEMP in: "
+           << MI.getParent()->getParent()->getName() << "\n";
+
+    DebugLoc DL = MI.getDebugLoc();
+    MachineBasicBlock *MBB = MI.getParent();
+
+    const ARMBaseInstrInfo *TII = Subtarget.getInstrInfo();
+    const TargetRegisterInfo *TRI = MBB->getParent()->getSubtarget().getRegisterInfo();
+
+    auto &RtOp = MI.getOperand(0);
+    auto &WbOp = MI.getOperand(1);
+    auto &Rn = MI.getOperand(2);
+    auto &ImmedOffset = MI.getOperand(3);
+    auto &PredOp = MI.getOperand(4);
+    //auto &NoReg = MI.getOperand(5);
+
+    // Insert the LDR_POST with 0 immediate value
+    // FIXME: I could not get the "normal" LDR to work
+    BuildMI(*MBB, MI, DL, TII->get(ARM::t2LDR_POST))
+        .add(RtOp)
+        .add(WbOp)
+        .add(Rn)
+        .addImm(0)
+        .add(PredOp);
+
+    // If one of the operands is LR, we need to force save it
+    // The liveness analysis will not detect it
+    bool ForceSaveLR = (RtOp.getReg() == ARM::LR);
+
+    // Insert a checkpoint
+    TII->insertCheckpoint(*MBB, MI, ForceSaveLR);
+
+    auto size = ImmedOffset.getImm();
+
+    // Update the SP
+    MachineBasicBlock::iterator MII(MI);
+    emitT2RegPlusImmediate(*MBB, MII, DL, ARM::SP, ARM::SP, size, ARMCC::AL, 0,
+                           *TII, MachineInstr::FrameSetup);
   }
 
   // This hook gets to expand COPY instructions before they become
@@ -5364,10 +5464,32 @@ void ARMBaseInstrInfo::insertIdempBoundary(MachineBasicBlock &MBB,
 
 /// Insert a checkpoint
 void ARMBaseInstrInfo::insertCheckpoint(MachineBasicBlock &MBB,
-                              MachineBasicBlock::iterator MI) const {
-  errs() << "TODO: Implement!\n";
-  llvm_unreachable("Target didn't implement "
-                   "TargetInstrInfo::insertCheckpoint!");
+                                        MachineBasicBlock::iterator MI,
+                                        bool ForceSaveLR) const {
+
+  const TargetRegisterInfo *TRI = MBB.getParent()->getSubtarget().getRegisterInfo();
+  auto LRLiveness = MBB.computeRegisterLiveness(TRI, ARM::LR, MI);
+
+  bool LRMayBeLive = ((LRLiveness != MachineBasicBlock::LivenessQueryResult::LQR_Dead));
+
+  if (ForceSaveLR || LRMayBeLive) {
+    // Push lr to SP-16
+    BuildMI(MBB, MI, DebugLoc(), get(ARM::t2STRi8))
+          .addReg(ARM::LR)
+          .addReg(ARM::SP)
+          .addImm(-16)
+          .add(predOps(ARMCC::AL));
+  }
+
+  //
+  // Insert the checkpoint call
+  //
+  if (!IdempNoCheckpointCall) {
+    // Insert the checkpoint call
+    BuildMI(MBB, MI, DebugLoc(), get(ARM::tBL))
+        .add(predOps(ARMCC::AL))
+        .addExternalSymbol("__checkpoint");
+  }
 }
 
 /// replaceWithIdemPop - Replace a POP with an idempotent POP

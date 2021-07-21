@@ -36,6 +36,8 @@
 * llvm/lib/Target/ARM/ARMInstrInfo.td
   * Define the IDEMP instruction
 * llvm/lib/Target/ARM/ARMFrameLowering.cpp
-  * Add an option to force LR to be pushed on the stack, this is needed because
-    we might introduce calls (to checkpoint). TODO: can we do this ONLY when we
-    know that we will insert a checkpoint call?
+  * Adds idempotent pops (break ldmia instructions)
+  * Adds checkpoints before stack decreases (return)
+* llvm/lib/Target/ARM/ARMInstrThumb2.td
+  * Adds idempotent alternative pseudo instructions implemented in
+    ARMBaseInstrInfo and also used in FrameLowering

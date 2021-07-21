@@ -3667,6 +3667,30 @@ let Defs =
                                   Requires<[IsThumb2, NoVFP]>;
 }
 
+//===----------------------------------------------------------------------===//
+// Idempotent-Alternative Pseudo Instructions
+
+let isReturn = 1, isTerminator = 1, isBarrier = 1, mayLoad = 1,
+    hasExtraDefRegAllocReq = 1, isCodeGenOnly = 1, isPseudo = 1 in
+def t2LDMIA_RET_IDEMP: t2PseudoInst<(outs GPR:$wb), (ins GPR:$Rn, pred:$p,
+                                                   reglist:$regs, variable_ops),
+                              4, IIC_iLoad_mBr, []>,
+                         RegConstraint<"$Rn = $wb">;
+
+// FIXME needs isTerminator to make the SP happen before it
+let isBarrier = 1, mayLoad = 1, isTerminator = 1,
+    hasExtraDefRegAllocReq = 1, isCodeGenOnly = 1, isPseudo = 1 in
+def t2LDMIA_UPD_IDEMP: t2PseudoInst<(outs GPR:$wb), (ins GPR:$Rn, pred:$p,
+                                                reglist:$regs, variable_ops),
+                              4, IIC_iLoad_mu, []>,
+                         RegConstraint<"$Rn = $wb">;
+
+let isBarrier = 1, mayLoad = 1,
+    hasExtraDefRegAllocReq = 1, isCodeGenOnly = 1, isPseudo = 1 in
+def t2LDR_POST_IDEMP: t2PseudoInst<(outs GPR:$Rt, GPR:$Rn_wb),
+                              (ins addr_offset_none:$Rn, t2am_imm8_offset:$offset),
+                              4, IIC_iLoad_iu, []>;
+
 
 //===----------------------------------------------------------------------===//
 // Control-Flow Instructions

@@ -462,7 +462,8 @@ public:
 
   /// Insert a checkpoint
   virtual void insertCheckpoint(MachineBasicBlock &MBB,
-                                MachineBasicBlock::iterator MI) const override;
+                                MachineBasicBlock::iterator MI,
+                                bool ForceSaveLR = false) const override;
 
   /// replaceWithIdemPop - Replace a POP with an idempotent POP
   virtual void replaceWithIdempPop(MachineFunction &MF) const override;
