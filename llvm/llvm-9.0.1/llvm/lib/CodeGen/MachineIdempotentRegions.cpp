@@ -123,7 +123,6 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
       MachineBasicBlock::iterator MI = MBB.begin();
       while (MI != MBB.end()) {
         if (TII->isIdempBoundary(*MI)) {
-          errs() << "Found an idempotent boundary at: " << *MI << "\n";
           auto InstrToDelete = MI;
           ++MI;
           InstrToDelete->eraseFromParent();
@@ -131,6 +130,12 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
           ++MI;
         }
       }
+    }
+  }
+
+  void removeInstructions(CutsTy &Instr) {
+    for (auto &MI : Instr) {
+      MI->eraseFromParent();
     }
   }
 
@@ -152,6 +157,10 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
           errs() << "  To same stack slot!\n";
           Stop = true;
         }
+      } else if (TII->isIdempBoundary(*MI)) {
+        // An IDEMP boundary already breaks the path.
+        errs() << "Found IDEMP boundary, stopping path\n";
+        StopPath = true;
       }
       return std::pair<bool, bool>(Stop, StopPath);
     };
@@ -174,10 +183,89 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
     }
   }
 
+  void findRedundantCuts(MachineFunction &MF, CutsTy &Cuts) {
+    auto IterMachineInstr = [&](MachineInstr *MI) -> std::pair<bool, bool> {
+      bool Stop = false;
+      bool StopPath = false;
+
+      // If the instruction is a idemp boundary, this path is already covered
+      if (TII->isIdempBoundary(*MI)) {
+        StopPath = true;
+      }
+      // If the instruction is a load (reads memory), we NEED this checkpoint
+      else if (MI->mayLoad()) {
+        // Force stop, makes reverseIterateOverMachineFunctions return true
+        Stop = true;
+      }
+
+      return std::pair<bool, bool>(Stop, StopPath);
+    };
+
+    MachineInstr *FirstInstr = nullptr;
+    for (auto &MBB : MF) {
+      for (auto &MI : MBB) {
+        if (!FirstInstr)
+          FirstInstr = &MI;
+
+        if (TII->isIdempBoundary(MI)) {
+          // If ANY path from this idemp to the previous idemp (or start)
+          // does not have another read in it, we can safely remove it
+          // If we need the idemp, the function return true
+          if(!reverseIterateOverMachineInstructions(FirstInstr, &MI,
+                                                IterMachineInstr, false)) {
+            // We can remove the cut
+            Cuts.insert(&MI);
+          }
+        }
+      }
+    }
+  }
+
+  void addIdempToReturn(MachineFunction &MF) {
+    for (auto &MBB : MF) {
+      if (MBB.succ_empty()) {
+        for (auto &MI : MBB) {
+          if(MI.isReturn()) {
+            errs() << "Adding checkpoint before return: " << MI;
+            insertIdempBoundary(MI);
+          }
+        }
+      }
+    }
+  }
+
+  void addIdempToCall(MachineFunction &MF) {
+    for (auto &MBB : MF) {
+      for (auto &MI : MBB) {
+        if (MI.isCall()) {
+          errs() << "Adding checkpoint before call: " << MI;
+          insertIdempBoundary(MI);
+        }
+      }
+    }
+  }
+
+  void lowerIdempToCheckpoint(MachineFunction &MF) {
+    for (auto &MBB : MF) {
+      for (auto &MI : MBB) {
+        if (TII->isIdempBoundary(MI)) {
+          TII->insertCheckpoint(MBB, MI);
+        }
+      }
+    }
+  }
+
   void insertIdempBoundariesAtCuts(CutsTy &Cuts) {
     for (auto &MI : Cuts) {
-      errs() << "inserting idempotent boundary begore: " << *MI;
+      errs() << "inserting idempotent boundary before: " << *MI;
       insertIdempBoundary(*MI);
+    }
+  }
+
+  void printMachineFunction(MachineFunction &MF) {
+    errs() << "Machine Function: " << MF.getName() << "\n";
+    for (const auto &BB : MF) {
+      errs() << "  " << BB;
     }
   }
 
@@ -190,23 +278,52 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
     if (IdempCodeGen == false)
       return false;
 
-    errs() << "># "
-           << "FUNCTION:: "
-           << ": " << MF.getName() << "\n";
-    for (const auto &BB : MF) {
-      // errs() << "       " << BB << "\n";
-      for (const auto &I : BB) {
-        errs() << "       " << I;
-      }
+    if (MF.getName().contains("__checkpoint")) {
+      errs() << "Skipping: " << MF.getName() << "\n";
+      return false;
     }
 
-    errs() << "\n\n";
+    errs() << "****************************************************************"
+              "**\n";
+    errs() << "* Running MachineIdempotentRegions pass on: " << MF.getName()
+           << "\n";
+    errs() << "****************************************************************"
+              "**\n";
 
-    CutsTy Cuts;
-    findStackSpillWars(MF, Cuts);
-    insertIdempBoundariesAtCuts(Cuts);
+    /*
+     * Find spill WARs
+     */
+    CutsTy SpillCuts;
+    findStackSpillWars(MF, SpillCuts);
+    insertIdempBoundariesAtCuts(SpillCuts);
 
+    addIdempToCall(MF);
+
+    //errs() << "\n\n";
+    //printMachineFunction(MF);
+
+    /*
+     * Find and remove redundant cuts
+     */
+    CutsTy RedundantCuts;
+    findRedundantCuts(MF, RedundantCuts);
+
+    // Print the redundant Cuts
+    for (auto &C : RedundantCuts) {
+      errs() << "Removing cut before: " << *C->getNextNode();
+    }
+
+    // Remove the redundant Cuts
+    removeInstructions(RedundantCuts);
+
+    // Lower the checkpoint instruction
+    lowerIdempToCheckpoint(MF);
+
+    // Remove the IDEMP instructions
     removeIdempIntrinsics(MF);
+
+    //errs() << "\n\nRemoved IDEMP:\n";
+    //printMachineFunction(MF);
 
     return false;
   }
