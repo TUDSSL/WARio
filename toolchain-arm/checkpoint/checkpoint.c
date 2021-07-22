@@ -152,9 +152,9 @@ void __checkpoint_setup(void) {
     // We perform the initial checkpoint, and set the first_boot value to
     // zero to indicate that the next time a restore happens there is a
     // checkpoint to restore.
-    LIBCP_ASM("mov r2, lr");                // save lr in r2
+    LIBCP_ASM("str lr, [sp, #-16]");        // save lr in sp-16
     LIBCP_ASM("bl __checkpoint");           // call checkpoint
-    LIBCP_ASM("mov lr, r2");                // restore lr from r2
+
     LIBCP_ASM("mov r1, #0");                // set r1 to 0
     LIBCP_ASM("str r1, [r0]");              // store r1 (0) into first_boot
 
@@ -180,9 +180,8 @@ void __checkpoint_startup_checkpoint(void) {
     // We perform the initial checkpoint, and set the first_boot value to
     // zero to indicate that the next time a restore happens there is a
     // checkpoint to restore.
-    LIBCP_ASM("mov r0, lr");                // save lr in r2
+    LIBCP_ASM("str lr, [sp, #-16]");        // save lr in sp-16
     LIBCP_ASM("bl __checkpoint");           // call checkpoint
-    LIBCP_ASM("mov lr, r0");                // restore lr from r2
 
     LIBCP_ASM("ldr r0, =__first_boot");     // load the first_boot address
     LIBCP_ASM("ldr r1, [r0]");              // load the first_boot value
@@ -192,3 +191,22 @@ void __checkpoint_startup_checkpoint(void) {
 
     LIBCP_ASM("bx lr"); // return
 }
+
+
+#ifndef CHECKPOINT_MARKERS_DISABLE
+/*
+ * These functions are used as markers and are skipped during emulation, if they
+ * are actually called they will mess up the LR which can lead to strange bugs
+ * we therefore add a breakpoint to the body just in case (so it can be
+ * found)
+ */
+
+#define CHECKPOINT_MARKER(name) \
+    NAKED void __checkpoint_marker_##name(void) {LIBCP_ASM("bkpt");}
+
+CHECKPOINT_MARKER(frontend)
+CHECKPOINT_MARKER(call)
+CHECKPOINT_MARKER(pop)
+CHECKPOINT_MARKER(spill)
+
+#endif /* CHECKPOINT_MARKERS_DISABLE */
