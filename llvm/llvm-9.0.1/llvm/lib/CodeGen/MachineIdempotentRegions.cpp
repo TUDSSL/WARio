@@ -254,7 +254,7 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
     for (auto &MBB : MF) {
       for (auto &MI : MBB) {
         if (TII->isIdempBoundary(MI)) {
-          auto CPR = TII->CHECKPOINTR_FRONTEND; // Default reason
+          auto CPR = TII->CHECKPOINTR_IR; // Default reason
 
           auto ICR = InstrCheckpointReasonMap.find(&MI);
           if (ICR != InstrCheckpointReasonMap.end()) {

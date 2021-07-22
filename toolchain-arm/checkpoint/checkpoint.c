@@ -204,7 +204,7 @@ void __checkpoint_startup_checkpoint(void) {
 #define CHECKPOINT_MARKER(name) \
     NAKED void __checkpoint_marker_##name(void) {LIBCP_ASM("bkpt");}
 
-CHECKPOINT_MARKER(frontend)
+CHECKPOINT_MARKER(ir)
 CHECKPOINT_MARKER(call)
 CHECKPOINT_MARKER(pop)
 CHECKPOINT_MARKER(spill)

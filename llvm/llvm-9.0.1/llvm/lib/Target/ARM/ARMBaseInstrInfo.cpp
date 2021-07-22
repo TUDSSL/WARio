@@ -5474,8 +5474,8 @@ void ARMBaseInstrInfo::insertCheckpoint(MachineBasicBlock &MBB,
   const char *FN;
   if (IdempCheckpointReasonMarkers) {
     switch (CPR) {
-      case CheckpointReason::CHECKPOINTR_FRONTEND:
-        FN = "__checkpoint_marker_frontend";
+      case CheckpointReason::CHECKPOINTR_IR:
+        FN = "__checkpoint_marker_ir";
         break;
       case CheckpointReason::CHECKPOINTR_CALL:
         FN = "__checkpoint_marker_call";
