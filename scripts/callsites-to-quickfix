@@ -1,0 +1,34 @@
+#!/bin/bash
+# Take Callsite count csv report and create a quickfix compatible
+# list for use in VIM
+#
+# callsitecount report format:
+#  description_line_for_columns
+#  address_in_hex, count
+#  address_in_hex, count
+#  ...
+#  address_in_hex, count
+#
+# Quickfix format:
+#  filename:line: some text (info)
+
+buffer_file="$1"
+callsite_report=$2
+
+echo "Buffer file: $buffer_file"
+echo "Report file: $callsite_report"
+
+sort -k2 -t',' -r -n "$callsite_report" | while read line ; do
+   content=(${line//,/ })
+
+   addr=${content[0]}
+   count=${content[1]}
+   addr="${addr:2}" # remove 0x
+
+   match=$(grep -n "\s*$addr:" "$buffer_file")
+   content=(${match//:/ })
+
+   line_nr=${content[0]}
+
+   echo "$buffer_file:$line_nr:$count Calls | $match"
+done
