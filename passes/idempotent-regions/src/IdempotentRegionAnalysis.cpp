@@ -38,6 +38,7 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M, LoopInfoMapTy &LIM) {
      * Skip excluded functions
      */
     if (ExcludeF.find(F->getName()) != ExcludeF.end()) continue;
+    if (F->getName().contains("__checkpoint")) continue;
 
     dbg() << "********************************************************************************\n";
     dbg() << "* Analyzing Function: " << F->getName() << "\n";
@@ -79,6 +80,28 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M, LoopInfoMapTy &LIM) {
      * Add a checkpoint before each forced cut (calls etc.)
      */
     for (auto &C : WA.getForcedCuts()) {
+      // Skip CallSite
+      if (CallSite(C)) {
+        if (InsertCheckpointBeforeCall) {
+          CheckpointLocations->insert(C);
+          bool FuncNeedsCP = false;
+          CallInst *Call = cast<CallInst>(C);
+
+          for (auto &A : Call->args()) {
+            if (A->getType()->isPointerTy()) {
+              FuncNeedsCP = true;
+            }
+          }
+
+          if (FuncNeedsCP) CheckpointLocations->insert(C);
+        }
+
+        //if (InsertCheckpointAfterCall) {
+        //  CheckpointLocations->insert(C->getNextNode());
+        //}
+        continue;
+      }
+
       dbg() << "Adding checkpoint before forced cut: " << *C << "\n";
       CheckpointLocations->insert(C);
     }

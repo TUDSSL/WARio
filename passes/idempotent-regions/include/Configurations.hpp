@@ -72,6 +72,10 @@ extern cl::opt<bool> UseRatchetImplementation;
 
 extern cl::opt<bool> InsertCheckpointIntrinsic;
 
+extern cl::opt<bool> InsertCheckpointBeforeCall;
+
+extern cl::opt<bool> InsertCheckpointAfterCall;
+
 #ifdef DEBUG_PRINT
 #define dbg() errs()
 #else
