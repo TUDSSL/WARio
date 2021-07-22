@@ -1699,6 +1699,18 @@ public:
     return false;
   }
 
+  //
+  // The checkpoint reason is not used to make decisions, only to insert
+  // debug information
+  //
+  enum CheckpointReason {
+    CHECKPOINTR_UNKNOWN,
+    CHECKPOINTR_FRONTEND,
+    CHECKPOINTR_CALL,
+    CHECKPOINTR_POP,
+    CHECKPOINTR_SPILL,
+  };
+
   /// Insert an idempotent boundary
   virtual void insertIdempBoundary(MachineBasicBlock &MBB,
                                 MachineBasicBlock::iterator MI) const {
@@ -1709,6 +1721,7 @@ public:
   /// Insert a checkpoint
   virtual void insertCheckpoint(MachineBasicBlock &MBB,
                                 MachineBasicBlock::iterator MI,
+                                enum CheckpointReason CPR,
                                 bool ForceSaveLR = false) const {
     llvm_unreachable("Target didn't implement "
                      "TargetInstrInfo::insertCheckpoint!");

@@ -463,6 +463,7 @@ public:
   /// Insert a checkpoint
   virtual void insertCheckpoint(MachineBasicBlock &MBB,
                                 MachineBasicBlock::iterator MI,
+                                enum CheckpointReason CPR,
                                 bool ForceSaveLR = false) const override;
 
   /// replaceWithIdemPop - Replace a POP with an idempotent POP

@@ -2,6 +2,7 @@
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/Passes.h"
+#include "llvm/CodeGen/PseudoSourceValue.h"
 #include "llvm/CodeGen/SlotIndexes.h"
 #include "llvm/IR/IRPrintingPasses.h"
 #include "llvm/Support/Debug.h"
@@ -97,6 +98,13 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
    * Cut Locations
    */
   typedef std::set<MachineInstr *> CutsTy;
+
+  /*
+   * Track the checkpoint reason
+   * Used for statistics in the emulator
+   */
+  typedef llvm::TargetInstrInfo::CheckpointReason CheckpointReasonTy;
+  std::map<MachineInstr *, CheckpointReasonTy> InstrCheckpointReasonMap;
 
   /*
    * Easy access for information used by the Pass
@@ -221,27 +229,24 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
     }
   }
 
-  void addIdempToReturn(MachineFunction &MF) {
+  void findCallCuts(MachineFunction &MF, CutsTy &Cuts) {
     for (auto &MBB : MF) {
-      if (MBB.succ_empty()) {
-        for (auto &MI : MBB) {
-          if(MI.isReturn()) {
-            errs() << "Adding checkpoint before return: " << MI;
-            insertIdempBoundary(MI);
-          }
+      for (auto &MI : MBB) {
+        if (MI.isCall()) {
+          errs() << "Adding call cut before " << MI;
+          Cuts.insert(&MI);
         }
       }
     }
   }
 
-  void addIdempToCall(MachineFunction &MF) {
-    for (auto &MBB : MF) {
-      for (auto &MI : MBB) {
-        if (MI.isCall()) {
-          errs() << "Adding checkpoint before call: " << MI;
-          insertIdempBoundary(MI);
-        }
-      }
+  void insertIdempBoundariesAtCuts(CutsTy &Cuts, CheckpointReasonTy CPR) {
+    for (auto &MI : Cuts) {
+      errs() << "inserting idempotent boundary before: " << *MI;
+      insertIdempBoundary(*MI);
+
+      auto *I = MI->getPrevNode(); // The idempotent boundary
+      InstrCheckpointReasonMap[I] = CPR;
     }
   }
 
@@ -249,16 +254,17 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
     for (auto &MBB : MF) {
       for (auto &MI : MBB) {
         if (TII->isIdempBoundary(MI)) {
-          TII->insertCheckpoint(MBB, MI);
+          auto CPR = TII->CHECKPOINTR_FRONTEND; // Default reason
+
+          auto ICR = InstrCheckpointReasonMap.find(&MI);
+          if (ICR != InstrCheckpointReasonMap.end()) {
+            CPR = ICR->second;
+          }
+
+          // Insert the checkpoint
+          TII->insertCheckpoint(MBB, MI, CPR);
         }
       }
-    }
-  }
-
-  void insertIdempBoundariesAtCuts(CutsTy &Cuts) {
-    for (auto &MI : Cuts) {
-      errs() << "inserting idempotent boundary before: " << *MI;
-      insertIdempBoundary(*MI);
     }
   }
 
@@ -295,9 +301,11 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
      */
     CutsTy SpillCuts;
     findStackSpillWars(MF, SpillCuts);
-    insertIdempBoundariesAtCuts(SpillCuts);
+    insertIdempBoundariesAtCuts(SpillCuts, CheckpointReasonTy::CHECKPOINTR_SPILL);
 
-    addIdempToCall(MF);
+    CutsTy CallCuts;
+    findCallCuts(MF, CallCuts);
+    insertIdempBoundariesAtCuts(CallCuts, CheckpointReasonTy::CHECKPOINTR_CALL);
 
     //errs() << "\n\n";
     //printMachineFunction(MF);

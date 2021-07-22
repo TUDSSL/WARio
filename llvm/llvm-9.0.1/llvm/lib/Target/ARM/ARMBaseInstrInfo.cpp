@@ -1618,11 +1618,10 @@ bool ARMBaseInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
         }
 
         MIB.add(RegOp);
-        errs() << "RegOp: " << RegOp << "\n";
       }
 
       // If we pop LR, it will be live so we force save it
-      insertCheckpoint(*MBB, MI, PopLR);
+      insertCheckpoint(*MBB, MI, CHECKPOINTR_POP, PopLR);
 
       // Add the SP increase
       MachineBasicBlock::iterator MII(MI);
@@ -1641,7 +1640,6 @@ bool ARMBaseInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
     MachineBasicBlock *MBB = MI.getParent();
 
     const ARMBaseInstrInfo *TII = Subtarget.getInstrInfo();
-    const TargetRegisterInfo *TRI = MBB->getParent()->getSubtarget().getRegisterInfo();
 
     auto &RtOp = MI.getOperand(0);
     auto &WbOp = MI.getOperand(1);
@@ -1664,7 +1662,7 @@ bool ARMBaseInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
     bool ForceSaveLR = (RtOp.getReg() == ARM::LR);
 
     // Insert a checkpoint
-    TII->insertCheckpoint(*MBB, MI, ForceSaveLR);
+    TII->insertCheckpoint(*MBB, MI, CHECKPOINTR_POP, ForceSaveLR);
 
     auto size = ImmedOffset.getImm();
 
@@ -5465,11 +5463,44 @@ void ARMBaseInstrInfo::insertIdempBoundary(MachineBasicBlock &MBB,
 /// Insert a checkpoint
 void ARMBaseInstrInfo::insertCheckpoint(MachineBasicBlock &MBB,
                                         MachineBasicBlock::iterator MI,
+                                        enum CheckpointReason CPR,
                                         bool ForceSaveLR) const {
 
+  assert((CPR != CheckpointReason::CHECKPOINTR_UNKNOWN) &&
+         "Unknown checkpoint reason!");
+  //
+  // Optionally insert a checkpoint reason marker
+  //
+  const char *FN;
+  if (IdempCheckpointReasonMarkers) {
+    switch (CPR) {
+      case CheckpointReason::CHECKPOINTR_FRONTEND:
+        FN = "__checkpoint_marker_frontend";
+        break;
+      case CheckpointReason::CHECKPOINTR_CALL:
+        FN = "__checkpoint_marker_call";
+        break;
+      case CheckpointReason::CHECKPOINTR_POP:
+        FN = "__checkpoint_marker_pop";
+        break;
+      case CheckpointReason::CHECKPOINTR_SPILL:
+        FN = "__checkpoint_marker_spill";
+        break;
+
+      default:
+        assert(false && "Unhandled checkpoint reason marker");
+        break;
+    }
+    BuildMI(MBB, MI, DebugLoc(), get(ARM::tBL))
+        .add(predOps(ARMCC::AL))
+        .addExternalSymbol(FN);
+  }
+
+  //
+  // Prepare for the checkpoint
+  //
   const TargetRegisterInfo *TRI = MBB.getParent()->getSubtarget().getRegisterInfo();
   auto LRLiveness = MBB.computeRegisterLiveness(TRI, ARM::LR, MI);
-
   bool LRMayBeLive = ((LRLiveness != MachineBasicBlock::LivenessQueryResult::LQR_Dead));
 
   if (ForceSaveLR || LRMayBeLive) {
@@ -5489,8 +5520,10 @@ void ARMBaseInstrInfo::insertCheckpoint(MachineBasicBlock &MBB,
     BuildMI(MBB, MI, DebugLoc(), get(ARM::tBL))
         .add(predOps(ARMCC::AL))
         .addExternalSymbol("__checkpoint");
+
   }
 }
+
 
 /// replaceWithIdemPop - Replace a POP with an idempotent POP
 void ARMBaseInstrInfo::replaceWithIdempPop(MachineFunction &MF) const {

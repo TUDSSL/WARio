@@ -10,6 +10,7 @@ namespace llvm {
   extern cl::opt<bool> IdempPop;
 
   extern cl::opt<bool> IdempNoCheckpointCall;
+  extern cl::opt<bool> IdempCheckpointReasonMarkers;
 
 } // namespace llvm
 

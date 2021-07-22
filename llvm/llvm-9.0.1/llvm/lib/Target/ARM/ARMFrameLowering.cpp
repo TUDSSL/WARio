@@ -34,6 +34,7 @@
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/PseudoSourceValue.h"
 #include "llvm/CodeGen/RegisterScavenging.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetOpcodes.h"
@@ -188,7 +189,7 @@ static void emitSPUpdate(bool isARM, MachineBasicBlock &MBB,
   if (IdempPop && (NumBytes > 0)) {
     errs() << "idemp: inserting SP update checkpoint in: "
            << MBB.getParent()->getName() << "\n";
-    TII.insertCheckpoint(MBB, MBBI);
+    TII.insertCheckpoint(MBB, MBBI, TII.CHECKPOINTR_POP, true);
   }
 
   emitRegPlusImmediate(isARM, MBB, MBBI, dl, TII, ARM::SP, ARM::SP, NumBytes,
@@ -849,7 +850,7 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
           if (IdempPop) {
             errs() << "idemp: inserting FP->SP update checkpoint in: "
                    << MBB.getParent()->getName() << "\n";
-            TII.insertCheckpoint(MBB, MBBI);
+            TII.insertCheckpoint(MBB, MBBI, TII.CHECKPOINTR_POP);
           }
           emitT2RegPlusImmediate(MBB, MBBI, dl, ARM::R4, FramePtr, -NumBytes,
                                  ARMCC::AL, 0, TII);
@@ -868,7 +869,7 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
           if (IdempPop) {
             errs() << "idemp: inserting FP->SP update (w/o bytes) checkpoint in: "
                    << MBB.getParent()->getName() << "\n";
-            TII.insertCheckpoint(MBB, MBBI);
+            TII.insertCheckpoint(MBB, MBBI, TII.CHECKPOINTR_POP);
           }
           BuildMI(MBB, MBBI, dl, TII.get(ARM::tMOVr), ARM::SP)
               .addReg(FramePtr)
