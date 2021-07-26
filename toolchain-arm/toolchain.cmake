@@ -4,7 +4,7 @@ set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
 
 # libgcc is required to compile with clang/llvm for now
-set(LIBGCC_BASE_DIR  $ENV{CMAKE_LIBGCC_BASE_DIR})
+set(LIBGCC_BASE_DIR  $ENV{CMAKE_LIBGCC_ARM_BASE_DIR})
 
 #set(CONFIG_DIR "${PROJECT_SOURCE_DIR}/config-m4")
 set(CONFIG_DIR "$ENV{ICLANG_ROOT}/toolchain-arm")
