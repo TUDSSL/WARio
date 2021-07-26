@@ -9,3 +9,8 @@ export LLVM_ROOT="$ROOT_DIR/llvm/llvm-9.0.1/install/"
 
 export ICLANG_ROOT="$ROOT_DIR"
 export CHECKPOINTLIB="$ROOT_DIR/toolchain-arm/checkpoint"
+
+# For now libgcc is used when compiling the ARM elf files
+libgcc_loc=$(arm-none-eabi-gcc -print-libgcc-file-name)
+libgcc_loc=$(dirname "$libgcc_loc")
+export CMAKE_LIBGCC_ARM_BASE_DIR="$libgcc_loc"
