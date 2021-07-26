@@ -5,7 +5,7 @@
 icemu \
     -p mock_putc_plugin.so \
     -p mock_clockfunc_plugin.so \
-    -p cycle_count_plugin.so \
+    -p cycle_count_plugin.so -a cycle-count-file=% \
     -p final_value_plugin.so -a final-value=__checkpoint_count \
     -p checkpoint_marker_plugin.so -a checkpoint-marker-file=% \
     -p callsite_count_plugin.so -a callsite-count-track=__checkpoint -a callsite-count-file=% \
