@@ -81,7 +81,18 @@ function apply_passes() {
     local bitcode_input="$1"
     local basename="$obj_dir/$obj_filename"
 
-    local ir="$bitcode_input"
+    # pass LLVMIR > elf
+    local compile_args_dir="$(dirname $(readlink -f "$obj_file"))"
+    local compile_args="$(<${compile_args_dir}/compile_args.txt)"
+    local obj_pass="$obj_dir/$obj_filename-pass.obj"
+
+    # Remove unneeded args
+    compile_args="${compile_args//-MD/}"
+    compile_args="${compile_args//-MMD/}"
+    compile_args="${compile_args//-MP/}"
+    compile_args=$(echo "${compile_args}" | sed -E 's/-MT\s+\S+//g')
+    compile_args=$(echo "${compile_args}" | sed -E 's/-MF\s+\S+//g')
+    compile_args=$(echo "${compile_args}" | sed -E 's/-I\S+//g')
 
     ## Commented out for debugging
     ## # Unroll step
@@ -96,39 +107,36 @@ function apply_passes() {
     ## run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -$passname -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
     ## local llvm_pass="$basename-$passname.ll"
 
-    # WAR step
-    apply_pass $WAR_PASS_LIB "idemp" "$basename" "$ir"
-    local ir="$apply_pass_output"
+    # If we want to run the passes
+    if [[ -z "${ICLANG_NO_PASSES}" ]]; then
+        local ir="$bitcode_input"
 
-    # pass LLVMIR > elf
-    local compile_args_dir="$(dirname $(readlink -f "$obj_file"))"
-    local compile_args="$(<${compile_args_dir}/compile_args.txt)"
-    local obj_pass="$obj_dir/$obj_filename-pass.obj"
+        # WAR step
+        apply_pass $WAR_PASS_LIB "idemp" "$basename" "$ir"
+        local ir="$apply_pass_output"
 
-    # Remove unneeded args
-    compile_args="${compile_args//-MD/}"
-    compile_args="${compile_args//-MMD/}"
-    compile_args="${compile_args//-MP/}"
-    compile_args=$(echo "${compile_args}" | sed -E 's/-MT\s+\S+//g')
-    compile_args=$(echo "${compile_args}" | sed -E 's/-MF\s+\S+//g')
-    compile_args=$(echo "${compile_args}" | sed -E 's/-I\S+//g')
+        # Compile the instrumented IR file
+        run "clang $compile_args -mllvm -no-stack-slot-sharing $ICLANG_CODEGEN_FLAGS -c $ir -o $obj_pass"
 
-    # Compile the instrumented IR file
-    run "clang $compile_args -mllvm -no-stack-slot-sharing $ICLANG_CODEGEN_FLAGS -c $ir -o $obj_pass"
+        # Compile the checkpoint library
+        run "clang $compile_args -c $CHECKPOINT_ARCH_SRC -o libcp.obj"
 
-    # Compile the checkpoint library
-    run "clang $compile_args -c $CHECKPOINT_ARCH_SRC -o libcp.obj"
+        # Link the intrumented object
+        run "clang $link_args $obj_pass libcp.obj -o $output_file"
 
-    # Link the intrumented object
-    run "clang $link_args $obj_pass libcp.obj -o $output_file"
+        ## Debug output
+        # Output the dissasembly
+        $OBJDUMP -S "$output_file" >> "$output_file.S"
 
-    ## Debug output
-    # Output the dissasembly
-    $OBJDUMP -S "$output_file" >> "$output_file.S"
+        # Compile the uninstrumented IR file with the same arguments
+        local obj_orig="$obj_dir/$obj_filename-orig.obj"
+        local output_orig="$obj_dir/$obj_filename.uninstr.$obj_extension"
 
-    # Compile the uninstrumented IR file with the same arguments
-    local obj_orig="$obj_dir/$obj_filename-orig.obj"
-    local output_orig="$obj_dir/$obj_filename.uninstr.$obj_extension"
+    else
+        # Compile the uninstrumented IR file with the same arguments
+        local obj_orig="$obj_dir/$obj_filename.obj"
+        local output_orig="$obj_dir/$obj_filename.$obj_extension"
+    fi
 
     run "clang $compile_args -c $bitcode_input -o $obj_orig"
     run "clang $link_args $obj_orig -o $output_orig"
