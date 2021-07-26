@@ -1,0 +1,84 @@
+#!/bin/bash
+
+# Run specified benchmark, or if the argument is "all, find all the benchmark
+# build directory
+
+set -e
+
+target="$1"
+if [ -z "$1" ]; then
+    target="all"
+fi
+
+function find_elf() {
+    ELF_FILE=""
+
+    local build_dir="$1"
+    for i in $(find ./$build_dir -type f \( -iname "*.elf" ! -iname "*.uninstr.elf" ! -iname "*.gclang.elf" \)); do
+    #for i in $(find ./build-opt-all -type f \( -iname "*.elf" ! -iname "*.uninstr.elf"  \)); do
+        if [[ ! -z $ELF_FILE ]]; then
+            echo "Multiple .elf files found in $build_dir. Update the find command"
+            exit -1
+        fi
+        ELF_FILE="$i"
+    done
+
+    if [[ -z "$ELF_FILE" ]]; then
+        echo "No elf file found in $build_dir"
+        exit -1
+    fi
+}
+
+function print_help() {
+    echo "Usage: benchmark-run [target]"
+    echo ""
+    echo "benchmark-run will try to find all the targets in the directory"
+    echo "assuming they start with 'build-' the build- does not have to be"
+    echo "included in the target"
+    echo ""
+    echo "special targets:"
+    echo "  all (default)  - finds all targets starting with 'build-'"
+    echo "  all-parallel   - same as the 'all' target but run in parallel"
+    exit 0
+}
+
+# Print the help
+[[ "$target" == "help" ]] && print_help
+[[ "$target" == "--help" ]] && print_help
+[[ "$target" == "-h" ]] && print_help
+
+parralel="false"
+
+# Run all the benchmarks we can find
+if [[ "$target" == "all" ]]; then
+    echo "Running all the benchmarks"
+    target="build-*"
+fi
+
+# Run all the benchmarks we can find
+if [[ "$target" == "all-parallel" ]]; then
+    echo "Running all the benchmarks in parallel (output hidden)"
+    parralel="true"
+    target="build-*"
+fi
+
+function run_elf() {
+    find_elf "$1"
+    echo "Running benchmark: $ELF_FILE"
+    run-elf "$ELF_FILE"
+    echo ""
+}
+
+# Run the benchmarks
+for i in $(find . -type d \( -iname "$target" -or -iname "build-$target" \)); do
+    if [[ $parralel == "true" ]]; then
+        run_elf $i >/dev/null 2>&1 &
+    else
+        run_elf $i
+    fi
+done
+
+# Wait for the emulations to end
+wait
+echo "Done"
+

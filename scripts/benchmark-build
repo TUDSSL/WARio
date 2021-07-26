@@ -1,0 +1,132 @@
+#!/bin/bash
+
+# Build all the configured benchmarks for the provided project
+# Expects the first argument to be the path to a project th
+
+set -e
+
+target="$1"
+if [ -z "$1" ]; then
+    target="all"
+fi
+
+CMAKE_TOOLCHAIN_FILE="$ICLANG_ROOT/toolchain-arm/toolchain.cmake"
+function build_benchmark() {
+    local benchmark_name="$1"
+    local build_dir="build-$benchmark_name"
+    echo "Building benchmark $benchmark_name in $build_dir"
+
+    mkdir -p "$build_dir"
+    pushd "$build_dir"
+
+    cmake -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN_FILE" ../
+    make
+
+    popd
+}
+
+function uninstrumented() {
+    # Configure the benchmark
+    export ICLANG_PASS_FLAGS=""
+    export ICLANG_CODEGEN_FLAGS=""
+
+    # Build the benchmark
+    ICLANG_NO_PASSES="YES" build_benchmark "uninstrumented"
+}
+
+function opt_ratchet() {
+    # Configure the benchmark
+    export ICLANG_PASS_FLAGS="-cp-ratchet"
+    export ICLANG_CODEGEN_FLAGS="\
+-mllvm --idemp-force-lr-spill \
+-mllvm --idemp-code-gen \
+-mllvm --idemp-pop \
+-mllvm --idemp-checkpoint-reason-markers"
+
+    # Build the benchmark
+    build_benchmark "opt-ratchet"
+}
+
+function opt_baseline() {
+    # Configure the benchmark
+    export ICLANG_PASS_FLAGS=""
+    export ICLANG_CODEGEN_FLAGS="\
+-mllvm --idemp-force-lr-spill \
+-mllvm --idemp-code-gen \
+-mllvm --idemp-pop \
+-mllvm --idemp-checkpoint-reason-markers"
+
+    # Build the benchmark
+    build_benchmark "opt-baseline"
+}
+
+function opt_all() {
+    # Configure the benchmark
+    export ICLANG_PASS_FLAGS=""
+    export ICLANG_CODEGEN_FLAGS="\
+-mllvm --idemp-force-lr-spill \
+-mllvm --idemp-code-gen \
+-mllvm --idemp-pop \
+-mllvm --idemp-checkpoint-reason-markers"
+
+    # Build the benchmark
+    build_benchmark "opt-all"
+}
+
+
+function all() {
+    uninstrumented
+    opt_ratchet
+    opt_baseline
+    opt_all
+}
+
+function all_parallel() {
+    uninstrumented >/dev/null 2>&1 &
+    opt_ratchet >/dev/null 2>&1 &
+    opt_baseline >/dev/null 2>&1 &
+    opt_all >/dev/null 2>&1 &
+    wait
+}
+
+function clean() {
+    echo "Removing build directories"
+    # Don't use a wildcard, it might remove builds not generated here
+    rm -rf "./build-uninstrumented"
+    rm -rf "./build-opt-ratchet"
+    rm -rf "./build-opt-baseline"
+    rm -rf "./build-opt-all"
+}
+
+function print_help() {
+    echo "Usage: benchmark-build [target]"
+    echo ""
+    echo "targets:"
+    echo "  all (default)"
+    echo "  uninstrumented"
+    echo "  opt_ratchet"
+    echo "  opt-baseline"
+    echo "  opt-all"
+    echo "  all-parallel (build all the benchmarks in parallel)"
+}
+
+declare -A ConfigMap
+ConfigMap["help"]=print_help
+ConfigMap["-h"]=print_help
+ConfigMap["--help"]=print_help
+
+ConfigMap["all"]=all
+ConfigMap["all-parallel"]=all_parallel
+ConfigMap["uninstrumented"]=uninstrumented
+ConfigMap["opt-ratchet"]=opt_ratchet
+ConfigMap["opt-baseline"]=opt_baseline
+ConfigMap["opt-all"]=opt_all
+
+if ! [[ ${ConfigMap[$target]+isset} ]]; then
+    echo "Unknown target: $target"
+    print_help
+    exit -1
+fi
+
+# Build the target
+${ConfigMap["$target"]}

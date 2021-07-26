@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Collect the benchmark results in a single place
+# Compare them
+# Generate some output
+
+set -e
+
+benchmark_dir="benchmark-compare"
+results_file="results.csv"
+
+target="$1"
+if [ -z "$1" ]; then
+    target="all"
+fi
+
+mkdir -p $benchmark_dir
+echo -n "" > $benchmark_dir/$results_file
+echo "Configuration,Cycles,Checkpoints,IR-checkpoints,Call-checkpoints,Pop-checkpoints,Spill-checkpoints" >> $benchmark_dir/$results_file
+
+# Analyze all the benchmarks we can find
+if [[ "$target" == "all" ]]; then
+    echo "Comparing all the benchmarks"
+    target="build-*"
+fi
+
+for i in $(find . -type d \( -iname "$target" -or -iname "build-$target" \)); do
+    # Strip the benchmark name from the build-
+    benchmark_name=${i//"build-"/}
+    benchmark_name=${benchmark_name//"./"/}
+
+    echo "Target benchmark: $benchmark_name"
+
+    f="$benchmark_dir/$results_file"
+
+    # Collect the information and write the .csv
+    echo -n "$benchmark_name" >> "$f"
+
+    # Get the cycle count
+    cycle_count=""
+    echo -n "," >> "$f"
+    cycle_count_file=$(find "$i" -type f -name "*.cyclecount")
+    if [[ ! -z "$cycle_count_file" ]]; then
+        cycle_count="$(cat $cycle_count_file)"
+    fi
+    echo -n "$cycle_count" >> "$f"
+
+    # Get the checkpoint count
+    checkpoint_count=""
+    echo -n "," >> "$f"
+    checkpoint_count_file=$(find "$i" -type f -name "*.callsitecount.csv")
+    if [[ ! -z "$checkpoint_count_file" ]]; then
+        checkpoint_count=$(awk -F ',' 'BEGIN{sum=0} {sum +=$2} END {print sum}' "$checkpoint_count_file")
+    fi
+    echo -n "$checkpoint_count" >> "$f"
+
+    # Get the markers
+    # order: IR, CALL, POP, SPILL
+    IR="0"
+    CALL="0"
+    POP="0"
+    SPILL="0"
+
+    marker_file=$(find "$i" -type f -name "*.checkpointmarker.csv")
+    if [[ ! -z "$marker_file" ]]; then
+        for marker_line in $(cat $marker_file); do
+            marker_line=${marker_line//"__checkpoint_marker_"/}
+            marker=$(echo "$marker_line" | awk -F ',' '{print $1'})
+            count=$(echo "$marker_line" | awk -F ',' '{print $2'})
+
+            [[ "$marker" == "ir" ]] && IR="$count"
+            [[ "$marker" == "call" ]] && CALL="$count"
+            [[ "$marker" == "pop" ]] && POP="$count"
+            [[ "$marker" == "spill" ]] && SPILL="$count"
+        done
+    fi
+
+    echo -n ",$IR" >> "$f"
+    echo -n ",$CALL" >> "$f"
+    echo -n ",$POP" >> "$f"
+    echo -n ",$SPILL" >> "$f"
+
+    # New line
+    echo "" >> "$f"
+done
+
