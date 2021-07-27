@@ -48,16 +48,17 @@ add_link_options(
     -mfloat-abi=soft
     --target=thumbv7em-unknown-none-eabi
     -nodefaultlibs
-    -Wl,--Bstatic
-    -Wl,-lc_nano
-    -Wl,-lnosys
-    -L/usr/arm-none-eabi/lib/thumb/v7e-m/nofp
-
-    #-L/usr/lib/gcc/arm-none-eabi/10.0.2/thumb/v7e-m/nofp/
-    -L${LIBGCC_BASE_DIR}/thumb/v7e-m/nofp/
-    -Wl,-lgcc
 
     # Add the config dir
     -L${CONFIG_DIR}
+    # Add gcc lib
+    -L${CONFIG_DIR}/lib/gcc
+    # Add standard lib
+    -L${CONFIG_DIR}/lib/libc
+
+    -Wl,--Bstatic
+    -Wl,-lc_nano
+    -Wl,-lnosys
+    -Wl,-lgcc
     )
 
