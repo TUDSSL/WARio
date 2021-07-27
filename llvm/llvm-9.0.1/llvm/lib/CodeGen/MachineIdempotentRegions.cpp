@@ -276,6 +276,12 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
   }
 
   bool runOnMachineFunction(MachineFunction &MF) override {
+    /*
+     * Only run the pass when the target is thumb
+     */
+    auto Target = MF.getSubtarget().getTargetTriple();
+    if (!Target.isThumb()) return false;
+
     // Init variables used troughout the pass
     TII = MF.getSubtarget().getInstrInfo();
 

@@ -19,7 +19,7 @@ if [ ! -d "$BUILD_DIR" ]; then
         -Wno-dev \
         -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
-        -DLLVM_TARGETS_TO_BUILD="ARM" \
+        -DLLVM_TARGETS_TO_BUILD="ARM;X86" \
         -DLLVM_BUILD_TESTS=OFF \
         -DLLVM_INCLUDE_BENCHMARKS=OFF \
         -DLLVM_BUILD_BENCHMARKS=OFF \
