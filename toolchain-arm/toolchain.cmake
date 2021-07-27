@@ -32,7 +32,7 @@ add_compile_options(
     -march=armv7e-m
     -mfloat-abi=soft
     --target=thumbv7em-unknown-none-gnu
-    -I/usr/arm-none-eabi/include
+    -I${CONFIG_DIR}/lib/include
     )
 
 
