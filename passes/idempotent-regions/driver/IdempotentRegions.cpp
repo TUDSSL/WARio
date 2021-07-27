@@ -1,4 +1,4 @@
-#include "Utils.hpp"
+#include "PassUtils.hpp"
 #include "llvm/IR/Function.h"
 
 #include "RatchetDriver.hpp"
@@ -16,7 +16,7 @@ struct CAT : public ModulePass {
     /*
      * Debugging
      */
-    Utils::ExitOnInit();
+    //Utils::ExitOnInit();
 
     return false;
   }
@@ -57,7 +57,7 @@ struct CAT : public ModulePass {
     /*
      * Debugging
      */
-    Utils::ExitOnInit();
+    //Utils::ExitOnInit();
 
     /*
      * Fetch NOELLE
@@ -134,7 +134,7 @@ struct CAT : public ModulePass {
     /*
      * Run verifier on each function instrumented
      */
-    Utils::Verify(M);
+    //Utils::Verify(M);
 
     dbg() << "********************************************************************************\n";
     dbg() << "* Done\n";

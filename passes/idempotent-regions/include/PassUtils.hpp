@@ -6,40 +6,38 @@
 #include "llvm/IR/Type.h"
 #include <functional>
 
-using namespace llvm;
-
 namespace Utils {
 /*
  * Init
  */
 void ExitOnInit(void);
 
-Function *GetMethod(Module *M, const std::string Name);
+llvm::Function *GetMethod(llvm::Module *M, const std::string Name);
 
 /*
  * Injection helpers
  */
-llvm::IRBuilder<> GetBuilder(Function *F, Instruction *InsertionPoint);
+llvm::IRBuilder<> GetBuilder(llvm::Function *F, llvm::Instruction *InsertionPoint);
 
-llvm::IRBuilder<> GetBuilder(Function *F, BasicBlock *InsertionPoint);
+llvm::IRBuilder<> GetBuilder(llvm::Function *F, llvm::BasicBlock *InsertionPoint);
 
-bool IsInstrumentable(Function &F);
+bool IsInstrumentable(llvm::Function &F);
 
 /*
  * Verification helpers
  */
-bool Verify(Module &M);
+bool Verify(llvm::Module &M);
 
 /*
  * Metadata handlers
  */
-void SetInstrumentationMetadata(Instruction *I, const std::string MDTypeString,
+void SetInstrumentationMetadata(llvm::Instruction *I, const std::string MDTypeString,
                                 const std::string MDLiteral);
 
 /*
  * Global Variable helper
  */
-GlobalVariable *GetOrInsertGlobalInteger(llvm::Module *M,
+llvm::GlobalVariable *GetOrInsertGlobalInteger(llvm::Module *M,
                                                llvm::IntegerType *Type,
                                                const std::string Name,
                                                uint64_t Initial = 0,
@@ -55,7 +53,7 @@ GlobalVariable *GetOrInsertGlobalInteger(llvm::Module *M,
  * It returns false otherwise.
  */
 bool ReverseIterateOverInstructions(
-    Instruction *From, Instruction *To,
+    llvm::Instruction *From, llvm::Instruction *To,
     std::function<std::pair<bool, bool>(Instruction *I)>
         FucntionToInvokePerInstruction,
     bool DebugPrint = false);

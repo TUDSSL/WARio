@@ -1,7 +1,7 @@
 # Sources
 set(PassSrc
     IdempotentRegions.cpp
-    ${CMAKE_SOURCE_DIR}/src/Utils.cpp
+    ${CMAKE_SOURCE_DIR}/src/PassUtils.cpp
     ${CMAKE_SOURCE_DIR}/src/Configurations.cpp
     ${CMAKE_SOURCE_DIR}/src/WarAnalysis.cpp
     ${CMAKE_SOURCE_DIR}/src/PlacementCost.cpp
@@ -33,6 +33,7 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(
+    PUBLIC
     ${LLVM_INCLUDE_DIRS}
     $ENV{NOELLE}/include
     $ENV{NOELLE}/include/svf

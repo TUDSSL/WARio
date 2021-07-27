@@ -1,5 +1,5 @@
 #include "Configurations.hpp"
-#include "Utils.hpp"
+#include "PassUtils.hpp"
 #include "WarAnalysis.hpp"
 
 using namespace IdempotentRegion;

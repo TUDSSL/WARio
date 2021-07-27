@@ -1,5 +1,5 @@
 #include "IdempotentRegion.hpp"
-#include "Utils.hpp"
+#include "PassUtils.hpp"
 #include "WarAnalysis.hpp"
 #include "ProtectingWriteAnalysis.hpp"
 
