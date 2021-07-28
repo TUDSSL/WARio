@@ -24,7 +24,7 @@ if [ ! -d "$BUILD_DIR" ]; then
         -DLLVM_INCLUDE_BENCHMARKS=OFF \
         -DLLVM_BUILD_BENCHMARKS=OFF \
         -DLLVM_BUILD_DOCS=OFF \
-        -DLLVM_PARALLEL_LINK_JOBS=3 \
+        -DLLVM_PARALLEL_LINK_JOBS=4 \
     	-DCMAKE_INSTALL_PREFIX=$INSTALL_DIR \
         ../llvm
     popd
@@ -33,6 +33,6 @@ fi
 # build step
 echo "Building LLVM"
 pushd "$BUILD_DIR"
-ninja -j10
-ninja -j10 install
+ninja -j$(nproc)
+ninja -j$(nproc) install
 popd
