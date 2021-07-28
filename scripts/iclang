@@ -92,6 +92,8 @@ function apply_passes() {
     compile_args="${compile_args//-MP/}"
     compile_args=$(echo "${compile_args}" | sed -E 's/-MT\s+\S+//g')
     compile_args=$(echo "${compile_args}" | sed -E 's/-MF\s+\S+//g')
+    compile_args=$(echo "${compile_args}" | sed -E 's/-MF\s+\S+//g')
+    compile_args_with_includes="$compile_args"
     compile_args=$(echo "${compile_args}" | sed -E 's/-I\S+//g')
 
     ## Commented out for debugging
@@ -119,7 +121,7 @@ function apply_passes() {
         run "clang $compile_args -mllvm -no-stack-slot-sharing $ICLANG_CODEGEN_FLAGS -c $ir -o $obj_pass"
 
         # Compile the checkpoint library
-        run "clang $compile_args -c $CHECKPOINT_ARCH_SRC -o libcp.obj"
+        run "clang $compile_args_with_includes -c $CHECKPOINT_ARCH_SRC -o libcp.obj"
 
         # Link the intrumented object
         run "clang $link_args $obj_pass libcp.obj -o $output_file"
