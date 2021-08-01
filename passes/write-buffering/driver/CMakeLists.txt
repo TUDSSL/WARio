@@ -1,6 +1,6 @@
 # Sources
 set(PassSrc
-    ICS.cpp
+    WriteBuffering.cpp
     ${CMAKE_SOURCE_DIR}/src/Utils.cpp
     ${CMAKE_SOURCE_DIR}/src/Analyzer.cpp
     ${CMAKE_SOURCE_DIR}/src/Transformer.cpp
