@@ -8,6 +8,8 @@
 # ICLANG_PASS
 # ICLANG_PASS_FLAGS
 
+set -e
+
 PROG="iclang"
 
 # Other settings
@@ -21,14 +23,7 @@ NOELLE_LOAD="noelle-load"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-#if [[ -z "${ICLANG_PASS}" ]]; then
-#    PASS_LIB="$DIR/../passes/loop-scheduler/build/ICS.so"
-#    PASS_FLAGS="-ics"
-#else
-#    PASS_LIB="${ICLANG_PASS}"
-#    PASS_FLAGS="${ICLANG_PASS_FLAGS}"
-#fi
-
+# Set checkpoint library locations
 WAR_PASS_LIB="$DIR/../passes/idempotent-regions/build/idemp-regions.so"
 
 CHECKPOINT_ARCH_SRC="$DIR/../toolchain-arm/checkpoint/checkpoint.c"
@@ -76,8 +71,20 @@ function apply_pass() {
     apply_pass_output="$basename-$passname.ll"
 }
 
-
 function apply_passes() {
+    local basename="$1"
+    local ir="$2"
+
+    # WAR step
+    apply_pass $WAR_PASS_LIB "idemp" "$basename" "$ir"
+    local ir="$apply_pass_output"
+
+    # Return
+    apply_passes_output="$ir"
+}
+
+
+function compile_intermittent() {
     local bitcode_input="$1"
     local basename="$obj_dir/$obj_filename"
 
@@ -96,26 +103,12 @@ function apply_passes() {
     compile_args_with_includes="$compile_args"
     compile_args=$(echo "${compile_args}" | sed -E 's/-I\S+//g')
 
-    ## Commented out for debugging
-    ## # Unroll step
-    ## local passname="ics-loop-unroll"
-    ## run "$NOELLE_NORM -S $llvm_pass -o $basename-norm.ll"
-    ## run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -$passname -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
-    ## local llvm_pass="$basename-$passname.ll"
-
-    ## # Schedule step
-    ## local passname="ics-loop-schedule"
-    ## run "$NOELLE_NORM -S $llvm_pass -o $basename-norm.ll"
-    ## run "$NOELLE_LOAD -load $PASS_LIB $PASS_FLAGS -$passname -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
-    ## local llvm_pass="$basename-$passname.ll"
-
     # If we want to run the passes
     if [[ -z "${ICLANG_NO_PASSES}" ]]; then
         local ir="$bitcode_input"
 
-        # WAR step
-        apply_pass $WAR_PASS_LIB "idemp" "$basename" "$ir"
-        local ir="$apply_pass_output"
+        # Apply all the passes
+        apply_passes "$basename" "$ir"
 
         # Compile the instrumented IR file
         run "clang $compile_args -mllvm -no-stack-slot-sharing $ICLANG_CODEGEN_FLAGS -c $ir -o $obj_pass"
@@ -220,7 +213,7 @@ if [ -n "$output_file" ]; then
 
         # Apply the pass
         # Directly writes the elf file
-        apply_passes "${obj_dir}/${bc_file}"
+        compile_intermittent "${obj_dir}/${bc_file}"
     fi
 else
     # Just pass
