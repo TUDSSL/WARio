@@ -1,6 +1,6 @@
 # Project
-cmake_minimum_required(VERSION 3.4.3)
-project(ICS)
+cmake_minimum_required(VERSION 3.12)
+project(LoopWriteClustererPass)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -30,6 +30,3 @@ include(AddLLVM)
 
 # Pass
 add_subdirectory(driver)
-
-# Install
-#install(PROGRAMS bin/cat-c DESTINATION bin)

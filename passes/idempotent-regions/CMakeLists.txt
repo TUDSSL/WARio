@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.12)
-project(ICS)
+project(IdempotentRegionsPass)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -31,6 +31,3 @@ include(AddLLVM)
 
 # Pass
 add_subdirectory(driver)
-
-# Install
-#install(PROGRAMS bin/cat-c DESTINATION bin)

@@ -1,6 +1,6 @@
 #include "Configurations.hpp"
 #include "LoopWriteScheduler.hpp"
-#include "Utils.hpp"
+#include "PassUtils.hpp"
 
 using namespace llvm;
 using namespace LoopWriteScheduler;

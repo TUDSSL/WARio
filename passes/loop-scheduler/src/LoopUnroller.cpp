@@ -1,7 +1,7 @@
 #include "Configurations.hpp"
 #include "LoopUnroller.hpp"
 #include "LoopWriteScheduler.hpp"
-#include "Utils.hpp"
+#include "PassUtils.hpp"
 
 bool unrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
     bool modified = false;
