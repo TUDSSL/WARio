@@ -50,8 +50,10 @@ void IdempotentRegionAnalysis::run(Noelle &N, Module &M, LoopInfoMapTy &LIM) {
     WarAnalysis WA(N, *F);
     auto Paths = WA.run();
 
+#if 0
     ProtectingWriteAnalysis PWA(N, *F, WA);
     auto ConditionalPaths = PWA.run();
+#endif
 
     /*
      * Build the base placement cost per instruction

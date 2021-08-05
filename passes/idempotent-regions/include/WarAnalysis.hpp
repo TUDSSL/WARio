@@ -27,7 +27,7 @@ class WarAnalysis {
   bool forcesCut(Instruction &I);
   bool hasUncutPath(IdempotentRegion::CutsTy &Cuts, Instruction *From, Instruction *To);
 
-	void collectInstructionDependencies();
+  void collectInstructionDependencies();
   void collectForcedCuts();
   void collectUncutWars();
   void collectDominatingPaths();
