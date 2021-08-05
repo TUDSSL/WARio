@@ -1,7 +1,9 @@
+# Common path
+set(COMMON_DIR "${PROJECT_SOURCE_DIR}/../common")
+
 # Sources
 set(PassSrc
     IdempotentRegions.cpp
-    ${CMAKE_SOURCE_DIR}/src/PassUtils.cpp
     ${CMAKE_SOURCE_DIR}/src/Configurations.cpp
     ${CMAKE_SOURCE_DIR}/src/WarAnalysis.cpp
     ${CMAKE_SOURCE_DIR}/src/PlacementCost.cpp
@@ -12,6 +14,7 @@ set(PassSrc
     ${CMAKE_SOURCE_DIR}/src/CheckpointCountInserter.cpp
     ${CMAKE_SOURCE_DIR}/src/CheckpointIntrinsicInserter.cpp
     ${CMAKE_SOURCE_DIR}/src/ratchet/Ratchet.cpp
+    ${COMMON_DIR}/src/PassUtils.cpp
 )
 
 # Compilation flags
@@ -39,6 +42,7 @@ include_directories(
     $ENV{NOELLE}/include/svf
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/src/ratchet
+    ${COMMON_DIR}/include
 )
 
 # Declare the LLVM pass to compile
