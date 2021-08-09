@@ -1,20 +1,51 @@
 #!/bin/bash
 
+# First argument sets the pass, rest is provided to noelle-load
+
 set -e
+
+NOELLE_LOAD="noelle-load"
+
+pass="$1"
+shift
+echo "$@"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT="$DIR/.."
 
-#if [ "$#" -lt 3 ]; then
-#    echo "usage: pass-apply pass-flags in.ll out.ll"
-#    exit -1
-#fi
+function usage() {
+  echo "pass-apply pass [options] -o out.ll"
+  echo "  pass        - The pass to run (idemp, loop-unroll, loop-buffer)"
+  echo "  options     - noelle-load options"
 
-NOELLE_NORM="noelle-norm"
-NOELLE_LOAD="noelle-load"
+}
 
-PASS_LIB="$ROOT/passes/idempotent-regions/build/idemp-regions.so"
-#PASS_FLAGS="-idemp-regions"
+case "$pass" in
+  "idemp")
+    echo "Running idemp pass"
+    PASS_LIB="$ROOT/passes/idempotent-regions/build/idemp-regions.so"
+    PASS_ARGS="-idemp"
+    ;;
+  "loop-unroll")
+    echo "Running loop-unroll pass"
+    PASS_LIB="$ROOT/passes/loop-scheduler/build/loop-write-clusterer.so"
+    PASS_ARGS="-loop-write-clusterer -lwc-loop-unroll"
+    ;;
+  "loop-buffer")
+    echo "Running Loop-write-buffer pass"
+    PASS_LIB="$ROOT/passes/loop-scheduler/build/loop-write-clusterer.so"
+    PASS_ARGS="-loop-write-clusterer -lwc-loop-schedule"
+    ;;
+  *)
+    echo "Unknown pass: $pass"
+    usage
+    exit -1
+    ;;
+esac
 
-#$NOELLE_LOAD "-load $PASS_LIB $PASS_FLAGS -ics-loop-unroll -S  $llvm_norm -o $llvm_pass"
-$NOELLE_LOAD "-load $PASS_LIB $PASS_FLAGS -S  $@"
+echo "Using plugin: $PASS_LIB"
+echo "Using plugin options: $PASS_ARGS"
+
+
+# Run the pass
+$NOELLE_LOAD "-load $PASS_LIB $PASS_ARGS -S  $@"
