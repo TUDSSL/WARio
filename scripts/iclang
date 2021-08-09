@@ -109,6 +109,7 @@ function compile_intermittent() {
 
         # Apply all the passes
         apply_passes "$basename" "$ir"
+        local ir="$apply_passes_output"
 
         # Compile the instrumented IR file
         run "clang $compile_args -mllvm -no-stack-slot-sharing $ICLANG_CODEGEN_FLAGS -c $ir -o $obj_pass"
