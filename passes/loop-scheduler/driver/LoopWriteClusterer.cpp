@@ -69,7 +69,7 @@ struct CAT : public ModulePass
             /*
              * Schedule writes in loops together
              */
-            modified = LoopWriteScheduler::Schedule(N, M);
+            modified = LoopWriteScheduler::schedule(N, M);
         }
 
 
@@ -98,7 +98,7 @@ struct CAT : public ModulePass
 
 
 char CAT::ID = 0;
-static RegisterPass<CAT> X("ics", "Intermittent computing scheduling");
+static RegisterPass<CAT> X("loop-write-clusterer", "Intermittent computing scheduling");
 
 static CAT *_PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,

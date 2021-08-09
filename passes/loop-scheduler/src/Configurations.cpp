@@ -23,19 +23,19 @@ cl::opt<bool> Debug(
 );
 
 cl::opt<bool> LoopUnrollStep(
-    "ics-loop-unroll",
+    "lwc-loop-unroll",
     cl::init(false),
     cl::desc("Execute the ICS loop unroll step")
 );
 
 cl::opt<unsigned int> LoopUnrollCount(
-    "ics-loop-unroll-count",
+    "lwc-loop-unroll-count",
     cl::init(2),
     cl::desc("The ICS loop unroll count (default = 2)")
 );
 
 cl::opt<bool> LoopScheduleStep(
-    "ics-loop-schedule",
+    "lwc-loop-schedule",
     cl::init(false),
     cl::desc("Execute the ICS loop WAR store schedule step")
 );

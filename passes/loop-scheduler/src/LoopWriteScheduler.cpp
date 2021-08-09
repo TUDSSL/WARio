@@ -5,8 +5,7 @@
 using namespace llvm;
 using namespace LoopWriteScheduler;
 
-
-void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDependencies &instDep) {
+void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDependecyMapTy &WarDepMap, InstructionDependecyMapTy &RawDepMap) {
     auto sccManager = loop->getSCCManager();
     auto SCCDAG = sccManager->getSCCDAG();
     auto LDG = loop->getLoopDG();
@@ -23,8 +22,8 @@ void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDepende
          * Print the instructions that compose the SCC.
          */
         errs() << "     Instructions:\n";
-        auto mySCCIter = [&](Instruction *i) -> bool {
-            errs() << "       " << *i << "\n";
+        auto mySCCIter = [&](Instruction *I) -> bool {
+            errs() << "       " << *I << "\n";
 
             list<Value *> war_deps;
             list<Value *> raw_deps;
@@ -56,11 +55,9 @@ void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDepende
                 return false;
             };
 
-            LDG->iterateOverDependencesTo(i, false, true, false, iterDep);
-            if (war_deps.size() > 0)
-                instDep.addWar(i, war_deps);
-            if (raw_deps.size() > 0)
-                instDep.addRaw(i, raw_deps);
+            LDG->iterateOverDependencesTo(I, false, true, false, iterDep);
+            if (war_deps.size() > 0) WarDepMap[I] = war_deps;
+            if (raw_deps.size() > 0) RawDepMap[I] = raw_deps;
 
             return false;
         };
@@ -77,38 +74,38 @@ void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDepende
  * This will be the order the reschedules stores will appear in.
  */
 void orderWars(Noelle &N, LoopStructure *LS, BasicBlock *latch,
-               InstructionDependecyMap &warDep,
-               list<Instruction *> &warDepOrder) {
+               InstructionDependecyMapTy &WarDepMap,
+               list<Instruction *> &WarDepOrder) {
     /*
      * Get Dominator information for the function
      */
     auto D = N.getDominators(LS->getFunction())->DT;
 
-    warDepOrder.clear();
+    WarDepOrder.clear();
 
     // Get all the war instructions
-    for (const auto &kv : warDep) {
+    for (const auto &kv : WarDepMap) {
         // Only schedule if it dominates the latch (TODO: is this check needed?)
         auto war_inst = kv.first;
 
         if (D.dominates(war_inst->getParent(), latch)) {
-            warDepOrder.push_back(kv.first);
+            WarDepOrder.push_back(kv.first);
         } else {
             errs() << "War Instruction: " << *war_inst << " does not dominate the latch, can not schedule\n";
         }
     }
 
     // Sort the list
-    warDepOrder.sort([&](Instruction *a, Instruction *b) {
+    WarDepOrder.sort([&](Instruction *a, Instruction *b) {
                 return D.dominates(a, b);
             });
 }
 
 void findLoadsDependingOnRescheduledStores(
-    list<Instruction *> &warRescheduleInst, InstructionDependecyMap &rawDep,
+    list<Instruction *> &warRescheduleInst, InstructionDependecyMapTy &RawDepMap,
     map<Instruction *, list<Instruction *>> &affectedLoadStoresMap) {
 
-    for (auto raw : rawDep) {
+    for (auto raw :RawDepMap) {
         auto &load = raw.first;
         auto &writes = raw.second;
         for (auto war : warRescheduleInst) {
@@ -217,7 +214,7 @@ bool LoopWriteScheduler::isCandidate(LoopStructure *LS) {
     return true;
 }
 
-bool LoopWriteScheduler::Schedule(Noelle &N, Module &M) {
+bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
     errs() << "Running LoopWriteScheduler::Schedule on: " << M.getName() << "\n";
 
     bool modified = false;
@@ -249,8 +246,10 @@ bool LoopWriteScheduler::Schedule(Noelle &N, Module &M) {
         /*
          * Collect WAR and RAW violations in the loop body
          */
-        InstructionDependencies instDep;
-        collectInstructionDependencies(loop, instDep);
+        InstructionDependecyMapTy WarDepMap;
+        InstructionDependecyMapTy RawDepMap;
+
+        collectInstructionDependencies(loop, WarDepMap, RawDepMap);
 
         /*
          * WAR stores can only be rescheduled if they dominate the latch.
@@ -261,15 +260,15 @@ bool LoopWriteScheduler::Schedule(Noelle &N, Module &M) {
         /*
          * Order the WAR stores correctly
          */
-        list<Instruction *> warDepOrder;
-        orderWars(N, LS, latch, instDep.warDep, warDepOrder);
+        list<Instruction *> WarDepOrder;
+        orderWars(N, LS, latch, WarDepMap, WarDepOrder);
 
 
         /*
          * If a WAR store is already in the latch we don't have to reschedule it.
          */
         list<Instruction *> warRescheduleInst;
-        for (auto war : warDepOrder) {
+        for (auto war : WarDepOrder) {
             if (war->getParent() != latch) {
                 warRescheduleInst.push_back(war);
             }
@@ -280,7 +279,7 @@ bool LoopWriteScheduler::Schedule(Noelle &N, Module &M) {
          * a WAR store.
          */
         map<Instruction *, list<Instruction *>> affectedLoadStoresMap;
-        findLoadsDependingOnRescheduledStores(warRescheduleInst, instDep.rawDep,
+        findLoadsDependingOnRescheduledStores(warRescheduleInst, RawDepMap,
                                               affectedLoadStoresMap);
 
         /*
@@ -289,11 +288,11 @@ bool LoopWriteScheduler::Schedule(Noelle &N, Module &M) {
          * This needs to be done because if the loop exits early (before the latch)
          * the stores up to that point need to be written.
          */
-        map<Instruction *, pair<BasicBlock *, BasicBlock *>> scheduleExitEdges;
+        map<Instruction *, pair<BasicBlock *, BasicBlock *>> ScheduleExitEdges;
         for (auto exit : LS->getLoopExitEdges()) {
             for (auto war : warRescheduleInst) {
                 if (war->getParent() == exit.first) {
-                    scheduleExitEdges[war] = exit;
+                    ScheduleExitEdges[war] = exit;
                 }
             }
         }
@@ -301,9 +300,9 @@ bool LoopWriteScheduler::Schedule(Noelle &N, Module &M) {
         /*
          * Find the WAR store insertion point in the latch block
          */
-        Instruction *storeInsertPoint;
+        Instruction *StoreInsertPoint;
         for (Instruction &inst : *latch) {
-            storeInsertPoint = &inst;
+            StoreInsertPoint = &inst;
           if (dyn_cast<StoreInst>(&inst)) {
               break;
           }
@@ -326,13 +325,13 @@ bool LoopWriteScheduler::Schedule(Noelle &N, Module &M) {
         }
 
         errs() << "Exit edges to modify\n";
-        for (auto kv : scheduleExitEdges) {
+        for (auto kv : ScheduleExitEdges) {
             errs() << "WAR: " << *kv.first << "\nin edge:" << *kv.second.first
                    << " TO " << *kv.second.second << "\n";
         }
 
         errs() << "Latch block: " << *latch;
-        errs() << "Store insertion point (before) in latch: " << *storeInsertPoint << "\n";
+        errs() << "Store insertion point (before) in latch: " << *StoreInsertPoint << "\n";
 
         /*
          * Transform the IR
@@ -346,7 +345,7 @@ bool LoopWriteScheduler::Schedule(Noelle &N, Module &M) {
          */
         list<Instruction *> previousWrites;
         for (auto war : warRescheduleInst) {
-            auto edge = scheduleExitEdges[war];
+            auto edge = ScheduleExitEdges[war];
             auto block = edge.second;
 
             auto builder = Utils::GetBuilder(F, block);
@@ -373,7 +372,7 @@ bool LoopWriteScheduler::Schedule(Noelle &N, Module &M) {
          */
         for (auto war : warRescheduleInst) {
             auto war_bb = war->getParent();
-            war->moveBefore(storeInsertPoint);
+            war->moveBefore(StoreInsertPoint);
             // Add metadata
             Utils::SetInstrumentationMetadata(war, "ics_scheduler", "ics_moved_write");
         }
