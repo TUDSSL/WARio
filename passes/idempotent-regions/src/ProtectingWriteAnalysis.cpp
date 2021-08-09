@@ -20,7 +20,10 @@ void ProtectingWriteAnalysis::collectPotentialProtectingWrites() {
     vector<Instruction *> AllWrites;
 
     // Collect Writes that Dominate the WAR Read
-    for (auto WriteVal : Writes) {
+    for (auto WriteDep : Writes) {
+      if (WriteDep.IsMust == false) continue; // TODO: Check this
+
+      auto WriteVal = WriteDep.Value;
       auto Write = cast<Instruction>(WriteVal);
       if (!DT.dominates(Write, Read)) {
         continue;
