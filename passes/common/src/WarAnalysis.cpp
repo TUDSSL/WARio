@@ -18,7 +18,6 @@ bool WarAnalysis::forcesCut(Instruction &I) {
           isa<AtomicCmpXchgInst>(&I) || isa<AtomicRMWInst>(&I));
 }
 
-
 /*
  * Create a map with WAR and RAW dependencies for the instructiond in
  * function F.
@@ -28,8 +27,8 @@ void WarAnalysis::collectInstructionDependencies() {
   auto FDG = N.getFunctionDependenceGraph(&F);
   auto DT = N.getDominators(&F)->DT;
 
-  list<Value *> war_deps;
-  list<Value *> raw_deps;
+  list<Dependence> war_deps;
+  list<Dependence> raw_deps;
 
   Instruction *I;
 
@@ -41,20 +40,12 @@ void WarAnalysis::collectInstructionDependencies() {
       case DG_DATA_WAR:
         dbg() << "             needs [WAR]";
         dbg() << "  " << *src << "\n";
-        war_deps.push_back(src);
+        war_deps.push_back(Dependence{src, dependence->isMustDependence()});
         break;
       case DG_DATA_RAW:
-        /*
-         * RAW dependencies are used to protect later WAR dependencies and to
-         * remove the need for a cut. This can only be the case if it MUST
-         * write.
-         */
-          if (dependence->isMustDependence()) {
-          // TODO the Write must also dominate the read!!
-          dbg() << "             needs [RAW]";
-          dbg() << "  " << *src << "\n";
-          raw_deps.push_back(src);
-        }
+        dbg() << "             needs [RAW]";
+        dbg() << "  " << *src << "\n";
+        raw_deps.push_back(Dependence{src, dependence->isMustDependence()});
         break;
       case DG_DATA_WAW:
         dbg() << "             needs [WAW]";
@@ -98,7 +89,7 @@ void WarAnalysis::collectWarDependencies() {
    */
   for (auto &kv : WarDepMap) {
     auto Write = kv.first;
-    auto Reads = kv.second;
+    auto &Reads = kv.second;
 
     dbg() << "Analyzing write: " << *Write << "\n";
 
@@ -214,6 +205,7 @@ void WarAnalysis::collectDominatingPaths() {
   }
 }
 
+// TODO: Make adding metadata optional (if used in another pass)
 PathsTy &WarAnalysis::run() {
   dbg() << "Running WarAnalysis on function: " << F.getName() << "\n";
 
@@ -275,7 +267,7 @@ PathsTy &WarAnalysis::run() {
   dbg() << "\nWrite after Reads:\n";
   for (const auto &war : WarDepMap) {
     dbg() << "  WAR: " << *war.first << "\n";
-    for (auto r : war.second) dbg() << "    needs: " << *r << "\n";
+    for (auto r : war.second) dbg() << "    needs: " << *r.Value << "\n";
   }
 
   /*

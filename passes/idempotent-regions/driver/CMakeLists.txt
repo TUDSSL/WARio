@@ -5,7 +5,6 @@ set(COMMON_DIR "${PROJECT_SOURCE_DIR}/../common")
 set(PassSrc
     IdempotentRegions.cpp
     ${CMAKE_SOURCE_DIR}/src/Configurations.cpp
-    ${CMAKE_SOURCE_DIR}/src/WarAnalysis.cpp
     ${CMAKE_SOURCE_DIR}/src/PlacementCost.cpp
     ${CMAKE_SOURCE_DIR}/src/HittingSet.cpp
     ${CMAKE_SOURCE_DIR}/src/HittingSetBruteForce.cpp
@@ -14,6 +13,7 @@ set(PassSrc
     ${CMAKE_SOURCE_DIR}/src/CheckpointCountInserter.cpp
     ${CMAKE_SOURCE_DIR}/src/CheckpointIntrinsicInserter.cpp
     ${CMAKE_SOURCE_DIR}/src/ratchet/Ratchet.cpp
+    ${COMMON_DIR}/src/WarAnalysis.cpp
     ${COMMON_DIR}/src/PassUtils.cpp
 )
 

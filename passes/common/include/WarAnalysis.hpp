@@ -5,7 +5,19 @@
 
 class WarAnalysis {
  public:
-  typedef map<Instruction *, list<Value *>> InstructionDependencyMapTy;
+  struct Dependence {
+    Value *Value;
+    bool IsMust;
+
+    bool operator==(const Dependence &rhs) const {
+      return Value == rhs.Value;
+    }
+    bool operator==(const class Value *rhs) const {
+      return Value == rhs;
+    }
+  };
+
+  typedef map<Instruction *, list<Dependence>> InstructionDependencyMapTy;
 
  private:
   Noelle &N;
@@ -47,5 +59,6 @@ class WarAnalysis {
 
   const IdempotentRegion::WarPathMapTy &getWarPathMap() { return WarPathMap; }
   const InstructionDependencyMapTy &getRawDepMap() { return RawDepMap; }
+  const InstructionDependencyMapTy &getWarDepMap() { return WarDepMap; }
 };
 
