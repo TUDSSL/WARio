@@ -76,9 +76,10 @@ void LoopWriteScheduler::collectInstructionDependencies(
  * Order the WAR store instructions in the order that they appear in.
  * This will be the order the reschedules stores will appear in.
  */
-void orderWars(Noelle &N, LoopStructure *LS, BasicBlock *latch,
-               InstructionDependecyMapTy &WarDepMap,
-               list<Instruction *> &WarDepOrder) {
+void LoopWriteScheduler::orderWars(Noelle &N, LoopStructure *LS,
+                                   BasicBlock *latch,
+                                   InstructionDependecyMapTy &WarDepMap,
+                                   list<Instruction *> &WarDepOrder) {
   /*
    * Get Dominator information for the function
    */
@@ -104,7 +105,7 @@ void orderWars(Noelle &N, LoopStructure *LS, BasicBlock *latch,
       [&](Instruction *a, Instruction *b) { return D.dominates(a, b); });
 }
 
-void findLoadsDependingOnRescheduledStores(
+void LoopWriteScheduler::findLoadsDependingOnRescheduledStores(
     list<Instruction *> &warRescheduleInst,
     InstructionDependecyMapTy &RawDepMap,
     map<Instruction *, list<Instruction *>> &affectedLoadStoresMap) {
@@ -120,14 +121,14 @@ void findLoadsDependingOnRescheduledStores(
   }
 }
 
-void insertLoadChecks(
+void LoopWriteScheduler::insertLoadChecks(
     map<Instruction *, list<Instruction *>> &affectedLoadStoresMap,
     Function *F) {
   errs() << "\n";
   for (auto rload : affectedLoadStoresMap) {
     auto load = rload.first;
     auto block = load->getParent();
-    errs() << "Resolving load: " << *load << "\n";
+    errs() << " Resolving load: " << *load << "\n";
 
     // Add metadata
     Utils::SetInstrumentationMetadata(load, "ics_scheduler",
@@ -140,7 +141,7 @@ void insertLoadChecks(
 
     auto load_inst = dyn_cast<LoadInst>(load);
     auto load_src = load_inst->getPointerOperand();
-    errs() << "Load src: " << *load_src << "\n";
+    errs() << "  Load src: " << *load_src << "\n";
 
     // Add a check for each store location
     Value *load_propagated = load_inst;
@@ -149,9 +150,9 @@ void insertLoadChecks(
       auto store_inst = dyn_cast<StoreInst>(store);
       auto store_src = store_inst->getValueOperand();
       auto store_dst = store_inst->getPointerOperand();
-      errs() << "Load propagated: " << *load_propagated << "\n";
-      errs() << "Store src: " << *store_src << "\n";
-      errs() << "Store dst: " << *store_dst << "\n";
+      errs() << "  Propagated load: " << *load_propagated << "\n";
+      errs() << "  Store src: " << *store_src << "\n";
+      errs() << "  Store dst: " << *store_dst << "\n";
 
       auto icmp_inst = builder.CreateICmpEQ(load_src, store_dst);
       auto select_inst =

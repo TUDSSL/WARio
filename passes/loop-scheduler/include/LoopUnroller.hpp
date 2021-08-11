@@ -13,7 +13,7 @@ struct LoopCandidateInfo {
 
 typedef std::vector<LoopCandidateInfo> LoopUnrollCandidatesTy;
 
-bool IsCandidate(LoopDependenceInfo *LDI, LoopCandidateInfo &LCI);
+bool IsCandidate(Noelle &N, LoopDependenceInfo *LDI, LoopCandidateInfo &LCI);
 LoopUnrollCandidatesTy CollectUnrollCandidates(Noelle &N, Module &M);
 bool UnrollLoop(LoopStructure &LS, LoopInfo &LI, int count);
 

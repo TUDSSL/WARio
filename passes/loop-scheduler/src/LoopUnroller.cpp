@@ -70,23 +70,40 @@ bool LoopUnroller::UnrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
   return modified;
 }
 
-bool LoopUnroller::IsCandidate(LoopDependenceInfo *LDI,
+bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
                                LoopCandidateInfo &LCI) {
   auto LS = LDI->getLoopStructure();
   auto n_subloops = LS->getNumberOfSubLoops();
 
   assert(LS != nullptr);
 
+  /*
+   * Only transform inner loops
+   */
   if (n_subloops > 0) {
     errs() << "The loop has subloops, not a candidate\n";
     return false;
   }
 
+  /*
+   * A candidate loop may only have one latch
+   */
   auto latches = LS->getLatches();
   if (latches.size() > 1) {
     errs() << "Loop has multiple latches, not a candidate\n";
     return false;
   }
+
+  /*
+   * Decide the unroll factor depending on the number of instructions
+   */
+  if (LS->getNumberOfInstructions() > LoopUnrollInstructionThreshold) {
+    errs() << "Loop has " << LS->getNumberOfInstructions()
+           << " instructions, the threshold is configured as "
+           << LoopUnrollInstructionThreshold << "\n";
+    return false;
+  }
+
 
   /*
    * Check if the loop contains any calls
@@ -109,6 +126,7 @@ bool LoopUnroller::IsCandidate(LoopDependenceInfo *LDI,
     errs() << "Loop does not have enough WAR violations, not a candidate\n";
     return false;
   }
+
 
   /*
    * Populate the candidate info
@@ -144,7 +162,7 @@ LoopUnroller::LoopUnrollCandidatesTy LoopUnroller::CollectUnrollCandidates(
 
     LoopCandidateInfo LCI;
 
-    if (IsCandidate(L, LCI) == false) {
+    if (IsCandidate(N, L, LCI) == false) {
       continue;
     }
 

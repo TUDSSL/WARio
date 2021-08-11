@@ -58,6 +58,8 @@ extern cl::opt<bool> LoopUnrollStep;
 
 extern cl::opt<unsigned int> LoopUnrollCount;
 
+extern cl::opt<unsigned int> LoopUnrollInstructionThreshold;
+
 extern cl::opt<bool> LoopScheduleStep;
 
 #ifdef DEBUG_PRINT

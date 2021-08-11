@@ -25,13 +25,19 @@ cl::opt<bool> Debug(
 cl::opt<bool> LoopUnrollStep(
   "lwc-loop-unroll",
   cl::init(false),
-  cl::desc("Execute the ICS loop unroll step")
+  cl::desc("Execute loop unroll step")
 );
 
 cl::opt<unsigned int> LoopUnrollCount(
   "lwc-loop-unroll-count",
   cl::init(2),
-  cl::desc("The ICS loop unroll count (default = 2)")
+  cl::desc("The loop unroll count (default = 2)")
+);
+
+cl::opt<unsigned int> LoopUnrollInstructionThreshold(
+  "lwc-loop-unroll-threshold",
+  cl::init(150),
+  cl::desc("The loop unroll instruction threshold (pre-unroll)")
 );
 
 cl::opt<bool> LoopScheduleStep(
