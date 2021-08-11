@@ -42,16 +42,6 @@
 
 #include "LoopWriteScheduler.hpp"
 
-/*
- * Debugging
- */
-#define DEBUG_INFO(str) do { if (Debug) { errs() << str; } } while (0)
-#define OBJ_INFO(obj) do { if (Debug) { obj->print(errs()); errs() << "\n"; } } while (0)
-#define VERIFY_DEBUG_INFO(str) do { if (!NoVerify) { errs() << str; } } while (0)
-#define VERIFY_OBJ_INFO(obj) do { if (!NoVerify) { obj->print(errs()); errs() << "\n"; } } while (0)
-#define DEBUG_ERRS if (Debug) errs()
-
-
 using namespace llvm;
 
 
