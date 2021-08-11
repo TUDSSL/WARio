@@ -50,20 +50,26 @@ struct CAT : public ModulePass
 
         if (LoopUnrollStep == true) {
             /*
-             * Collect LoopInfo (it's a function pass)
+             * Collect loop unroll candidates
              */
-            map<Function *, LoopInfo *> LI_map;
-            auto loops = N.getLoops();
-            for (auto loop : *loops) {
-                auto LS = loop->getLoopStructure();
-                auto F = LS->getFunction();
-                LI_map[F] = &getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
-            }
+            auto LoopUnrollCandidates = LoopUnroller::CollectUnrollCandidates(N, M);
 
             /*
-             * Unroll candidate loops
+             * Unroll the candidates
              */
-            modified = LoopUnroller::Unroll(N, M, LI_map, LoopUnrollCount);
+            errs() << "\n"
+                   << "Unrolling " << LoopUnrollCandidates.size()
+                   << " loops\n";
+
+            for (auto C : LoopUnrollCandidates) {
+                auto *LS = C.LoopDependenceInfo->getLoopStructure();
+                auto *F = LS->getFunction();
+                auto &LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
+
+                // Unroll
+                modified = LoopUnroller::UnrollLoop(*LS, LI, LoopUnrollCount) ||
+                           modified;
+            }
 
         } else if (LoopScheduleStep == true) {
             /*

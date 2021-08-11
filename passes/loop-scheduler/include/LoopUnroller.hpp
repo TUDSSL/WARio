@@ -1,11 +1,21 @@
 #pragma once
 
 #include "Configurations.hpp"
+#include <ostream>
 
 using namespace llvm;
 
 namespace LoopUnroller {
+    struct LoopCandidateInfo {
+      int WarCount;
+      LoopDependenceInfo *LoopDependenceInfo;
+    };
 
-    bool Unroll(Noelle &N, Module &M, map<Function *, LoopInfo *> LI_map, int count);
+    typedef std::vector<LoopCandidateInfo> LoopUnrollCandidatesTy;
 
+    bool IsCandidate(LoopDependenceInfo *LDI, LoopCandidateInfo &LCI);
+    LoopUnrollCandidatesTy CollectUnrollCandidates(Noelle &N, Module &M);
+    bool UnrollLoop(LoopStructure &LS, LoopInfo &LI, int count);
+
+    void MarkForLoopWriteScheduling(LoopStructure &LS);
 }

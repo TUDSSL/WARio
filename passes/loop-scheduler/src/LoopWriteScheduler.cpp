@@ -5,7 +5,7 @@
 using namespace llvm;
 using namespace LoopWriteScheduler;
 
-void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDependecyMapTy &WarDepMap, InstructionDependecyMapTy &RawDepMap) {
+void LoopWriteScheduler::collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDependecyMapTy &WarDepMap, InstructionDependecyMapTy &RawDepMap) {
     auto sccManager = loop->getSCCManager();
     auto SCCDAG = sccManager->getSCCDAG();
     auto LDG = loop->getLoopDG();
@@ -21,9 +21,9 @@ void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDepende
         /*
          * Print the instructions that compose the SCC.
          */
-        errs() << "     Instructions:\n";
+        //errs() << "     Instructions:\n";
         auto mySCCIter = [&](Instruction *I) -> bool {
-            errs() << "       " << *I << "\n";
+            //errs() << "       " << *I << "\n";
 
             list<Value *> war_deps;
             list<Value *> raw_deps;
@@ -34,18 +34,18 @@ void collectInstructionDependencies(LoopDependenceInfo *loop, InstructionDepende
                 }
                 switch (dependence->dataDependenceType()) {
                     case DG_DATA_WAR:
-                        errs() << "             needs [WAR]";
-                        errs() << "  " << *src << "\n";
+                        //errs() << "             needs [WAR]";
+                        //errs() << "  " << *src << "\n";
                         war_deps.push_back(src);
                         break;
                     case DG_DATA_RAW:
-                        errs() << "             needs [RAW]";
-                        errs() << "  " << *src << "\n";
+                        //errs() << "             needs [RAW]";
+                        //errs() << "  " << *src << "\n";
                         raw_deps.push_back(src);
                         break;
                     case DG_DATA_WAW:
-                        errs() << "             needs [WAW]";
-                        errs() << "  " << *src << "\n";
+                        //errs() << "             needs [WAW]";
+                        //errs() << "  " << *src << "\n";
                         break;
                     case DG_DATA_NONE:
                         break;
@@ -191,26 +191,18 @@ void insertLoadChecks(
     }
 }
 
+bool LoopWriteScheduler::isUnrolledCandidate(LoopDependenceInfo *LDI) {
+    auto LS = LDI->getLoopStructure();
+    auto I = LS->getEntryInstruction();
 
-bool LoopWriteScheduler::isCandidate(LoopStructure *LS) {
-    auto n_subloops = LS->getNumberOfSubLoops();
+    if (!I->hasMetadata()) return false;
 
-    // For testing, should be removed before using on other LLVMIR
-    if (LS->getFunction()->getName() != "list_reverse") {
-        return false;
-    }
+    auto Meta = I->getMetadata("lws_unrolled_loop");
+    if (Meta == nullptr) return false;
 
-    if (n_subloops != 0) {
-        return false;
-    }
-
-    auto latches = LS->getLatches();
-    if (latches.size() > 1) {
-        errs() << "Loop has multiple latches, not a candidate\n";
-        return false;
-    }
-
-    // Is a candidate
+    /*
+     * Found an unrolled candidate
+     */
     return true;
 }
 
@@ -235,12 +227,13 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
         auto entryInst = LS->getEntryInstruction();
         auto F = LS->getFunction();
         auto functionName = F->getName();
+        auto DT = N.getDominators(LS->getFunction())->DT;
 
-        if (isCandidate(LS) == false) {
-            continue;
+        if (isUnrolledCandidate(loop) == false) {
+          continue;
         }
 
-        errs() << "Function: " << functionName << "\n"
+        errs() << "\nFunction: " << functionName << "\n"
                << "  Loop: " << *entryInst << "\n";
 
         /*
@@ -255,6 +248,8 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
          * WAR stores can only be rescheduled if they dominate the latch.
          * We also place them in the latch.
          */
+        auto Latches = LS->getLatches();
+        assert((Latches.size() == 1) && "Multiple not supported latches!");
         BasicBlock *latch = *LS->getLatches().begin();
 
         /*
@@ -288,11 +283,18 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
          * This needs to be done because if the loop exits early (before the latch)
          * the stores up to that point need to be written.
          */
-        map<Instruction *, pair<BasicBlock *, BasicBlock *>> ScheduleExitEdges;
+        map<BasicBlock *, list<Instruction *>> ScheduleExitEdges;
         for (auto exit : LS->getLoopExitEdges()) {
+            // Ordered iteration
             for (auto war : warRescheduleInst) {
-                if (war->getParent() == exit.first) {
-                    ScheduleExitEdges[war] = exit;
+                auto BB_exit = exit.second;
+                auto BB_war = war->getParent();
+
+                /*
+                 * If the store dominates the exit, we have to add a writeback
+                 */
+                if (DT.dominates(BB_war, BB_exit)) {
+                    ScheduleExitEdges[BB_exit].push_back(war);
                 }
             }
         }
@@ -311,12 +313,12 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
         /*
          * Print some information
          */
-        errs() << "WAR order that should be rescheduled\n";
+        errs() << " WAR order that should be rescheduled\n";
         for (auto war : warRescheduleInst) {
             errs() << *war << "\n";
         }
 
-        errs() << "Loads that are affected by rescheduling the WAR stores\n";
+        errs() << " Loads that are affected by rescheduling the WAR stores\n";
         for (auto kv : affectedLoadStoresMap) {
             errs() << *kv.first << " due to stores:\n";
             for (auto store : kv.second) {
@@ -324,14 +326,18 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
             }
         }
 
-        errs() << "Exit edges to modify\n";
-        for (auto kv : ScheduleExitEdges) {
-            errs() << "WAR: " << *kv.first << "\nin edge:" << *kv.second.first
-                   << " TO " << *kv.second.second << "\n";
+        errs() << " Exit edges to modify\n";
+        for (const auto kv : ScheduleExitEdges) {
+            errs() << "  Exit: " << *kv.first->begin() << "\n"
+                << "   for WARs:";
+            for (const auto &I : kv.second) {
+              errs() << "  " << *I << "\n";
+            }
+            errs() << "\n";
         }
 
-        errs() << "Latch block: " << *latch;
-        errs() << "Store insertion point (before) in latch: " << *StoreInsertPoint << "\n";
+        errs() << " Latch block: " << *latch->begin();
+        errs() << " Store insertion point (before) in latch: " << *StoreInsertPoint << "\n";
 
         /*
          * Transform the IR
@@ -343,10 +349,13 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
          * Each exit should write all postponed (rescheduled) stores up to that
          * point before exiting the loop.
          */
+#if 0
         list<Instruction *> previousWrites;
         for (auto war : warRescheduleInst) {
             auto edge = ScheduleExitEdges[war];
-            auto block = edge.second;
+            auto block = *edge.begin();
+
+            assert((block != nullptr) && "empty block pointer");
 
             auto builder = Utils::GetBuilder(F, block);
 
@@ -366,6 +375,24 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
                 builder.Insert(clone_write);
             }
         }
+#endif
+        for (auto &kv : ScheduleExitEdges) {
+            auto Exit = kv.first;
+            auto WARs = kv.second;
+
+            auto Builder = Utils::GetBuilder(F, Exit);
+            Builder.SetInsertPoint(Exit->getFirstNonPHI());
+
+            for (auto &war : WARs) {
+                // Clone the write
+                auto WriteClone = war->clone();
+                // Add MetaData
+                Utils::SetInstrumentationMetadata(WriteClone, "lwc_scheduler",
+                                                  "lwc_write_early_exit");
+                // Insert the cloned write
+                Builder.Insert(WriteClone);
+            }
+        }
 
         /*
          * Move the WAR stores (ordered) to the insertion point
@@ -374,7 +401,7 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
             auto war_bb = war->getParent();
             war->moveBefore(StoreInsertPoint);
             // Add metadata
-            Utils::SetInstrumentationMetadata(war, "ics_scheduler", "ics_moved_write");
+            Utils::SetInstrumentationMetadata(war, "lwc_scheduler", "lwc_moved_write");
         }
 
 
@@ -389,8 +416,8 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
         /*
          * Print the IR of the new version of the function (for debugging)
          */
-        errs() << "\n\nNew function:\n";
-        errs() << *LS->getFunction();
+        //errs() << "\n\nNew function:\n";
+        //errs() << *LS->getFunction();
     }
 
     return modified;
