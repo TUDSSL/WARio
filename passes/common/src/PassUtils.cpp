@@ -95,7 +95,7 @@ bool Utils::Verify(Module &M) {
   bool Failed = false;
   for (auto &F : M) {
     if (verifyFunction(F, &(errs()))) {
-      DEBUG_ERRS << "Failed verification: " << F.getName() << "\n" << F << "\n";
+      dbgs() << "Failed verification: " << F.getName() << "\n" << F << "\n";
 
       Failed |= true;
     }
