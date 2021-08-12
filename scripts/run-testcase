@@ -22,6 +22,19 @@ expected=( $(grep -E -o '(\$.*$)' $f) )
 
 # Run the test case
 $SCRIPT_DIR/run-test "$f" > "$f.pass.txt" 2>&1
+result=$?
+
+#echo "$?"
+if [[ $result == 1 ]]; then
+    echo "run-test command failed, did you supply a TEST_PASS_APPLY variable?"
+    echo "TEST_PASS_APPLY=${TEST_PASS_APPLY}"
+    exit -1
+fi
+
+if [[ $result -gt 0 ]]; then
+    echo "run-test command failed, did the pass crash?"
+    exit -1
+fi
 
 for exp in ${expected[@]}; do
   if grep -Fxq -m1 "$exp" "$f.pass.txt" ; then
@@ -47,7 +60,7 @@ echo "==============================="
 echo "Tests passed: $passed_tests, failed: $failed_tests"
 
 if [ "$REMOVE_TMP_FILES" = true ] ; then
-  rm -f "$f.pass.ll" "$f.pass.txt" "$f.ll"
+  rm -f "$f.pass.ll" "*$f.ll" "$f.pass.txt" "$f.ll"
 fi
 
 exit $failed_tests

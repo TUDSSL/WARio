@@ -5,5 +5,12 @@ f="$1"
 # Convert the C file to .ll
 c-to-llvm "$f" "$f.ll" > /dev/null 2>&1
 
-# Run the pass on the .ll
-pass-apply -idemp -o "$f.pass.ll" "$f.ll"
+# The TEST_PASS_APPLY should point to a script that applies the correct form
+# of pass-apply
+if [[ -z "${TEST_PASS_APPLY}" ]]; then
+    echo "error: please export the TEST_PASS_APPLY command needed for this test"
+    exit 1
+fi
+
+# input - output
+${TEST_PASS_APPLY} "$f.ll" "$f.pass.ll"

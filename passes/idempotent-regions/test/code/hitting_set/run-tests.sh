@@ -1,5 +1,10 @@
 #!/bin/bash
 
-run-tests-dir branchless &&
-run-tests-dir branched &&
-run-tests-dir loop
+# Export the correct pass-apply
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+export TEST_PASS_APPLY="$DIR/test-pass-apply.sh"
+echo "$TEST_PASS_APPLY"
+
+run-tests-dir "$DIR/branchless" &&
+run-tests-dir "$DIR/branched" &&
+run-tests-dir "$DIR/loop"
