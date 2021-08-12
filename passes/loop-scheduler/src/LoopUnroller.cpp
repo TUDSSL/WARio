@@ -7,7 +7,7 @@ bool LoopUnroller::UnrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
   bool modified = false;
   auto &loopFunction = *LS.getFunction();
 
-  errs() << "Unrolling " << loopFunction.getName() << " " << count << "x\n";
+  dbg() << "Unrolling " << loopFunction.getName() << " " << count << "x\n";
 
   auto header = LS.getHeader();
   auto llvmLoop = LI.getLoopFor(header);
@@ -42,18 +42,18 @@ bool LoopUnroller::UnrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
   auto unrolled = llvm::UnrollLoop(llvmLoop, opts, &LI, nullptr, nullptr,
                                    nullptr, &ORE, true);
 
-  // errs() << "Done llvm unrolling\n";
+  // dbg() << "Done llvm unrolling\n";
   /*
    * Check if the loop unrolled.
    */
   switch (unrolled) {
     case LoopUnrollResult::FullyUnrolled:
-      // errs() << "   Fully unrolled\n";
+      // dbg() << "   Fully unrolled\n";
       modified = true;
       break;
 
     case LoopUnrollResult::PartiallyUnrolled:
-      // errs() << "   Partially unrolled\n";
+      // dbg() << "   Partially unrolled\n";
       modified = true;
       break;
 
@@ -81,7 +81,7 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    * Only transform inner loops
    */
   if (n_subloops > 0) {
-    errs() << "The loop has subloops, not a candidate\n";
+    dbg() << "The loop has subloops, not a candidate\n";
     return false;
   }
 
@@ -90,7 +90,7 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    */
   auto latches = LS->getLatches();
   if (latches.size() > 1) {
-    errs() << "Loop has multiple latches, not a candidate\n";
+    dbg() << "Loop has multiple latches, not a candidate\n";
     return false;
   }
 
@@ -99,7 +99,7 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    * (The LLVM Unroller does not like unrolling infinite loops)
    */
   if (LS->getLoopExitEdges().size() == 0) {
-    errs() << "Loop has no exit edges, not a candidate\n";
+    dbg() << "Loop has no exit edges, not a candidate\n";
     return false;
   }
 
@@ -107,7 +107,7 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    * Decide the unroll factor depending on the number of instructions
    */
   if (LS->getNumberOfInstructions() > LoopUnrollInstructionThreshold) {
-    errs() << "Loop has " << LS->getNumberOfInstructions()
+    dbg() << "Loop has " << LS->getNumberOfInstructions()
            << " instructions, the threshold is configured as "
            << LoopUnrollInstructionThreshold << "\n";
     return false;
@@ -119,7 +119,7 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    */
   for (const auto &I : LS->getInstructions()) {
     if (isa<CallInst>(I) && (isa<IntrinsicInst>(I) == false)) {
-      errs() << "Loop contains a function call\n";
+      dbg() << "Loop contains a function call\n";
       return false;
     }
   }
@@ -179,7 +179,7 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
 
 LoopUnroller::LoopUnrollCandidatesTy LoopUnroller::CollectUnrollCandidates(
     Noelle &N, Module &M) {
-  errs() << "Running LoopUnroller::CollectUnrollCandidates on: " << M.getName()
+  dbg() << "Running LoopUnroller::CollectUnrollCandidates on: " << M.getName()
          << "\n";
 
   LoopUnrollCandidatesTy LUC;
@@ -206,7 +206,7 @@ LoopUnroller::LoopUnrollCandidatesTy LoopUnroller::CollectUnrollCandidates(
       continue;
     }
 
-    errs() << "Found candidate in function: " << functionName << "\n"
+    dbg() << "Found candidate in function: " << functionName << "\n"
            << "  Loop: " << *entryInst << "\n"
            << "  WarCount: " << LCI.WarCount << "\n";
 

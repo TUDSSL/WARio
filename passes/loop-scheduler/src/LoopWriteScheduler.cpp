@@ -104,7 +104,7 @@ void LoopWriteScheduler::orderWars(Noelle &N, LoopStructure *LS,
     if (D.dominates(war_inst->getParent(), latch)) {
       WarDepOrder.push_back(kv.first);
     } else {
-      errs() << "War Instruction: " << *war_inst
+      dbg() << "War Instruction: " << *war_inst
              << " does not dominate the latch, can not schedule\n";
     }
   }
@@ -133,11 +133,11 @@ void LoopWriteScheduler::findLoadsDependingOnRescheduledStores(
 void LoopWriteScheduler::insertLoadChecks(
     map<Instruction *, list<Instruction *>> &affectedLoadStoresMap,
     Function *F) {
-  errs() << "\n";
+  dbg() << "\n";
   for (auto rload : affectedLoadStoresMap) {
     auto load = rload.first;
     auto block = load->getParent();
-    errs() << " Resolving load: " << *load << "\n";
+    dbg() << " Resolving load: " << *load << "\n";
 
     // Add metadata
     Utils::SetInstrumentationMetadata(load, "ics_scheduler",
@@ -150,7 +150,7 @@ void LoopWriteScheduler::insertLoadChecks(
 
     auto load_inst = dyn_cast<LoadInst>(load);
     auto load_src = load_inst->getPointerOperand();
-    errs() << "  Load src: " << *load_src << "\n";
+    dbg() << "  Load src: " << *load_src << "\n";
 
     // Add a check for each store location
     Value *load_propagated = load_inst;
@@ -159,9 +159,9 @@ void LoopWriteScheduler::insertLoadChecks(
       auto store_inst = dyn_cast<StoreInst>(store);
       auto store_src = store_inst->getValueOperand();
       auto store_dst = store_inst->getPointerOperand();
-      errs() << "  Propagated load: " << *load_propagated << "\n";
-      errs() << "  Store src: " << *store_src << "\n";
-      errs() << "  Store dst: " << *store_dst << "\n";
+      dbg() << "  Propagated load: " << *load_propagated << "\n";
+      dbg() << "  Store src: " << *store_src << "\n";
+      dbg() << "  Store dst: " << *store_dst << "\n";
 
       auto icmp_inst = builder.CreateICmpEQ(load_src, store_dst);
       auto select_inst =
@@ -225,7 +225,7 @@ bool LoopWriteScheduler::isUnrolledCandidate(LoopDependenceInfo *LDI) {
 }
 
 bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
-  errs() << "Running LoopWriteScheduler::Schedule on: " << M.getName() << "\n";
+  dbg() << "Running LoopWriteScheduler::Schedule on: " << M.getName() << "\n";
 
   bool modified = false;
 
@@ -250,7 +250,7 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
       continue;
     }
 
-    errs() << "\nFunction: " << functionName << " Loop: " << *entryInst << "\n";
+    dbg() << "\nFunction: " << functionName << " Loop: " << *entryInst << "\n";
 
     /*
      * Collect WAR and RAW violations in the loop body
@@ -334,32 +334,31 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
     /*
      * Print some information
      */
-    errs() << " WARs to reschedule in order\n";
+    dbg() << " WARs to reschedule in order\n";
     for (auto war : warRescheduleInst) {
-      errs() << *war << "\n";
+      dbg() << *war << "\n";
     }
 
-    errs() << " Loads that are affected by rescheduling the WAR stores\n";
+    dbg() << " Loads that are affected by rescheduling the WAR stores\n";
     for (auto kv : affectedLoadStoresMap) {
-      errs() << *kv.first << " due to stores:\n";
+      dbg() << *kv.first << " due to stores:\n";
       for (auto store : kv.second) {
-        errs() << *store << "\n";
+        dbg() << *store << "\n";
       }
     }
 
-    errs() << " Exit edges to modify\n";
+    dbg() << " Exit edges to modify\n";
     for (const auto kv : ScheduleExitEdges) {
-      errs() << "  Exit: " << *kv.first->begin() << "\n"
+      dbg() << "  Exit: " << *kv.first->begin() << "\n"
              << "   due to stores:\n";
       for (const auto &I : kv.second) {
-        errs() << "  " << *I << "\n";
+        dbg() << "  " << *I << "\n";
       }
-      errs() << "\n";
+      dbg() << "\n";
     }
 
-    errs() << " Latch block: " << *latch->begin() << "\n";
-    ;
-    errs() << " Store insertion point (before) in latch: " << *StoreInsertPoint
+    dbg() << " Latch block: " << *latch->begin() << "\n";
+    dbg() << " Store insertion point (before) in latch: " << *StoreInsertPoint
            << "\n";
 
     /*
@@ -378,9 +377,9 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
           for (auto *Store : kv.second) ++InsertedLoadChecks;
         }
 
-        errs() << "$LOOP_WRITE_RESCHEDULED_STORES: " << RescheduledWars << "\n";
-        errs() << "$LOOP_WRITE_RESOLVED_LOADS: " << ResolvedLoads << "\n";
-        errs() << "$LOOP_WRITE_INSERTED_LOAD_CHECKS: " << InsertedLoadChecks << "\n";
+        dbg() << "$LOOP_WRITE_RESCHEDULED_STORES: " << RescheduledWars << "\n";
+        dbg() << "$LOOP_WRITE_RESOLVED_LOADS: " << ResolvedLoads << "\n";
+        dbg() << "$LOOP_WRITE_INSERTED_LOAD_CHECKS: " << InsertedLoadChecks << "\n";
     }
 
     /*
@@ -433,8 +432,10 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
     /*
      * Print the IR of the new version of the function (for debugging)
      */
-    // errs() << "\n\nNew function:\n";
-    // errs() << *LS->getFunction();
+    #if 0
+    dbg() << "\n\nNew function:\n";
+    dbg() << *LS->getFunction();
+    #endif
   }
 
   return modified;
