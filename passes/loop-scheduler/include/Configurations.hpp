@@ -54,6 +54,8 @@ extern cl::opt<bool> InitExit;
 
 extern cl::opt<bool> Debug;
 
+extern cl::opt<bool> AutomatedTestingPrint;
+
 extern cl::opt<bool> LoopUnrollStep;
 
 extern cl::opt<unsigned int> LoopUnrollCount;

@@ -95,6 +95,15 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
   }
 
   /*
+   * A candidate can not be an infinite loop
+   * (The LLVM Unroller does not like unrolling infinite loops)
+   */
+  if (LS->getLoopExitEdges().size() == 0) {
+    errs() << "Loop has no exit edges, not a candidate\n";
+    return false;
+  }
+
+  /*
    * Decide the unroll factor depending on the number of instructions
    */
   if (LS->getNumberOfInstructions() > LoopUnrollInstructionThreshold) {
@@ -120,18 +129,49 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    */
   LoopWriteScheduler::InstructionDependecyMapTy WarDepMap;
   LoopWriteScheduler::InstructionDependecyMapTy RawDepMap;
-  LoopWriteScheduler::collectInstructionDependencies(LDI, WarDepMap, RawDepMap);
+  LoopWriteScheduler::collectLoopInstructionDependencies(LDI, WarDepMap, RawDepMap);
+  int LoopWars = WarDepMap.size();
 
-  if (WarDepMap.size() < 1) {
-    errs() << "Loop does not have enough WAR violations, not a candidate\n";
-    return false;
+  /*
+   * Check if there are loop carried WAR violations that we might be able to
+   * solve. This is the case when a RAW in the loop FDG has a WAR dependence
+   * in the PDG.
+   */
+  int LoopCarriedWars = 0;
+  auto PDG = N.getProgramDependenceGraph();
+  for (auto &kv : RawDepMap) {
+    auto Read = kv.first;
+    auto Writes = kv.second;
+
+    /*
+     * Check for WAR dependences between the Read and Write
+     */
+    for (auto Write : Writes) {
+      auto Deps = PDG->getDependences(Read, Write);
+      for (auto D : Deps) {
+        if (D->isWARDependence()) ++LoopCarriedWars;
+      }
+    }
   }
 
+  /*
+   * If there are no WAR violations in the loop
+   * and if there are also no loop carried WAR violations, then this
+   * is not a candidate loop
+   */
+  if (LoopWars == 0 && LoopCarriedWars == 0)
+    return false;
+
+  /*
+   * The WAR stores we want to reschedule should not be volatile
+   */
+  // TODO
 
   /*
    * Populate the candidate info
    */
-  LCI.WarCount = WarDepMap.size();
+  LCI.WarCount = LoopWars;
+  LCI.LoopCarriedWarCount = LoopCarriedWars;
 
   // Is a candidate
   return true;
@@ -176,6 +216,7 @@ LoopUnroller::LoopUnrollCandidatesTy LoopUnroller::CollectUnrollCandidates(
     LCI.LoopDependenceInfo = L;
     LUC.push_back(LCI);
   }
+
   return LUC;
 }
 

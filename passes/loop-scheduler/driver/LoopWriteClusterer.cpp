@@ -50,9 +50,34 @@ struct LoopWriteClusterer : public ModulePass {
       /*
        * Unroll the candidates
        */
-      errs() << "\n"
+      dbg() << "\n"
              << "Unrolling " << LoopUnrollCandidates.size() << " loops\n";
 
+      /*
+       * Print testing output for unit tests
+       */
+
+      if (AutomatedTestingPrint) {
+        // Total number of loops
+        int LoopCount = 0;
+        for (auto L : *N.getLoops()) ++LoopCount;
+        errs() << "$LOOP_COUNT: " << LoopCount << "\n";
+
+        // Candidate loops
+        errs() << "$LOOP_CANDIDATE_COUNT: " << LoopUnrollCandidates.size()
+               << "\n";
+
+        // Stats for each candidate loop
+        for (auto &LUC : LoopUnrollCandidates) {
+          errs() << "$LOOP_CANDIDATE_WAR_COUNT: " << LUC.WarCount << "\n";
+          errs() << "$LOOP_CANDIDATE_LOOP_CARRIED_WAR_COUNT: "
+                 << LUC.LoopCarriedWarCount << "\n";
+        }
+      }
+
+      /*
+       * Unroll the candidates
+       */
       for (auto C : LoopUnrollCandidates) {
         auto *LS = C.LoopDependenceInfo->getLoopStructure();
         auto *F = LS->getFunction();

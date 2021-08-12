@@ -6,7 +6,8 @@
 using namespace llvm;
 using namespace LoopWriteScheduler;
 
-void LoopWriteScheduler::collectInstructionDependencies(
+//#define LID_DEBUG
+void LoopWriteScheduler::collectLoopInstructionDependencies(
     LoopDependenceInfo *loop, InstructionDependecyMapTy &WarDepMap,
     InstructionDependecyMapTy &RawDepMap) {
   auto sccManager = loop->getSCCManager();
@@ -24,9 +25,13 @@ void LoopWriteScheduler::collectInstructionDependencies(
     /*
      * Print the instructions that compose the SCC.
      */
-    // errs() << "     Instructions:\n";
+    #ifdef LID_DEBUG
+        errs() << "     Instructions:\n";
+    #endif
     auto mySCCIter = [&](Instruction *I) -> bool {
-      // errs() << "       " << *I << "\n";
+      #ifdef LID_DEBUG
+      errs() << "       " << *I << "\n";
+      #endif
 
       list<Value *> war_deps;
       list<Value *> raw_deps;
@@ -37,13 +42,17 @@ void LoopWriteScheduler::collectInstructionDependencies(
         }
         switch (dependence->dataDependenceType()) {
           case DG_DATA_WAR:
-            // errs() << "             needs [WAR]";
-            // errs() << "  " << *src << "\n";
+            #ifdef LID_DEBUG
+            errs() << "             needs [WAR]";
+            errs() << "  " << *src << "\n";
+            #endif
             war_deps.push_back(src);
             break;
           case DG_DATA_RAW:
-            // errs() << "             needs [RAW]";
-            // errs() << "  " << *src << "\n";
+            #ifdef LID_DEBUG
+            errs() << "             needs [RAW]";
+            errs() << "  " << *src << "\n";
+            #endif
             raw_deps.push_back(src);
             break;
           case DG_DATA_WAW:
@@ -158,10 +167,17 @@ void LoopWriteScheduler::insertLoadChecks(
       auto select_inst =
           builder.CreateSelect(icmp_inst, store_src, load_propagated);
 
+      // TODO
+      // Should we check if icmp results in a guaranteed true or false?
+
       // Add metadata
-      Utils::SetInstrumentationMetadata(
-          cast<ICmpInst>(icmp_inst), "ics_scheduler", "ics_resolved_load_icmp");
-      Utils::SetInstrumentationMetadata(cast<SelectInst>(select_inst),
+      if (isa<CmpInst>(icmp_inst)) {
+        // Only add metadata if it ended up as an intruction (not true or false)
+        Utils::SetInstrumentationMetadata(cast<Instruction>(icmp_inst),
+                                          "ics_scheduler",
+                                          "ics_resolved_load_icmp");
+      }
+      Utils::SetInstrumentationMetadata(cast<Instruction>(select_inst),
                                         "ics_scheduler",
                                         "ics_resolved_load_select");
 
@@ -241,8 +257,7 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
      */
     InstructionDependecyMapTy WarDepMap;
     InstructionDependecyMapTy RawDepMap;
-
-    collectInstructionDependencies(loop, WarDepMap, RawDepMap);
+    collectLoopInstructionDependencies(loop, WarDepMap, RawDepMap);
 
     /*
      * WAR stores can only be rescheduled if they dominate the latch.
@@ -259,13 +274,20 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
     orderWars(N, LS, latch, WarDepMap, WarDepOrder);
 
     /*
-     * If a WAR store is already in the latch we don't have to reschedule it.
+     * If a WAR store is:
+     * - already in the latch
+     * - volatile
+     * we don't have to reschedule it.
      */
     list<Instruction *> warRescheduleInst;
     for (auto war : WarDepOrder) {
-      if (war->getParent() != latch) {
-        warRescheduleInst.push_back(war);
-      }
+      auto *Store = dyn_cast<StoreInst>(war);
+      assert(Store != nullptr);
+
+      if (Store->getParent() == latch) continue;
+      if (Store->isVolatile()) continue;
+
+      warRescheduleInst.push_back(Store);
     }
 
     /*
@@ -339,6 +361,27 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
     ;
     errs() << " Store insertion point (before) in latch: " << *StoreInsertPoint
            << "\n";
+
+    /*
+     * Print debug information used in automated unit tests
+     */
+    if (AutomatedTestingPrint) {
+        int RescheduledWars = 0;
+        int ResolvedLoads = 0;
+        int InsertedLoadChecks = 0;
+
+        RescheduledWars = warRescheduleInst.size();
+        ResolvedLoads = affectedLoadStoresMap.size();
+
+        // Count all writes connected to affected loads
+        for (auto &kv : affectedLoadStoresMap) {
+          for (auto *Store : kv.second) ++InsertedLoadChecks;
+        }
+
+        errs() << "$LOOP_WRITE_RESCHEDULED_STORES: " << RescheduledWars << "\n";
+        errs() << "$LOOP_WRITE_RESOLVED_LOADS: " << ResolvedLoads << "\n";
+        errs() << "$LOOP_WRITE_INSERTED_LOAD_CHECKS: " << InsertedLoadChecks << "\n";
+    }
 
     /*
      * Transform the IR

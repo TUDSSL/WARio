@@ -8,6 +8,7 @@ using namespace llvm;
 namespace LoopUnroller {
 struct LoopCandidateInfo {
   int WarCount;
+  int LoopCarriedWarCount;
   LoopDependenceInfo *LoopDependenceInfo;
 };
 

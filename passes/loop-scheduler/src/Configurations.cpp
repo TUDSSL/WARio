@@ -22,6 +22,12 @@ cl::opt<bool> Debug(
   cl::desc("Turn on debugging outputs/prints")
 );
 
+cl::opt<bool> AutomatedTestingPrint(
+  "lwc-automated-testing-print",
+  cl::init(true),
+  cl::desc("Turn on debugging outputs/prints used in automated unit testing")
+);
+
 cl::opt<bool> LoopUnrollStep(
   "lwc-loop-unroll",
   cl::init(false),
