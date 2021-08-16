@@ -50,7 +50,7 @@ class ResultFiles:
 
         self.findBaseName()
 
-        self.basepath = self.results_directory + self.basename
+        self.basepath = self.results_directory + '/' + self.basename
 
         self.source_code_file = self.basepath + '.S'
         self.instruction_profilig_file = self.basepath + '.instructionprofiling.csv'
