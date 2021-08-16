@@ -15,14 +15,6 @@ bool LoopUnroller::UnrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
   // Error if the LLVM loop info is not found
   assert((llvmLoop != nullptr) && "could not find LLVM loop");
 
-  // Add metadata
-  string meta = "lws_unroll_" + to_string(count);
-  Utils::SetInstrumentationMetadata(LS.getEntryInstruction(),
-                                    "loop_write_scheduler", meta);
-
-  // Mark the loop for loop write scheduling
-  MarkForLoopWriteScheduling(LS);
-
   /*
    * Unroll the loop
    */
@@ -48,23 +40,34 @@ bool LoopUnroller::UnrollLoop(LoopStructure &LS, LoopInfo &LI, int count) {
    */
   switch (unrolled) {
     case LoopUnrollResult::FullyUnrolled:
-      // dbg() << "   Fully unrolled\n";
+      dbg() << "   Fully unrolled\n";
       modified = true;
       break;
 
     case LoopUnrollResult::PartiallyUnrolled:
-      // dbg() << "   Partially unrolled\n";
+      dbg() << "   Partially unrolled\n";
       modified = true;
       break;
 
     case LoopUnrollResult::Unmodified:
       errs() << "   Not unrolled\n";
-      assert(false && "Loop not unrolled");
+      //assert(false && "Loop not unrolled");
+      modified = false;
       break;
 
     default:
       errs() << "Abort\n";
       abort();
+  }
+
+  if (modified) {
+    // Add metadata
+    string meta = "lws_unroll_" + to_string(count);
+    Utils::SetInstrumentationMetadata(LS.getEntryInstruction(),
+                                      "loop_write_scheduler", meta);
+
+    // Mark the loop for loop write scheduling
+    MarkForLoopWriteScheduling(LS);
   }
 
   return modified;
@@ -159,8 +162,10 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    * and if there are also no loop carried WAR violations, then this
    * is not a candidate loop
    */
-  if (LoopWars == 0 && LoopCarriedWars == 0)
+  if (LoopWars == 0 && LoopCarriedWars == 0) {
+    dbg() << "Loop does not contain WAR violations\n";
     return false;
+  }
 
   /*
    * The WAR stores we want to reschedule should not be volatile
@@ -202,19 +207,29 @@ LoopUnroller::LoopUnrollCandidatesTy LoopUnroller::CollectUnrollCandidates(
 
     LoopCandidateInfo LCI;
 
+    dbg() << "Checking func: " << functionName << "\n"
+           << "  Loop: " << *entryInst << "\n";
+
     if (IsCandidate(N, L, LCI) == false) {
       continue;
     }
-
-    dbg() << "Found candidate in function: " << functionName << "\n"
-           << "  Loop: " << *entryInst << "\n"
-           << "  WarCount: " << LCI.WarCount << "\n";
 
     /*
      * Add the candidate
      */
     LCI.LoopDependenceInfo = L;
+    LCI.Function = F;
     LUC.push_back(LCI);
+  }
+
+  for (auto &LCI : LUC) {
+    dbg() << "\n";
+    dbg() << "Found candidate in function: " << LCI.Function->getName() << "\n"
+          << "  Loop: "
+          << *LCI.LoopDependenceInfo->getLoopStructure()->getEntryInstruction()
+          << "\n"
+          << "  WarCount: " << LCI.WarCount << "\n"
+          << "  LoopCarriedWarCount: " << LCI.LoopCarriedWarCount << "\n";
   }
 
   return LUC;

@@ -37,9 +37,11 @@ struct LoopWriteClusterer : public ModulePass {
     assert(((LoopUnrollStep && LoopScheduleStep) == false) &&
            "Either execute the ics-loop-unroll or the ics-loop-schedule "
            "step! Not both.");
+    #if 0
     assert((LoopUnrollStep || LoopScheduleStep) &&
            "Either execute the ics-loop-unroll or the ics-loop-schedule "
            "step.");
+    #endif
 
     if (LoopUnrollStep == true) {
       /*
@@ -51,41 +53,53 @@ struct LoopWriteClusterer : public ModulePass {
        * Unroll the candidates
        */
       dbg() << "\n"
-             << "Unrolling " << LoopUnrollCandidates.size() << " loops\n";
+             << "Attempting to unroll " << LoopUnrollCandidates.size() << " loops\n";
+
+      /*
+       * Unroll the candidates
+       */
+      int UnrolledCandidates = 0;
+      for (auto &C : LoopUnrollCandidates) {
+        auto *LS = C.LoopDependenceInfo->getLoopStructure();
+        auto *F = LS->getFunction();
+        auto &LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
+
+        // Unroll the candidate loop
+        auto Unrolled = LoopUnroller::UnrollLoop(*LS, LI, LoopUnrollCount);
+
+        // Set the Unrolled flag in the candidate
+        // If unrolling failed, we will later remove the candidate
+        C.Unrolled = Unrolled;
+
+        // Used for debugging print
+        if (Unrolled) ++UnrolledCandidates;
+
+        // Keep track if the IR is modified
+        modified = Unrolled || modified;
+      }
 
       /*
        * Print testing output for unit tests
        */
-
       if (AutomatedTestingPrint) {
+        dbg() << "\n";
         // Total number of loops
         int LoopCount = 0;
         for (auto L : *N.getLoops()) ++LoopCount;
         errs() << "$LOOP_COUNT: " << LoopCount << "\n";
 
         // Candidate loops
-        errs() << "$LOOP_CANDIDATE_COUNT: " << LoopUnrollCandidates.size()
+        errs() << "$LOOP_CANDIDATE_COUNT: " << UnrolledCandidates
                << "\n";
 
         // Stats for each candidate loop
         for (auto &LUC : LoopUnrollCandidates) {
+          if (LUC.Unrolled == false) continue;
+          errs() << "In " << LUC.Function->getName() << "\n";
           errs() << "$LOOP_CANDIDATE_WAR_COUNT: " << LUC.WarCount << "\n";
           errs() << "$LOOP_CANDIDATE_LOOP_CARRIED_WAR_COUNT: "
                  << LUC.LoopCarriedWarCount << "\n";
         }
-      }
-
-      /*
-       * Unroll the candidates
-       */
-      for (auto C : LoopUnrollCandidates) {
-        auto *LS = C.LoopDependenceInfo->getLoopStructure();
-        auto *F = LS->getFunction();
-        auto &LI = getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
-
-        // Unroll
-        modified =
-            LoopUnroller::UnrollLoop(*LS, LI, LoopUnrollCount) || modified;
       }
 
     } else if (LoopScheduleStep == true) {

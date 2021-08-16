@@ -7,9 +7,12 @@ using namespace llvm;
 
 namespace LoopUnroller {
 struct LoopCandidateInfo {
-  int WarCount;
-  int LoopCarriedWarCount;
+  int WarCount = 0;
+  int LoopCarriedWarCount = 0;
+  bool Unrolled = false;
+
   LoopDependenceInfo *LoopDependenceInfo;
+  Function *Function;
 };
 
 typedef std::vector<LoopCandidateInfo> LoopUnrollCandidatesTy;
