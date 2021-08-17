@@ -175,6 +175,9 @@ class ControlWidget(QWidget):
         self.table.setSortingEnabled(True)
         self.table.itemSelectionChanged.connect(self.tableSelectionChanged)
 
+        # Highlight the callsite locations in the editor
+        self.highlightCheckpointCalls(list(callsite_count_map.keys()))
+
         # Info box
         self.infoTextBox = QTextEdit()
         self.infoTextBox.setReadOnly(True)
@@ -202,6 +205,30 @@ class ControlWidget(QWidget):
         self.showAssemblyButton.clicked.connect(self.showAssemblyButtonPressed)
         self.hideAssemblyButton.clicked.connect(self.hideAssemblyButtonPressed)
 
+
+        # Add search field
+        self.highlightedSearchMap = dict()
+        self.searchFieldLayout = QHBoxLayout()
+        self.searchField = QLineEdit()
+        self.searchFieldLabel = QLabel('search:')
+        self.searchFieldLayout.addWidget(self.searchFieldLabel)
+        self.searchFieldLayout.addWidget(self.searchField)
+
+        self.searchButtonLayout = QHBoxLayout()
+        self.searchButton = QPushButton('search')
+        self.prevButton = QPushButton('prev')
+        self.nextButton = QPushButton('next')
+        self.clearButton = QPushButton('clear')
+        self.searchButtonLayout.addWidget(self.searchButton)
+        self.searchButtonLayout.addWidget(self.nextButton)
+        self.searchButtonLayout.addWidget(self.prevButton)
+        self.searchButtonLayout.addWidget(self.clearButton)
+
+        self.searchButton.clicked.connect(self.searchPressed)
+        self.nextButton.clicked.connect(self.nextPressed)
+        self.prevButton.clicked.connect(self.prevPressed)
+        self.clearButton.clicked.connect(self.clearPressed)
+
         # Layout
         self.splitter = QSplitter(Qt.Vertical)
 
@@ -213,6 +240,10 @@ class ControlWidget(QWidget):
         vbox.addLayout(self.legendLayout)
         #vbox.addWidget(self.statusLine)
         vbox.addWidget(self.splitter)
+
+        vbox.addLayout(self.searchFieldLayout)
+        vbox.addLayout(self.searchButtonLayout)
+
         vbox.addLayout(self.buttonLayout)
 
         self.setLayout(vbox)
@@ -238,7 +269,7 @@ class ControlWidget(QWidget):
         self.showAssemblyCode(True)
 
     def hideAssemblyButtonPressed(self):
-        self.writeToInfoTextBox('Hiding assembly coden')
+        self.writeToInfoTextBox('Hiding assembly code')
         self.showAssemblyCode(False)
 
     def showAssemblyCode(self, show):
@@ -251,6 +282,22 @@ class ControlWidget(QWidget):
                     block.setVisible(False)
             else:
                 block.setVisible(True)
+            block = block.next()
+
+        editor.setTextCursor(editor.textCursor())
+        editor.repaint()
+        editor.viewport().update()
+
+    def highlightCheckpointCalls(self, checkpoint_addresses):
+        editor = self.codeWidget.codeEditor
+
+        block = editor.document().firstBlock()
+        while block.isValid():
+            line_addr =  getInstructionAddress(block.text())
+            if line_addr != None:
+                if line_addr in checkpoint_addresses:
+                    editor.addHighlightedBlock(block, QColor('#0066a2'), font_color=Qt.white)
+
             block = block.next()
 
         editor.setTextCursor(editor.textCursor())
@@ -276,6 +323,94 @@ class ControlWidget(QWidget):
                 editor.jumpToBlock(block)
                 return
             block = block.next()
+
+    def nextPressed(self):
+        editor = self.codeWidget.codeEditor
+        cursor_block = editor.textCursor().block()
+
+        # Search forward from the cursor
+        block = editor.textCursor().block()
+        block = block.next()
+        while block.isValid():
+            if block.blockNumber() in self.highlightedSearchMap:
+                # Found the next block, jump and stop
+                editor.jumpToBlock(block)
+                return
+            block = block.next()
+
+        # Search from the start to the cursor
+        block = editor.document().firstBlock()
+        while block.isValid():
+            if block == cursor_block:
+                # Looped without finding the next one
+                break
+
+            if block.blockNumber() in self.highlightedSearchMap:
+                # Found the next block, jump and stop
+                editor.jumpToBlock(block)
+                return
+            block = block.next()
+
+    # Copy of next, but block.previous is used
+    def prevPressed(self):
+        editor = self.codeWidget.codeEditor
+        cursor_block = editor.textCursor().block()
+
+        # Search forward from the cursor
+        block = editor.textCursor().block()
+        block = block.previous()
+        while block.isValid():
+            if block.blockNumber() in self.highlightedSearchMap:
+                # Found the prev block, jump and stop
+                editor.jumpToBlock(block)
+                return
+            block = block.previous()
+
+        # Search from the start to the cursor
+        block = editor.document().lastBlock()
+        while block.isValid():
+            if block == cursor_block:
+                # Looped without finding the prev one
+                break
+
+            if block.blockNumber() in self.highlightedSearchMap:
+                # Found the prev block, jump and stop
+                editor.jumpToBlock(block)
+                return
+            block = block.previous()
+
+    # Highlight all the search results
+    def searchPressed(self):
+        # Clear the old search
+        self.clearPressed()
+
+        # Highlight the new search
+        editor = self.codeWidget.codeEditor
+        search_text = self.searchField.text()
+
+        block = editor.document().firstBlock()
+        while block.isValid():
+            block_text = block.text()
+
+            # Check if the search matches (regex)
+            match = re.search(search_text, block_text)
+            if match != None:
+                selection = editor.addHighlightedBlock(block, QColor('#f1be3e'))
+                self.highlightedSearchMap[block.blockNumber()] = selection
+
+            block = block.next()
+
+        editor.updateHighlights()
+
+    # Clear all the highlighted search
+    def clearPressed(self):
+        editor = self.codeWidget.codeEditor
+        for h in list(self.highlightedSearchMap.values()):
+            editor.removeHighlight(h)
+
+        editor.updateHighlights()
+        self.highlightedSearchMap.clear()
+
 
 
 class CodeWidget(QWidget):
