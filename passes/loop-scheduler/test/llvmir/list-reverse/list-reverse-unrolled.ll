@@ -82,48 +82,92 @@ declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #1
 define dso_local arm_aapcscc void @list_init(%struct.list_head_s*, i32, %struct.list_head_s*) #0 {
   br label %4
 
-4:                                                ; preds = %17, %3
-  %.01 = phi %struct.list_head_s* [ %2, %3 ], [ %10, %17 ]
-  %.0 = phi i32 [ 0, %3 ], [ %18, %17 ]
+4:                                                ; preds = %44, %3
+  %.01 = phi %struct.list_head_s* [ %2, %3 ], [ %37, %44 ], !lws_unroll_3 !10, !lws_unrolled_loop !10
+  %.0 = phi i32 [ 0, %3 ], [ %45, %44 ]
   %exitcond = icmp ne i32 %.0, %1
   br i1 %exitcond, label %6, label %5
 
-5:                                                ; preds = %4
+5:                                                ; preds = %31, %17, %4
   br label %19
 
 6:                                                ; preds = %4
   %7 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %0, i32 %.0
   %8 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %.01, i32 0, i32 0
-  store %struct.list_head_s* %7, %struct.list_head_s** %8, align 4, !tbaa !10
+  store %struct.list_head_s* %7, %struct.list_head_s** %8, align 4, !tbaa !11
   %9 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %.01, i32 0, i32 0
-  %10 = load %struct.list_head_s*, %struct.list_head_s** %9, align 4, !tbaa !10
+  %10 = load %struct.list_head_s*, %struct.list_head_s** %9, align 4, !tbaa !11
   %11 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %10, i32 0, i32 1
   %12 = getelementptr inbounds %struct.list_data_s, %struct.list_data_s* %11, i32 0, i32 0
   store i16 1, i16* %12, align 4, !tbaa !3
   %13 = trunc i32 %.0 to i16
   %14 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %10, i32 0, i32 1
   %15 = getelementptr inbounds %struct.list_data_s, %struct.list_data_s* %14, i32 0, i32 1
-  store i16 %13, i16* %15, align 2, !tbaa !11
+  store i16 %13, i16* %15, align 2, !tbaa !12
   %16 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %10, i32 0, i32 0
-  store %struct.list_head_s* null, %struct.list_head_s** %16, align 4, !tbaa !10
+  store %struct.list_head_s* null, %struct.list_head_s** %16, align 4, !tbaa !11
   br label %17
 
 17:                                               ; preds = %6
   %18 = add i32 %.0, 1
-  br label %4
+  %exitcond.1 = icmp ne i32 %18, %1
+  br i1 %exitcond.1, label %20, label %5
 
 19:                                               ; preds = %5
   ret void
+
+20:                                               ; preds = %17
+  %21 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %0, i32 %18
+  %22 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %10, i32 0, i32 0
+  store %struct.list_head_s* %21, %struct.list_head_s** %22, align 4, !tbaa !11
+  %23 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %10, i32 0, i32 0
+  %24 = load %struct.list_head_s*, %struct.list_head_s** %23, align 4, !tbaa !11
+  %25 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %24, i32 0, i32 1
+  %26 = getelementptr inbounds %struct.list_data_s, %struct.list_data_s* %25, i32 0, i32 0
+  store i16 1, i16* %26, align 4, !tbaa !3
+  %27 = trunc i32 %18 to i16
+  %28 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %24, i32 0, i32 1
+  %29 = getelementptr inbounds %struct.list_data_s, %struct.list_data_s* %28, i32 0, i32 1
+  store i16 %27, i16* %29, align 2, !tbaa !12
+  %30 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %24, i32 0, i32 0
+  store %struct.list_head_s* null, %struct.list_head_s** %30, align 4, !tbaa !11
+  br label %31
+
+31:                                               ; preds = %20
+  %32 = add i32 %18, 1
+  %exitcond.2 = icmp ne i32 %32, %1
+  br i1 %exitcond.2, label %33, label %5
+
+33:                                               ; preds = %31
+  %34 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %0, i32 %32
+  %35 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %24, i32 0, i32 0
+  store %struct.list_head_s* %34, %struct.list_head_s** %35, align 4, !tbaa !11
+  %36 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %24, i32 0, i32 0
+  %37 = load %struct.list_head_s*, %struct.list_head_s** %36, align 4, !tbaa !11
+  %38 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %37, i32 0, i32 1
+  %39 = getelementptr inbounds %struct.list_data_s, %struct.list_data_s* %38, i32 0, i32 0
+  store i16 1, i16* %39, align 4, !tbaa !3
+  %40 = trunc i32 %32 to i16
+  %41 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %37, i32 0, i32 1
+  %42 = getelementptr inbounds %struct.list_data_s, %struct.list_data_s* %41, i32 0, i32 1
+  store i16 %40, i16* %42, align 2, !tbaa !12
+  %43 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %37, i32 0, i32 0
+  store %struct.list_head_s* null, %struct.list_head_s** %43, align 4, !tbaa !11
+  br label %44
+
+44:                                               ; preds = %33
+  %45 = add i32 %32, 1
+  br label %4
 }
 
 ; Function Attrs: nounwind
 define dso_local arm_aapcscc void @list_increment_data(%struct.list_head_s*) #0 {
   br label %2
 
-2:                                                ; preds = %4, %1
-  %.0 = phi %struct.list_head_s* [ %0, %1 ], [ %12, %4 ]
+2:                                                ; preds = %25, %1
+  %.0 = phi %struct.list_head_s* [ %0, %1 ], [ %33, %25 ], !lws_unroll_3 !10, !lws_unrolled_loop !10
   %3 = icmp ne %struct.list_head_s* %.0, null
-  br i1 %3, label %4, label %13
+  br i1 %3, label %4, label %14
 
 4:                                                ; preds = %2
   %5 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %.0, i32 0, i32 1
@@ -134,51 +178,85 @@ define dso_local arm_aapcscc void @list_increment_data(%struct.list_head_s*) #0 
   %10 = trunc i32 %9 to i16
   store i16 %10, i16* %6, align 4, !tbaa !3
   %11 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %.0, i32 0, i32 0
-  %12 = load %struct.list_head_s*, %struct.list_head_s** %11, align 4, !tbaa !10
-  br label %2
+  %12 = load %struct.list_head_s*, %struct.list_head_s** %11, align 4, !tbaa !11
+  %13 = icmp ne %struct.list_head_s* %12, null
+  br i1 %13, label %15, label %14
 
-13:                                               ; preds = %2
+14:                                               ; preds = %15, %4, %2
   ret void
+
+15:                                               ; preds = %4
+  %16 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %12, i32 0, i32 1
+  %17 = getelementptr inbounds %struct.list_data_s, %struct.list_data_s* %16, i32 0, i32 0
+  %18 = load i16, i16* %17, align 4, !tbaa !3
+  %19 = sext i16 %18 to i32
+  %20 = add nsw i32 %19, 1
+  %21 = trunc i32 %20 to i16
+  store i16 %21, i16* %17, align 4, !tbaa !3
+  %22 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %12, i32 0, i32 0
+  %23 = load %struct.list_head_s*, %struct.list_head_s** %22, align 4, !tbaa !11
+  %24 = icmp ne %struct.list_head_s* %23, null
+  br i1 %24, label %25, label %14
+
+25:                                               ; preds = %15
+  %26 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %23, i32 0, i32 1
+  %27 = getelementptr inbounds %struct.list_data_s, %struct.list_data_s* %26, i32 0, i32 0
+  %28 = load i16, i16* %27, align 4, !tbaa !3
+  %29 = sext i16 %28 to i32
+  %30 = add nsw i32 %29, 1
+  %31 = trunc i32 %30 to i16
+  store i16 %31, i16* %27, align 4, !tbaa !3
+  %32 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %23, i32 0, i32 0
+  %33 = load %struct.list_head_s*, %struct.list_head_s** %32, align 4, !tbaa !11
+  br label %2
 }
 
 ; Function Attrs: nounwind
 define dso_local arm_aapcscc %struct.list_head_s* @list_reverse(%struct.list_head_s*) #0 {
   br label %2
 
-2:                                                ; preds = %10, %1
-  %.01 = phi %struct.list_head_s* [ null, %1 ], [ %6, %10 ]
-  %.0 = phi %struct.list_head_s* [ %0, %1 ], [ %12, %10 ]
+2:                                                ; preds = %15, %1
+  %.01 = phi %struct.list_head_s* [ null, %1 ], [ %12, %15 ], !lws_unroll_3 !10, !lws_unrolled_loop !10
+  %.0 = phi %struct.list_head_s* [ %0, %1 ], [ %17, %15 ]
   %3 = icmp ne %struct.list_head_s* %.0, null
   br i1 %3, label %4, label %9
 
 4:                                                ; preds = %2
   %5 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %.0, i32 0, i32 0
-  %6 = load %struct.list_head_s*, %struct.list_head_s** %5, align 4, !tbaa !10
+  %6 = load %struct.list_head_s*, %struct.list_head_s** %5, align 4, !tbaa !11
   %7 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %.0, i32 0, i32 0
-  store %struct.list_head_s* %.01, %struct.list_head_s** %7, align 4, !tbaa !10
+  store %struct.list_head_s* %.01, %struct.list_head_s** %7, align 4, !tbaa !11
   %8 = icmp ne %struct.list_head_s* %6, null
   br i1 %8, label %10, label %9
 
-9:                                                ; preds = %4, %2
-  %.01.lcssa = phi %struct.list_head_s* [ %.01, %2 ], [ %.0, %4 ]
+9:                                                ; preds = %10, %4, %2
+  %.01.lcssa = phi %struct.list_head_s* [ %.01, %2 ], [ %.0, %4 ], [ %6, %10 ]
   ret %struct.list_head_s* %.01.lcssa
 
 10:                                               ; preds = %4
   %11 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %6, i32 0, i32 0
-  %12 = load %struct.list_head_s*, %struct.list_head_s** %11, align 4, !tbaa !10
+  %12 = load %struct.list_head_s*, %struct.list_head_s** %11, align 4, !tbaa !11
   %13 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %6, i32 0, i32 0
-  store %struct.list_head_s* %.0, %struct.list_head_s** %13, align 4, !tbaa !10
+  store %struct.list_head_s* %.0, %struct.list_head_s** %13, align 4, !tbaa !11
+  %14 = icmp ne %struct.list_head_s* %12, null
+  br i1 %14, label %15, label %9
+
+15:                                               ; preds = %10
+  %16 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %12, i32 0, i32 0
+  %17 = load %struct.list_head_s*, %struct.list_head_s** %16, align 4, !tbaa !11
+  %18 = getelementptr inbounds %struct.list_head_s, %struct.list_head_s* %12, i32 0, i32 0
+  store %struct.list_head_s* %6, %struct.list_head_s** %18, align 4, !tbaa !11
   br label %2
 }
 
 ; Function Attrs: naked noinline nounwind
 define dso_local arm_aapcscc void @Reset_Handler() #2 {
-  call void asm sideeffect "    ldr    r0, =0xE000ED08\0A    ldr    r1, =g_am_pfnVectors\0A    str    r1, [r0]", ""() #4, !srcloc !12
-  call void asm sideeffect "    ldr    sp, [r1]", ""() #4, !srcloc !13
-  call void asm sideeffect "    ldr     r0, =_init_data\0A    ldr     r1, =_sdata\0A    ldr     r2, =_edata\0Acopy_loop:\0A        ldr   r3, [r0], #4\0A        str   r3, [r1], #4\0A        cmp     r1, r2\0A        blt     copy_loop\0A", ""() #4, !srcloc !14
-  call void asm sideeffect "    ldr     r0, =_sbss\0A    ldr     r1, =_ebss\0A    mov     r2, #0\0Azero_loop:\0A        cmp     r0, r1\0A        it      lt\0A        strlt   r2, [r0], #4\0A        blt     zero_loop", ""() #4, !srcloc !15
-  call void asm sideeffect "    bl   main\0A", ""() #4, !srcloc !16
-  call void asm sideeffect "    bkpt     ", ""() #4, !srcloc !17
+  call void asm sideeffect "    ldr    r0, =0xE000ED08\0A    ldr    r1, =g_am_pfnVectors\0A    str    r1, [r0]", ""() #4, !srcloc !13
+  call void asm sideeffect "    ldr    sp, [r1]", ""() #4, !srcloc !14
+  call void asm sideeffect "    ldr     r0, =_init_data\0A    ldr     r1, =_sdata\0A    ldr     r2, =_edata\0Acopy_loop:\0A        ldr   r3, [r0], #4\0A        str   r3, [r1], #4\0A        cmp     r1, r2\0A        blt     copy_loop\0A", ""() #4, !srcloc !15
+  call void asm sideeffect "    ldr     r0, =_sbss\0A    ldr     r1, =_ebss\0A    mov     r2, #0\0Azero_loop:\0A        cmp     r0, r1\0A        it      lt\0A        strlt   r2, [r0], #4\0A        blt     zero_loop", ""() #4, !srcloc !16
+  call void asm sideeffect "    bl   main\0A", ""() #4, !srcloc !17
+  call void asm sideeffect "    bkpt     ", ""() #4, !srcloc !18
   unreachable
 }
 
@@ -227,11 +305,12 @@ attributes #4 = { nounwind }
 !7 = !{!"Simple C/C++ TBAA"}
 !8 = !{!"list_data_s", !9, i64 0, !9, i64 2}
 !9 = !{!"short", !6, i64 0}
-!10 = !{!4, !5, i64 0}
-!11 = !{!4, !9, i64 6}
-!12 = !{i32 12926, i32 12968, i32 13014}
-!13 = !{i32 13092}
-!14 = !{i32 13445, i32 13488, i32 13526, i32 13564, i32 13589, i32 13630, i32 13671, i32 13708}
-!15 = !{i32 13797, i32 13835, i32 13872, i32 13905, i32 13930, i32 13967, i32 14000, i32 14043}
-!16 = !{i32 14154}
-!17 = !{i32 14261}
+!10 = !{!"loop_write_scheduler"}
+!11 = !{!4, !5, i64 0}
+!12 = !{!4, !9, i64 6}
+!13 = !{i32 12926, i32 12968, i32 13014}
+!14 = !{i32 13092}
+!15 = !{i32 13445, i32 13488, i32 13526, i32 13564, i32 13589, i32 13630, i32 13671, i32 13708}
+!16 = !{i32 13797, i32 13835, i32 13872, i32 13905, i32 13930, i32 13967, i32 14000, i32 14043}
+!17 = !{i32 14154}
+!18 = !{i32 14261}
