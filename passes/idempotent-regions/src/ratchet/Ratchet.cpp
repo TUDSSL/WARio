@@ -39,7 +39,7 @@
 #include "Configurations.hpp"
 #include "Ratchet.hpp"
 
-#define dbgs dbg
+#define dbgs errs
 #define DEBUG(d_) d_
 
 using namespace llvm;
