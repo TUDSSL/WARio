@@ -187,7 +187,7 @@ static void emitSPUpdate(bool isARM, MachineBasicBlock &MBB,
                          ARMCC::CondCodes Pred = ARMCC::AL,
                          unsigned PredReg = 0) {
   if (IdempPop && (NumBytes > 0)) {
-    errs() << "idemp: inserting SP update checkpoint in: "
+    dbg() << "idemp: inserting SP update checkpoint in: "
            << MBB.getParent()->getName() << "\n";
     TII.insertCheckpoint(MBB, MBBI, TII.CHECKPOINTR_POP, true);
   }
@@ -848,7 +848,7 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
           // This means that if a function uses a frame pointer, two checkpoints
           // are needed during the function return.
           if (IdempPop) {
-            errs() << "idemp: inserting FP->SP update checkpoint in: "
+            dbg() << "idemp: inserting FP->SP update checkpoint in: "
                    << MBB.getParent()->getName() << "\n";
             TII.insertCheckpoint(MBB, MBBI, TII.CHECKPOINTR_POP);
           }
@@ -867,7 +867,7 @@ void ARMFrameLowering::emitEpilogue(MachineFunction &MF,
               .add(condCodeOp());
         else {
           if (IdempPop) {
-            errs() << "idemp: inserting FP->SP update (w/o bytes) checkpoint in: "
+            dbg() << "idemp: inserting FP->SP update (w/o bytes) checkpoint in: "
                    << MBB.getParent()->getName() << "\n";
             TII.insertCheckpoint(MBB, MBBI, TII.CHECKPOINTR_POP);
           }
@@ -1138,7 +1138,7 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
             assert(AFI->isThumb2Function() &&
                    "IdempPop is only implemented for thumb2 for now");
 
-            errs() << "idemp: replacing t2LDMIA_RET with idempotent pop in: "
+            dbg() << "idemp: replacing t2LDMIA_RET with idempotent pop in: "
                    << MF.getName() << "\n";
             LdmOpc = ARM::t2LDMIA_RET_IDEMP;
             DeleteRet = true;
@@ -1152,7 +1152,7 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
             Info.setRestored(false);
           }
         } else {
-          errs() << "Not the last BB for: " << MF.getName() << "\n";
+          dbg() << "Not the last BB for: " << MF.getName() << "\n";
           LdmOpc = AFI->isThumbFunction() ? ARM::t2LDMIA_UPD_IDEMP : ARM::LDMIA_UPD;
         }
       }
@@ -1177,7 +1177,7 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
     if (Regs.size() > 1 || LdrOpc == 0) {
       if (IdempPop) {
         if (LdmOpc == ARM::t2LDMIA_UPD) {
-          errs() << "idemp: replacing t2LDMIA_UPD with t2LDMIA_UPD_IDEMP in: "
+          dbg() << "idemp: replacing t2LDMIA_UPD with t2LDMIA_UPD_IDEMP in: "
                  << MF.getName() << "\n";
           LdmOpc = ARM::t2LDMIA_UPD_IDEMP;
         }
@@ -1197,7 +1197,7 @@ void ARMFrameLowering::emitPopInst(MachineBasicBlock &MBB,
     } else if (Regs.size() == 1) {
       if (IdempPop) {
         if (LdrOpc == ARM::t2LDR_POST) {
-          errs() << "idemp: replacing t2LDR_POST with t2LDR_POST_IDEMP in: "
+          dbg() << "idemp: replacing t2LDR_POST with t2LDR_POST_IDEMP in: "
                  << MF.getName() << "\n";
           LdrOpc = ARM::t2LDR_POST_IDEMP;
         }
@@ -2167,7 +2167,7 @@ void ARMFrameLowering::determineCalleeSaves(MachineFunction &MF,
   if (IdempForceLRSpill == true) {
     // Vito: Here we can force LR to always be on the stack, which is needed
     // if we want to call a checkpoint function
-    errs() << "idemp: forcing LR spill for: " << MF.getName() << "\n";
+    dbg() << "idemp: forcing LR spill for: " << MF.getName() << "\n";
     ForceLRSpill = true;
   }
 

@@ -155,19 +155,19 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
       bool Stop = false;
       bool StopPath = false;
 
-      // errs() << "   > Checking for stack load to " << FI << " at instruction:
+      // dbg() << "   > Checking for stack load to " << FI << " at instruction:
       // " << *MI;
       int LFI;
       if (TII->isLoadFromStackSlot(*MI, LFI)) {
-        errs() << "   # Checking LOAD Stack slot FI: " << LFI
+        dbg() << "   # Checking LOAD Stack slot FI: " << LFI
                << " LOAD: " << *MI;
         if (FI == LFI) {
-          errs() << "  To same stack slot!\n";
+          dbg() << "  To same stack slot!\n";
           Stop = true;
         }
       } else if (TII->isIdempBoundary(*MI)) {
         // An IDEMP boundary already breaks the path.
-        errs() << "Found IDEMP boundary, stopping path\n";
+        dbg() << "Found IDEMP boundary, stopping path\n";
         StopPath = true;
       }
       return std::pair<bool, bool>(Stop, StopPath);
@@ -180,10 +180,10 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
           FirstInstr = &MI;
 
         if (TII->isStoreToStackSlot(MI, FI)) {
-          errs() << "# Stack slot FI: " << FI << " store: " << MI;
+          dbg() << "# Stack slot FI: " << FI << " store: " << MI;
           if (reverseIterateOverMachineInstructions(FirstInstr, &MI,
                                                     IterMachineInstr, false)) {
-            errs() << ">>> Stack slot store to: " << FI << " HAS WAR: " << MI;
+            dbg() << ">>> Stack slot store to: " << FI << " HAS WAR: " << MI;
             Cuts.insert(&MI);
           }
         }
@@ -233,7 +233,7 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
     for (auto &MBB : MF) {
       for (auto &MI : MBB) {
         if (MI.isCall()) {
-          errs() << "Adding call cut before " << MI;
+          dbg() << "Adding call cut before " << MI;
           Cuts.insert(&MI);
         }
       }
@@ -242,7 +242,7 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
 
   void insertIdempBoundariesAtCuts(CutsTy &Cuts, CheckpointReasonTy CPR) {
     for (auto &MI : Cuts) {
-      errs() << "inserting idempotent boundary before: " << *MI;
+      dbg() << "inserting idempotent boundary before: " << *MI;
       insertIdempBoundary(*MI);
 
       auto *I = MI->getPrevNode(); // The idempotent boundary
@@ -269,9 +269,9 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
   }
 
   void printMachineFunction(MachineFunction &MF) {
-    errs() << "Machine Function: " << MF.getName() << "\n";
+    dbg() << "Machine Function: " << MF.getName() << "\n";
     for (const auto &BB : MF) {
-      errs() << "  " << BB;
+      dbg() << "  " << BB;
     }
   }
 
@@ -291,15 +291,15 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
       return false;
 
     if (MF.getName().contains("__checkpoint")) {
-      errs() << "Skipping: " << MF.getName() << "\n";
+      dbg() << "Skipping: " << MF.getName() << "\n";
       return false;
     }
 
-    errs() << "****************************************************************"
+    dbg() << "****************************************************************"
               "**\n";
-    errs() << "* Running MachineIdempotentRegions pass on: " << MF.getName()
+    dbg() << "* Running MachineIdempotentRegions pass on: " << MF.getName()
            << "\n";
-    errs() << "****************************************************************"
+    dbg() << "****************************************************************"
               "**\n";
 
     /*
@@ -313,7 +313,7 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
     findCallCuts(MF, CallCuts);
     insertIdempBoundariesAtCuts(CallCuts, CheckpointReasonTy::CHECKPOINTR_CALL);
 
-    //errs() << "\n\n";
+    //dbg() << "\n\n";
     //printMachineFunction(MF);
 
     /*
@@ -324,7 +324,7 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
 
     // Print the redundant Cuts
     for (auto &C : RedundantCuts) {
-      errs() << "Removing cut before: " << *C->getNextNode();
+      dbg() << "Removing cut before: " << *C->getNextNode();
     }
 
     // Remove the redundant Cuts
@@ -336,7 +336,7 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
     // Remove the IDEMP instructions
     removeIdempIntrinsics(MF);
 
-    //errs() << "\n\nRemoved IDEMP:\n";
+    //dbg() << "\n\nRemoved IDEMP:\n";
     //printMachineFunction(MF);
 
     return false;
