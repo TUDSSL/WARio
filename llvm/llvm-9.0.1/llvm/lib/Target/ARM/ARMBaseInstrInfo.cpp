@@ -1586,10 +1586,10 @@ bool ARMBaseInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
       bool PopLR = false;
 
       if (HasRet)
-        errs() << "Expanding LDMIA_RET_IDEMP in: "
+        dbg() << "Expanding LDMIA_RET_IDEMP in: "
                << MI.getParent()->getParent()->getName() << "\n";
       else
-        errs() << "Expanding LDMIA_IDEMP in: "
+        dbg() << "Expanding LDMIA_IDEMP in: "
                << MI.getParent()->getParent()->getName() << "\n";
 
       DebugLoc DL = MI.getDebugLoc();
@@ -1633,7 +1633,7 @@ bool ARMBaseInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
   }
 
   if (MI.getOpcode() == ARM::t2LDR_POST_IDEMP) {
-    errs() << "Expanding t2LDR_POST_IDEMP in: "
+    dbg() << "Expanding t2LDR_POST_IDEMP in: "
            << MI.getParent()->getParent()->getName() << "\n";
 
     DebugLoc DL = MI.getDebugLoc();

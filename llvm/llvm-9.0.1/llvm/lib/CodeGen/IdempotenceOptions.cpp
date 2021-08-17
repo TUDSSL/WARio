@@ -5,6 +5,10 @@ using namespace llvm;
 namespace llvm {
 
 cl::opt<bool>
+    IdempDebug("idemp-debug", cl::init(false),
+                 cl::desc("Turn on debugging outputs/prints"));
+
+cl::opt<bool>
     IdempCodeGen("idemp-code-gen", cl::init(false),
                  cl::desc("Enable idempotent transformations in the backend"));
 

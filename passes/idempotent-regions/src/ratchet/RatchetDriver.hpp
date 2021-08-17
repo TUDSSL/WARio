@@ -36,7 +36,7 @@ class Ratchet {
       if (ExcludeF.find(F->getName()) != ExcludeF.end()) continue;
 
       // Ratchet function pass NOTE: THE TRUE ADDS THE CALLS TO THE CUTSET
-      llvm::MemoryIdempotenceAnalysisImpl MIAI(true);
+      llvm::MemoryIdempotenceAnalysisImpl MIAI(false);
 
       auto &AA = P->getAnalysis<AAResultsWrapperPass>(*F);
       auto &DT = P->getAnalysis<DominatorTreeWrapperPass>(*F);

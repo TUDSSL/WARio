@@ -5,6 +5,8 @@
 
 namespace llvm {
 
+  extern cl::opt<bool> IdempDebug;
+
   extern cl::opt<bool> IdempForceLRSpill;
   extern cl::opt<bool> IdempCodeGen;
   extern cl::opt<bool> IdempPop;
@@ -13,6 +15,12 @@ namespace llvm {
   extern cl::opt<bool> IdempCheckpointReasonMarkers;
 
 } // namespace llvm
+
+#ifdef IDEMP_DEBUG_PRINT
+#define dbg() errs()
+#else
+#define dbg() if (IdempDebug == false) {} else errs()
+#endif
 
 #endif // LLVM_CODEGEN_INTERMITTENTOPTIONS_H
 

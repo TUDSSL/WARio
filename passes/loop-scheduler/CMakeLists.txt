@@ -21,7 +21,7 @@ add_definitions(${LLVM_DEFINITIONS})
 add_definitions(
 -D__STDC_LIMIT_MACROS
 -D__STDC_CONSTANT_MACROS
--DDEBUG_PRINT
+#-DDEBUG_PRINT
 )
 link_directories(${LLVM_LIBRARY_DIRS})
 

@@ -79,5 +79,5 @@ extern cl::opt<bool> InsertCheckpointAfterCall;
 #ifdef DEBUG_PRINT
 #define dbg() errs()
 #else
-#define dbg() if (true) {} else errs()
+#define dbg() if (Debug == false) {} else errs()
 #endif

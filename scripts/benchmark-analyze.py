@@ -23,6 +23,7 @@ ConfigTitleMap = {
         'uninstrumented': 'Plain C',
         'opt-ratchet': 'Ratchet',
         'opt-baseline': 'Ratchet+Noelle',
+        'opt-loop': 'Loop Clustering',
         'opt-all': 'Opt-all'
 }
 
@@ -30,6 +31,7 @@ ConfigOrder = [
         'uninstrumented',
         'opt-ratchet',
         'opt-baseline',
+        'opt-loop',
         'opt-all'
         ]
 
