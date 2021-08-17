@@ -25,6 +25,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # Set checkpoint library locations
 WAR_PASS_LIB="$DIR/../passes/idempotent-regions/build/idemp-regions.so"
+LOOP_PASS_LIB="$DIR/../passes/loop-scheduler/build/loop-write-clusterer.so"
 
 CHECKPOINT_ARCH_SRC="$DIR/../toolchain-arm/checkpoint/checkpoint.c"
 
@@ -67,7 +68,7 @@ function apply_pass() {
     local passargs="$5"
 
     run "$NOELLE_NORM -S $input_ir -o $basename-norm.ll"
-    run "$NOELLE_LOAD -load $passlib -$passname $passargs $ICLANG_PASS_FLAGS -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
+    run "$NOELLE_LOAD -load $passlib $passargs $ICLANG_PASS_FLAGS -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | tee $basename-$passname.txt | grep -v XAN:"
     apply_pass_output="$basename-$passname.ll"
 }
 
@@ -75,8 +76,16 @@ function apply_passes() {
     local basename="$1"
     local ir="$2"
 
+    # Loop Unroll step
+    apply_pass $LOOP_PASS_LIB "loop-unroll" "$basename" "$ir" "$ICLANG_PASS_LOOP_UNROLL_FLAGS"
+    local ir="$apply_pass_output"
+
+    # Loop write cluster step
+    apply_pass $LOOP_PASS_LIB "loop-cluster" "$basename" "$ir" "$ICLANG_PASS_LOOP_CLUSTER_FLAGS"
+    local ir="$apply_pass_output"
+
     # WAR step
-    apply_pass $WAR_PASS_LIB "idemp" "$basename" "$ir"
+    apply_pass $WAR_PASS_LIB "idemp" "$basename" "$ir" "$ICLANG_PASS_IDEMP_FLAGS"
     local ir="$apply_pass_output"
 
     # Return

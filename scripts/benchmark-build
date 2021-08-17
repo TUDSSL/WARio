@@ -25,49 +25,87 @@ function build_benchmark() {
     popd
 }
 
+
+#
+# The base target configuration for intermittent computing
+#
+
+BASE_ICLANG_CODEGEN_FLAGS="\
+-mllvm --idemp-force-lr-spill \
+-mllvm --idemp-code-gen \
+-mllvm --idemp-pop \
+-mllvm --idemp-checkpoint-reason-markers"
+
+#
+# The different target configurations
+#
+
+# Uninstrumented
+# Does not perform any transformations but does go trough the pipeline
 function uninstrumented() {
     # Configure the benchmark
-    export ICLANG_PASS_FLAGS=""
+    export ICLANG_PASS_IDEMP_FLAGS=""
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
+    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+
     export ICLANG_CODEGEN_FLAGS=""
 
     # Build the benchmark
     ICLANG_NO_PASSES="YES" build_benchmark "uninstrumented"
 }
 
+# Ratchet
+# Uses Ratchet middle-end analysis ported to this version of LLVM
+# The backend is different (our Thumb2) backend
 function opt_ratchet() {
     # Configure the benchmark
-    export ICLANG_PASS_FLAGS="-cp-ratchet"
-    export ICLANG_CODEGEN_FLAGS="\
--mllvm --idemp-force-lr-spill \
--mllvm --idemp-code-gen \
--mllvm --idemp-pop \
--mllvm --idemp-checkpoint-reason-markers"
+    export ICLANG_PASS_IDEMP_FLAGS="-idemp -cp-ratchet"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
+    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
 
     # Build the benchmark
     build_benchmark "opt-ratchet"
 }
 
+# Baseline
+# Uses the Ratched way of finding checkpoint locations but improved to use
+# Noelle information and to work with our other passes
 function opt_baseline() {
     # Configure the benchmark
-    export ICLANG_PASS_FLAGS=""
-    export ICLANG_CODEGEN_FLAGS="\
--mllvm --idemp-force-lr-spill \
--mllvm --idemp-code-gen \
--mllvm --idemp-pop \
--mllvm --idemp-checkpoint-reason-markers"
+    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
+    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
 
     # Build the benchmark
     build_benchmark "opt-baseline"
 }
 
+# Loop
+# Uses the loop write clustering pass
+function opt_loop() {
+    # Configure the benchmark
+    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=4"
+    export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
+
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
+
+    # Build the benchmark
+    build_benchmark "opt-loop"
+
+}
+
 function opt_all() {
     # Configure the benchmark
-    export ICLANG_PASS_FLAGS=""
-    export ICLANG_CODEGEN_FLAGS="\
--mllvm --idemp-force-lr-spill \
--mllvm --idemp-code-gen \
--mllvm --idemp-pop \
--mllvm --idemp-checkpoint-reason-markers"
+    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=4"
+    export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
+
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
 
     # Build the benchmark
     build_benchmark "opt-all"
@@ -78,6 +116,7 @@ function all() {
     uninstrumented
     opt_ratchet
     opt_baseline
+    opt_loop
     opt_all
 }
 
@@ -95,6 +134,7 @@ function clean() {
     rm -rf "./build-uninstrumented"
     rm -rf "./build-opt-ratchet"
     rm -rf "./build-opt-baseline"
+    rm -rf "./build-opt-loop"
     rm -rf "./build-opt-all"
 }
 
@@ -104,8 +144,9 @@ function print_help() {
     echo "targets:"
     echo "  all (default)"
     echo "  uninstrumented"
-    echo "  opt_ratchet"
+    echo "  opt-ratchet"
     echo "  opt-baseline"
+    echo "  opt-loop"
     echo "  opt-all"
     echo "  all-parallel (build all the benchmarks in parallel)"
 }
@@ -114,13 +155,16 @@ declare -A ConfigMap
 ConfigMap["help"]=print_help
 ConfigMap["-h"]=print_help
 ConfigMap["--help"]=print_help
+ConfigMap["clean"]=clean
 
 ConfigMap["all"]=all
 ConfigMap["all-parallel"]=all_parallel
 ConfigMap["uninstrumented"]=uninstrumented
 ConfigMap["opt-ratchet"]=opt_ratchet
 ConfigMap["opt-baseline"]=opt_baseline
+ConfigMap["opt-loop"]=opt_loop
 ConfigMap["opt-all"]=opt_all
+
 
 if ! [[ ${ConfigMap[$target]+isset} ]]; then
     echo "Unknown target: $target"
