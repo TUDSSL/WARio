@@ -23,28 +23,43 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT="$DIR/.."
 
-CFLAGS="-mthumb -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft --target=thumbv7em-unknown-none-gnu" #-ffunction-sections -fdata-sections -fomit-frame-pointer -Wall -std=c99"
+CFLAGS="-mthumb -mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft --target=thumbv7em-unknown-none-gnu -I$ROOT/toolchain-arm/lib/include"
 OPT="-O1"
 
 # Find libgcc from the gcc arm toolchain
 libgcc_loc=$(arm-none-eabi-gcc -print-libgcc-file-name)
 libgcc_loc=$(dirname "$libgcc_loc")
 
-LDFLAGS="-mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft --target=thumbv7em-unknown-none-eabi -nodefaultlibs -Wl,--Bstatic -Wl,-lc_nano -Wl,-lnosys -Wl,--gc-sections,--entry,Reset_Handler"
-LIBLOCS="-L/usr/arm-none-eabi/lib/thumb/v7e-m/nofp -L$libgcc_loc/thumb/v7e-m/nofp/"
+LDFLAGS="-mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=soft \
+ --target=thumbv7em-unknown-none-eabi -nodefaultlibs \
+ -Wl,--Bstatic -Wl,-lc_nano -Wl,-lnosys -Wl,--gc-sections,--entry,Reset_Handler"
+
+LIBLOCS="-L$ROOT/toolchain-arm/lib/gcc -L$ROOT/toolchain-arm/lib/libc -L$ROOT/toolchain-arm"
 LINKERSCRIPT="$ROOT/toolchain-arm/linkerscript.ld"
 
+# Idempotent compile args:
+CODEGEN_FLAGS="\
+-mllvm --idemp-stack-spill-hitting-set \
+-mllvm --idemp-force-lr-spill \
+-mllvm --idemp-code-gen \
+-mllvm --idemp-pop \
+-mllvm --idemp-checkpoint-reason-markers"
+
 # Compile the .ll file
-clang -c $CFLAGS $OPT $in -o $in.obj
+clang -c -mllvm --idemp-debug $CFLAGS $CODEGEN_FLAGS $OPT $in -o $in.obj
 
 # Compile startup.c
-clang -c $CFLAGS $OPT $ROOT/toolchain-arm/startup.c -o startup.obj
+#clang -c $CFLAGS $OPT $ROOT/toolchain-arm/startup.c -o startup.obj
+
+# Compile checkpoint.c
+clang -c $CFLAGS $OPT $ROOT/toolchain-arm/checkpoint/checkpoint.c -o checkpoint.obj
 
 # Link
-clang $LDFLAGS $LIBLOCS  -T $LINKERSCRIPT -lc -lm $in.obj startup.obj -o $out
+#clang $LDFLAGS $LIBLOCS  -T $LINKERSCRIPT -lc -lm $in.obj startup.obj checkpoint.obj -o $out
+clang $LDFLAGS $LIBLOCS  -T $LINKERSCRIPT -lc -lm $in.obj checkpoint.obj -o $out
 
 # Disassemble
 arm-none-eabi-objdump -d $out > $in.s
 
 # Cleanup
-rm $in.obj startup.obj
+rm -rf $in.obj startup.obj
