@@ -215,6 +215,25 @@ class QCodeEditor(QPlainTextEdit):
         return selection
 
 
+    def addHighlightedBlock(self, block, color, font_color=None, underline=False):
+        # Get the selection
+        selection = self.highlightLine(block, color, font_color, underline)
+        # Save the selection
+        self.highlightedLines.append(selection)
+
+        # Return the selection, used to remove it
+        return selection
+
+    def removeHighlight(self, selection):
+        try:
+            self.highlightedLines.remove(selection)
+        except IndexError:
+            pass
+
+    def updateHighlights(self, extraSelections=list()):
+        self.setExtraSelections(self.highlightedLines + extraSelections)
+
+
     def highlightCurrentLine(self):
         extraSelections = []
         selection = QTextEdit.ExtraSelection()
@@ -227,5 +246,6 @@ class QCodeEditor(QPlainTextEdit):
                 self.highlightLine(this_block, self.lineHighlightColor))
 
         # Apply highlighted lines
-        self.setExtraSelections(extraSelections)
+        self.updateHighlights(extraSelections)
+        #self.setExtraSelections(self.highlightedLines + extraSelections)
 

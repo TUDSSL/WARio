@@ -35,7 +35,14 @@ def hexCsvToMap(file):
             for line in f:
                 line = line.strip('\n')
                 (key, val) = line.split(',')
-                d[int(key, 16)] = int(val)
+                try:
+                    key_int = int(key, 16)
+                    val_int = int(val)
+                except ValueError:
+                    # Only add valid lines
+                    continue
+
+                d[key_int] = int(val_int)
 
     except IOError:
         print("Failed to open file: " + file)
@@ -136,6 +143,33 @@ class QCMarkerCountArea(QLineInfoArea):
 
         return ""
 
+class QWarCountArea(QLineInfoArea):
+    def __init__(self, editor, war_count_map):
+        super().__init__(editor)
+        self.text_offset = -5
+        self.bg_color = QColor('#C3312F')
+
+        self.war_count_map = war_count_map
+
+        # Get the maximum value, assume it does not change
+        self.width_const = max(max(self.war_count_map.values()), 1)
+
+    def width(self):
+        return 10 + self.charWidth('0') * self.numberToDigits(self.width_const)
+
+    def paintLineCallback(self, block):
+        text = block.text()
+
+        addr = getInstructionAddress(text)
+
+        if addr != None:
+            if addr in self.war_count_map:
+                return str(self.war_count_map[addr])
+            else:
+                return ""
+
+        return ""
+
 
 class ControlWidget(QWidget):
     def __init__(self, codeWidget, resultFiles):
@@ -175,6 +209,9 @@ class ControlWidget(QWidget):
         self.table.setSortingEnabled(True)
         self.table.itemSelectionChanged.connect(self.tableSelectionChanged)
 
+        # Highlight the callsite locations in the editor
+        self.highlightCheckpointCalls(list(callsite_count_map.keys()))
+
         # Info box
         self.infoTextBox = QTextEdit()
         self.infoTextBox.setReadOnly(True)
@@ -202,6 +239,30 @@ class ControlWidget(QWidget):
         self.showAssemblyButton.clicked.connect(self.showAssemblyButtonPressed)
         self.hideAssemblyButton.clicked.connect(self.hideAssemblyButtonPressed)
 
+
+        # Add search field
+        self.highlightedSearchMap = dict()
+        self.searchFieldLayout = QHBoxLayout()
+        self.searchField = QLineEdit()
+        self.searchFieldLabel = QLabel('search:')
+        self.searchFieldLayout.addWidget(self.searchFieldLabel)
+        self.searchFieldLayout.addWidget(self.searchField)
+
+        self.searchButtonLayout = QHBoxLayout()
+        self.searchButton = QPushButton('search')
+        self.prevButton = QPushButton('prev')
+        self.nextButton = QPushButton('next')
+        self.clearButton = QPushButton('clear')
+        self.searchButtonLayout.addWidget(self.searchButton)
+        self.searchButtonLayout.addWidget(self.nextButton)
+        self.searchButtonLayout.addWidget(self.prevButton)
+        self.searchButtonLayout.addWidget(self.clearButton)
+
+        self.searchButton.clicked.connect(self.searchPressed)
+        self.nextButton.clicked.connect(self.nextPressed)
+        self.prevButton.clicked.connect(self.prevPressed)
+        self.clearButton.clicked.connect(self.clearPressed)
+
         # Layout
         self.splitter = QSplitter(Qt.Vertical)
 
@@ -213,6 +274,10 @@ class ControlWidget(QWidget):
         vbox.addLayout(self.legendLayout)
         #vbox.addWidget(self.statusLine)
         vbox.addWidget(self.splitter)
+
+        vbox.addLayout(self.searchFieldLayout)
+        vbox.addLayout(self.searchButtonLayout)
+
         vbox.addLayout(self.buttonLayout)
 
         self.setLayout(vbox)
@@ -238,7 +303,7 @@ class ControlWidget(QWidget):
         self.showAssemblyCode(True)
 
     def hideAssemblyButtonPressed(self):
-        self.writeToInfoTextBox('Hiding assembly coden')
+        self.writeToInfoTextBox('Hiding assembly code')
         self.showAssemblyCode(False)
 
     def showAssemblyCode(self, show):
@@ -251,6 +316,22 @@ class ControlWidget(QWidget):
                     block.setVisible(False)
             else:
                 block.setVisible(True)
+            block = block.next()
+
+        editor.setTextCursor(editor.textCursor())
+        editor.repaint()
+        editor.viewport().update()
+
+    def highlightCheckpointCalls(self, checkpoint_addresses):
+        editor = self.codeWidget.codeEditor
+
+        block = editor.document().firstBlock()
+        while block.isValid():
+            line_addr =  getInstructionAddress(block.text())
+            if line_addr != None:
+                if line_addr in checkpoint_addresses:
+                    editor.addHighlightedBlock(block, QColor('#0066a2'), font_color=Qt.white)
+
             block = block.next()
 
         editor.setTextCursor(editor.textCursor())
@@ -277,6 +358,94 @@ class ControlWidget(QWidget):
                 return
             block = block.next()
 
+    def nextPressed(self):
+        editor = self.codeWidget.codeEditor
+        cursor_block = editor.textCursor().block()
+
+        # Search forward from the cursor
+        block = editor.textCursor().block()
+        block = block.next()
+        while block.isValid():
+            if block.blockNumber() in self.highlightedSearchMap:
+                # Found the next block, jump and stop
+                editor.jumpToBlock(block)
+                return
+            block = block.next()
+
+        # Search from the start to the cursor
+        block = editor.document().firstBlock()
+        while block.isValid():
+            if block == cursor_block:
+                # Looped without finding the next one
+                break
+
+            if block.blockNumber() in self.highlightedSearchMap:
+                # Found the next block, jump and stop
+                editor.jumpToBlock(block)
+                return
+            block = block.next()
+
+    # Copy of next, but block.previous is used
+    def prevPressed(self):
+        editor = self.codeWidget.codeEditor
+        cursor_block = editor.textCursor().block()
+
+        # Search forward from the cursor
+        block = editor.textCursor().block()
+        block = block.previous()
+        while block.isValid():
+            if block.blockNumber() in self.highlightedSearchMap:
+                # Found the prev block, jump and stop
+                editor.jumpToBlock(block)
+                return
+            block = block.previous()
+
+        # Search from the start to the cursor
+        block = editor.document().lastBlock()
+        while block.isValid():
+            if block == cursor_block:
+                # Looped without finding the prev one
+                break
+
+            if block.blockNumber() in self.highlightedSearchMap:
+                # Found the prev block, jump and stop
+                editor.jumpToBlock(block)
+                return
+            block = block.previous()
+
+    # Highlight all the search results
+    def searchPressed(self):
+        # Clear the old search
+        self.clearPressed()
+
+        # Highlight the new search
+        editor = self.codeWidget.codeEditor
+        search_text = self.searchField.text()
+
+        block = editor.document().firstBlock()
+        while block.isValid():
+            block_text = block.text()
+
+            # Check if the search matches (regex)
+            match = re.search(search_text, block_text)
+            if match != None:
+                selection = editor.addHighlightedBlock(block, QColor('#f1be3e'))
+                self.highlightedSearchMap[block.blockNumber()] = selection
+
+            block = block.next()
+
+        editor.updateHighlights()
+
+    # Clear all the highlighted search
+    def clearPressed(self):
+        editor = self.codeWidget.codeEditor
+        for h in list(self.highlightedSearchMap.values()):
+            editor.removeHighlight(h)
+
+        editor.updateHighlights()
+        self.highlightedSearchMap.clear()
+
+
 
 class CodeWidget(QWidget):
     def __init__(self, resultFiles):
@@ -289,6 +458,12 @@ class CodeWidget(QWidget):
         # Collect information for the LineInfo areas
         instruction_count_map = self.getInstructionCountMap()
         callsite_count_map = self.getCallsiteCountMap()
+        war_count_map = self.getWarCountMap()
+
+        # Add war count line area
+        if len(war_count_map) > 0:
+            self.codeEditor.addLineInfoArea(
+                    QWarCountArea(self.codeEditor, war_count_map))
 
         # Add callsite count (with checkpoint markers) line area
         self.codeEditor.addLineInfoArea(
@@ -313,6 +488,9 @@ class CodeWidget(QWidget):
     def getCallsiteCountMap(self):
         return hexCsvToMap(self.resultFiles.callsite_count_file)
 
+    def getWarCountMap(self):
+        return hexCsvToMap(self.resultFiles.wars_file)
+
 
 class MainWidget(QWidget):
     def __init__(self, resultFiles):
@@ -331,13 +509,19 @@ class MainWidget(QWidget):
         cycle_count = self.getCycleCount()
         self.controlWidget.writeHtmlToInfoTextBox('<b>Clock cycles:</b> ' + str(cycle_count))
 
-        war_count = self.getWarCount()
-        self.controlWidget.writeHtmlToInfoTextBox('<b>WAR count:</b> ' + str(war_count))
-
         checkpoint_marker_text = self.getCheckpointMarkerText()
         checkpoint_marker_text = checkpoint_marker_text.replace(',', ', ').replace('__checkpoint_marker_','')
         self.controlWidget.writeHtmlToInfoTextBox('<b>Checkpoint markers:</b> (marker, count, %)')
         self.controlWidget.writeToInfoTextBox(checkpoint_marker_text, newline='')
+
+        war_count, war_count_text = self.getWarCount()
+        self.controlWidget.writeHtmlToInfoTextBox('<b>WAR count:</b> ' + str(war_count))
+        if war_count > 0:
+            self.controlWidget.writeToInfoTextBox(war_count_text, newline='')
+
+        callsite_count_map = hexCsvToMap(self.resultFiles.callsite_count_file)
+        callsite_count_total = sum(callsite_count_map.values())
+        self.controlWidget.writeHtmlToInfoTextBox('<b>Checkpoint count:</b> ' + str(callsite_count_total))
 
         self.splitter.addWidget(self.codeWidget)
         self.splitter.addWidget(self.controlWidget)
@@ -361,11 +545,16 @@ class MainWidget(QWidget):
         file = self.resultFiles.wars_file
         try:
             with open(file, 'r') as f:
-                nonempty_lines = [line.strip("\n") for line in f if line != "\n"]
-                return len(nonempty_lines)-1 # first line is description
+                line_count = 0
+                text = ''
+                for line in f:
+                    text += line
+                    line_count += 1
+                return line_count-1, text
+
         except IOError:
             print('Failed to open: ', file)
-            return None
+            return None,None
 
     def getCheckpointMarkerText(self):
         file = self.resultFiles.checkpoint_marker_file
