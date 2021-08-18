@@ -14,6 +14,8 @@ namespace llvm {
   extern cl::opt<bool> IdempNoCheckpointCall;
   extern cl::opt<bool> IdempCheckpointReasonMarkers;
 
+  extern cl::opt<bool> IdempStackSpillHittingSet;
+
 } // namespace llvm
 
 #ifdef IDEMP_DEBUG_PRINT

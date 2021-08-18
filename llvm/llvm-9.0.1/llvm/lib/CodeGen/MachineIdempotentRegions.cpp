@@ -91,13 +91,140 @@ static bool reverseIterateOverMachineInstructions(
   return false;
 }
 
+/*
+ * Types
+ */
+typedef struct{
+  MachineInstr *Read;
+  MachineInstr *Write;
+} ReadWritePairTy;
+
+typedef std::list<ReadWritePairTy> ReadWritePairsTy;
+typedef std::vector<MachineInstr *> PathTy;
+typedef std::list<PathTy> PathsTy;
+typedef std::set<MachineInstr *> CutsTy;
+
+/*
+ * Hitting set algorithm
+ */
+class HittingSet {
+protected:
+  typedef std::map<MachineInstr *, unsigned int> HitCountMapTy;
+
+  const PathsTy &IdempotentPaths;
+  CutsTy Cuts;
+  HitCountMapTy HitCountMap;
+
+  bool Valid = false;
+
+  void computeHitCountMap(PathsTy &Paths) {
+    HitCountMap.clear();
+
+    for (const auto &Path : Paths)
+      for (const auto &Point : Path)
+        HitCountMap[Point]++;
+  }
+
+  void removeCutPaths(PathsTy &Paths, MachineInstr *Cut) {
+    auto It = Paths.begin();
+    while (It != Paths.end()) {
+      auto &P = *It;
+      if (std::find(P.begin(), P.end(), Cut) != P.end()) {
+        // For each point in the Path that will be removed, we decrement the
+        // corresponding HitCountMap entry
+        for (const auto &Point : *It)
+          HitCountMap[Point]--;
+
+        // Erase the Path
+        It = Paths.erase(It);
+      } else {
+        ++It;
+      }
+    }
+  }
+
+  bool verify(CutsTy &Solution) {
+    size_t CoveredPaths = 0;
+
+    for (const auto &Path : IdempotentPaths) {
+      for (const auto &P : Path) {
+        if (Solution.find(P) != Solution.end()) {
+          // Found a cut that breaks the Path
+          CoveredPaths++;
+          break;
+        }
+      }
+    }
+    return (CoveredPaths == IdempotentPaths.size());
+  }
+
+public:
+  HittingSet(const PathsTy &IdempotentPaths)
+      : IdempotentPaths(IdempotentPaths) {}
+
+  #define hsdbg() if (!PrintDebug) {} else dbg()
+  CutsTy &run(bool PrintDebug = false) {
+    hsdbg() << "Running HittingSet\n";
+
+    int Step = 0;
+    PathsTy RemainingPaths = IdempotentPaths;
+
+    computeHitCountMap(RemainingPaths);
+
+    while (RemainingPaths.size() > 0) {
+
+      hsdbg() << "\nStep: " << Step << "\n";
+      hsdbg() << "Remaining Paths: " << RemainingPaths.size() << "\n";
+
+      // Calculate the priority Hits*Cost
+      // Track the highest Priority
+      MachineInstr *Candidate;
+      double CandidatePriority = 0;
+      for (const auto &KV : HitCountMap) {
+        auto *I = KV.first;
+        const auto &H = KV.second;
+
+        //double Priority = (double)H / (double)PC.cost(I);
+        double Priority = (double)H;
+        if (Priority > CandidatePriority) {
+          Candidate = I;
+          CandidatePriority = Priority;
+        }
+      }
+
+      // Debug Information
+      hsdbg() << "Candidate: " << *Candidate << "\n";
+      hsdbg() << "  Priority: " << CandidatePriority << "\n";
+      hsdbg() << "  Hits: " << HitCountMap[Candidate] << "\n";
+
+      // Add the Candidate to the Cuts
+      Cuts.insert(Candidate);
+
+      // Remove the Paths containing the Candidate from the RemainingPaths
+      // Additionally updates the HitCountMap
+      removeCutPaths(RemainingPaths, Candidate);
+
+      // Increase the step count (debugging)
+      ++Step;
+    }
+
+    // Verify if the Cuts cover all the
+    assert((verify(Cuts) == true) && "Verify failed, not all paths are cut");
+
+    /*
+     * Debug information
+     */
+    hsdbg() << "\nMinimal Cuts:\n";
+    for (const auto &Cut : Cuts)
+      hsdbg() << *Cut << "\n";
+    hsdbg() << "\n";
+
+    return Cuts;
+  }
+};
+
 struct MachineIdempotentRegions : public MachineFunctionPass {
   static char ID;
-
-  /*
-   * Cut Locations
-   */
-  typedef std::set<MachineInstr *> CutsTy;
 
   /*
    * Track the checkpoint reason
@@ -147,9 +274,11 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
     }
   }
 
-  void findStackSpillWars(MachineFunction &MF, CutsTy &Cuts) {
+  int findStackSpillWars(MachineFunction &MF, ReadWritePairsTy &ReadWritePairs) {
 
     int FI; // Stack slot of the stack spill
+    std::vector<MachineInstr *> WarLoads;
+    int StackSpillWarCount = 0;
 
     auto IterMachineInstr = [&](MachineInstr *MI) -> std::pair<bool, bool> {
       bool Stop = false;
@@ -159,15 +288,20 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
       // " << *MI;
       int LFI;
       if (TII->isLoadFromStackSlot(*MI, LFI)) {
-        dbg() << "   # Checking LOAD Stack slot FI: " << LFI
-               << " LOAD: " << *MI;
+        //dbg() << "   # Checking LOAD Stack slot FI: " << LFI
+        //       << " LOAD: " << *MI;
         if (FI == LFI) {
-          dbg() << "  To same stack slot!\n";
-          Stop = true;
+          //dbg() << "  To same stack slot!\n";
+          //LoadMI = MI;
+          WarLoads.push_back(MI);
+          StopPath = true;
         }
       } else if (TII->isIdempBoundary(*MI)) {
         // An IDEMP boundary already breaks the path.
-        dbg() << "Found IDEMP boundary, stopping path\n";
+        //dbg() << "Found IDEMP boundary, stopping path\n";
+        StopPath = true;
+      } else if (MI->isCall()) {
+        // A call breaks the path
         StopPath = true;
       }
       return std::pair<bool, bool>(Stop, StopPath);
@@ -180,14 +314,98 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
           FirstInstr = &MI;
 
         if (TII->isStoreToStackSlot(MI, FI)) {
-          dbg() << "# Stack slot FI: " << FI << " store: " << MI;
-          if (reverseIterateOverMachineInstructions(FirstInstr, &MI,
-                                                    IterMachineInstr, false)) {
-            dbg() << ">>> Stack slot store to: " << FI << " HAS WAR: " << MI;
-            Cuts.insert(&MI);
+          MachineInstr *StoreMI = &MI;
+          dbg() << "# Stack slot FI: " << FI << " store: " << *StoreMI;
+
+          // Collect all the WAR loads connected to Store into WarLoads
+          WarLoads.clear();
+          reverseIterateOverMachineInstructions(FirstInstr, StoreMI,
+                                                    IterMachineInstr, false);
+
+          if (WarLoads.size()) {
+            for (auto *LoadMI : WarLoads) {
+              dbg() << "  >>> Stack slot store to: " << FI << " has a  WAR:\n"
+                    << "    Read: " << *LoadMI
+                    << "    Write: " << *StoreMI << "\n";
+              ReadWritePairs.push_back(ReadWritePairTy{LoadMI, StoreMI});
+            }
+            // Number of WAR stores
+            ++StackSpillWarCount;
           }
         }
       }
+    }
+    return StackSpillWarCount;
+  }
+
+  bool isPossiblePathInstruction(MachineInstr *MI) {
+    if (MI->isBranch() || MI->isReturn() || MI->isPHI()) return false;
+    return true;
+  }
+
+  void collectStackSpillPaths(MachineDominatorTree &DT, ReadWritePairsTy &ReadWritePairs, PathsTy &Paths) {
+    for (auto &RW : ReadWritePairs) {
+      // Get the reference to a new path vector for this WAR
+      Paths.resize(Paths.size()+1);
+      auto &Path = Paths.back();
+      auto *Load = RW.Read;
+      auto *Store = RW.Write;
+
+      auto *LoadBB = Load->getParent();
+      auto *StoreBB = Store->getParent();
+
+      auto *BB = StoreBB;
+      auto *DTN = DT.getNode(BB);
+      MachineBasicBlock::iterator Cursor(Store);
+
+      // The path starts with the WAR store
+      Path.push_back(Store);
+
+      do {
+        //dbg() << "\nVisiting BB: " << *BB << "\n";
+        while (Cursor-- != BB->begin()) {
+          auto *MI = cast<MachineInstr *>(Cursor);
+          //dbg() << "Cursor: " << *MI << "\n";
+
+          // Stop if we reach the WAR load
+          if (MI == Load) break;
+
+          if (isPossiblePathInstruction(MI)) {
+            Path.push_back(MI);
+          }
+        }
+        // Move on to the Immediate Dominator if it exists, otherwise we are done
+        DTN = DTN->getIDom();
+        if (DTN == nullptr) break;
+
+        // Setup for iterating trough the next BB
+        BB = DTN->getBlock();
+        Cursor = BB->end();
+
+      } while (DT.dominates(LoadBB, BB)); // Every node dominates itself
+
+      // Also consider placing it in the LoadBB. Good for loops.
+      MachineBasicBlock::iterator LoadBBCursor(Load);
+      while (++LoadBBCursor != LoadBB->end()) {
+        if (LoadBBCursor == Store) break;
+        auto *MI = cast<MachineInstr *>(LoadBBCursor);
+        if (isPossiblePathInstruction(MI)) {
+          Path.push_back(MI);
+        }
+      }
+
+      #if 0
+      if (IdempDebug) {
+        dbg() << "WAR:\n"
+              << "    Read:" << *Load
+              << "    Write:" << *Store
+              << "  Has Path:\n";
+        for (auto &MI : Path) {
+          dbg() << "    " << *MI;
+        }
+      }
+      #endif
+
     }
   }
 
@@ -284,6 +502,7 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
 
     // Init variables used troughout the pass
     TII = MF.getSubtarget().getInstrInfo();
+    MachineDominatorTree &DT = getAnalysis<MachineDominatorTree>();
 
     assert(TII != nullptr);
 
@@ -295,6 +514,7 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
       return false;
     }
 
+    dbg() << "\n";
     dbg() << "****************************************************************"
               "**\n";
     dbg() << "* Running MachineIdempotentRegions pass on: " << MF.getName()
@@ -302,19 +522,49 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
     dbg() << "****************************************************************"
               "**\n";
 
+    //dbg() << "\n\n";
+    //printMachineFunction(MF);
+    //dbg() << "\n\n";
+
     /*
-     * Find spill WARs
+     * Find and resolve spill WARs
      */
+    ReadWritePairsTy ReadWritePairs;
+    PathsTy Paths;
     CutsTy SpillCuts;
-    findStackSpillWars(MF, SpillCuts);
+
+    // Find all the stack spill WARs
+    int StackSpillWarCount = findStackSpillWars(MF, ReadWritePairs);
+
+    if (IdempStackSpillHittingSet) {
+      // Find all the stack spill paths that need to be resolved with a checkpoint
+      collectStackSpillPaths(DT, ReadWritePairs, Paths);
+
+      // Find a minimal set of checkpoint locations
+      HittingSet HS(Paths);
+      SpillCuts = HS.run();
+
+      dbg() << "Stack spill WAR stores: " << StackSpillWarCount << "\n";
+      dbg() << "Stack spill WAR violations: " << ReadWritePairs.size() << "\n";
+      dbg() << "Stack spill Cuts: " << SpillCuts.size() << "\n";
+    } else {
+      // Collect the WAR writes
+      // CutsTy is a set, so it will contain all unique Spill WAR writes
+      std::set<MachineInstr *> WarWrites;
+      for (auto &SpillWar : ReadWritePairs) {
+        SpillCuts.insert(SpillWar.Write);
+      }
+    }
+
+    // Insert checkpoints at stack spill cuts
     insertIdempBoundariesAtCuts(SpillCuts, CheckpointReasonTy::CHECKPOINTR_SPILL);
 
+    /*
+     * Find and resolve function calls
+     */
     CutsTy CallCuts;
     findCallCuts(MF, CallCuts);
     insertIdempBoundariesAtCuts(CallCuts, CheckpointReasonTy::CHECKPOINTR_CALL);
-
-    //dbg() << "\n\n";
-    //printMachineFunction(MF);
 
     /*
      * Find and remove redundant cuts

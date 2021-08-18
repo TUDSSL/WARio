@@ -31,4 +31,8 @@ cl::opt<bool> IdempCheckpointReasonMarkers(
     cl::desc("Insert checkpoint reason marker calls to use in the emulator. "
              "THIS WILL BREAK THE CODE IF NOT HANDLED CORRECTLY."));
 
+cl::opt<bool> IdempStackSpillHittingSet(
+    "idemp-stack-spill-hitting-set", cl::init(false),
+    cl::desc("Use a hitting-set algorithm to place stack-stipp checkpoints"));
+
 } // namespace llvm
