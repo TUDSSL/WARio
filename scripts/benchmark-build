@@ -36,6 +36,8 @@ BASE_ICLANG_CODEGEN_FLAGS="\
 -mllvm --idemp-pop \
 -mllvm --idemp-checkpoint-reason-markers"
 
+EXTRA_ICLANG_CODEGEN_FLAGS="-mllvm --idemp-stack-spill-hitting-set"
+
 #
 # The different target configurations
 #
@@ -89,10 +91,10 @@ function opt_baseline() {
 function opt_loop() {
     # Configure the benchmark
     export ICLANG_PASS_IDEMP_FLAGS="-idemp"
-    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=4"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8"
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
 
-    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
 
     # Build the benchmark
     build_benchmark "opt-loop"
@@ -105,7 +107,7 @@ function opt_all() {
     export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=4"
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
 
-    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
 
     # Build the benchmark
     build_benchmark "opt-all"
