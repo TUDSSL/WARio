@@ -35,7 +35,14 @@ def hexCsvToMap(file):
             for line in f:
                 line = line.strip('\n')
                 (key, val) = line.split(',')
-                d[int(key, 16)] = int(val)
+                try:
+                    key_int = int(key, 16)
+                    val_int = int(val)
+                except ValueError:
+                    # Only add valid lines
+                    continue
+
+                d[key_int] = int(val_int)
 
     except IOError:
         print("Failed to open file: " + file)
@@ -131,6 +138,33 @@ class QCMarkerCountArea(QLineInfoArea):
         if addr != None:
             if addr in self.callsite_count_map:
                 return str(self.callsite_count_map[addr])
+            else:
+                return ""
+
+        return ""
+
+class QWarCountArea(QLineInfoArea):
+    def __init__(self, editor, war_count_map):
+        super().__init__(editor)
+        self.text_offset = -5
+        self.bg_color = QColor('#C3312F')
+
+        self.war_count_map = war_count_map
+
+        # Get the maximum value, assume it does not change
+        self.width_const = max(max(self.war_count_map.values()), 1)
+
+    def width(self):
+        return 10 + self.charWidth('0') * self.numberToDigits(self.width_const)
+
+    def paintLineCallback(self, block):
+        text = block.text()
+
+        addr = getInstructionAddress(text)
+
+        if addr != None:
+            if addr in self.war_count_map:
+                return str(self.war_count_map[addr])
             else:
                 return ""
 
@@ -424,6 +458,12 @@ class CodeWidget(QWidget):
         # Collect information for the LineInfo areas
         instruction_count_map = self.getInstructionCountMap()
         callsite_count_map = self.getCallsiteCountMap()
+        war_count_map = self.getWarCountMap()
+
+        # Add war count line area
+        if len(war_count_map) > 0:
+            self.codeEditor.addLineInfoArea(
+                    QWarCountArea(self.codeEditor, war_count_map))
 
         # Add callsite count (with checkpoint markers) line area
         self.codeEditor.addLineInfoArea(
@@ -448,6 +488,9 @@ class CodeWidget(QWidget):
     def getCallsiteCountMap(self):
         return hexCsvToMap(self.resultFiles.callsite_count_file)
 
+    def getWarCountMap(self):
+        return hexCsvToMap(self.resultFiles.wars_file)
+
 
 class MainWidget(QWidget):
     def __init__(self, resultFiles):
@@ -466,13 +509,19 @@ class MainWidget(QWidget):
         cycle_count = self.getCycleCount()
         self.controlWidget.writeHtmlToInfoTextBox('<b>Clock cycles:</b> ' + str(cycle_count))
 
-        war_count = self.getWarCount()
-        self.controlWidget.writeHtmlToInfoTextBox('<b>WAR count:</b> ' + str(war_count))
-
         checkpoint_marker_text = self.getCheckpointMarkerText()
         checkpoint_marker_text = checkpoint_marker_text.replace(',', ', ').replace('__checkpoint_marker_','')
         self.controlWidget.writeHtmlToInfoTextBox('<b>Checkpoint markers:</b> (marker, count, %)')
         self.controlWidget.writeToInfoTextBox(checkpoint_marker_text, newline='')
+
+        war_count, war_count_text = self.getWarCount()
+        self.controlWidget.writeHtmlToInfoTextBox('<b>WAR count:</b> ' + str(war_count))
+        if war_count > 0:
+            self.controlWidget.writeToInfoTextBox(war_count_text, newline='')
+
+        callsite_count_map = hexCsvToMap(self.resultFiles.callsite_count_file)
+        callsite_count_total = sum(callsite_count_map.values())
+        self.controlWidget.writeHtmlToInfoTextBox('<b>Checkpoint count:</b> ' + str(callsite_count_total))
 
         self.splitter.addWidget(self.codeWidget)
         self.splitter.addWidget(self.controlWidget)
@@ -496,11 +545,16 @@ class MainWidget(QWidget):
         file = self.resultFiles.wars_file
         try:
             with open(file, 'r') as f:
-                nonempty_lines = [line.strip("\n") for line in f if line != "\n"]
-                return len(nonempty_lines)-1 # first line is description
+                line_count = 0
+                text = ''
+                for line in f:
+                    text += line
+                    line_count += 1
+                return line_count-1, text
+
         except IOError:
             print('Failed to open: ', file)
-            return None
+            return None,None
 
     def getCheckpointMarkerText(self):
         file = self.resultFiles.checkpoint_marker_file
