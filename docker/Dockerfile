@@ -15,7 +15,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y build-essential cmake python3 libboost-filesystem-dev  \
     libboost-system-dev libboost-program-options-dev vim git ninja-build clang \
-    gcc-arm-none-eabi wget python3-distutils python3-pandas golang
+    gcc-arm-none-eabi wget python3-distutils python3-pandas golang python3-tabulate
 
 # Change the working directory
 WORKDIR /root
