@@ -1,7 +1,7 @@
 #!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-if [ -z "$1"]; then
+if [ -z "$1" ]; then
     results_dir="results"
 else
     results_dir="$1"
