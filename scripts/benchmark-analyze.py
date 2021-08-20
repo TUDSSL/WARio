@@ -76,7 +76,7 @@ with open(dir_path + '/' + 'results-table.tex', 'w') as f:
 # Store a .csv version
 df.to_csv(dir_path + '/' + 'results-table.csv')
 
-fig, ax0 = plt.subplots()
+fig, ax0 = plt.subplots(figsize=(8,5), dpi=90)
 ax1 = ax0.twinx()
 
 width=0.3
@@ -103,7 +103,7 @@ patches.append(mpatches.Patch(color=CheckpointColors[1], label="Call checkpoints
 patches.append(mpatches.Patch(color=CheckpointColors[2], label="Pop checkpoints"))
 patches.append(mpatches.Patch(color=CheckpointColors[3], label="Spill checkpoints"))
 
-plt.legend(handles=patches)
+plt.legend(loc='center left', handles=patches, bbox_to_anchor=(1.1,-0.1))
 
 # Set the titles
 ax0.set_xlabel('Benchmark Configuration')
@@ -111,6 +111,7 @@ ax0.set_ylabel('Normalized Execution Time')
 ax1.set_ylabel('Checkpoints')
 
 #plt.show(block=True)
+plt.setp(ax0.xaxis.get_majorticklabels(), rotation=20)
 
 fig.tight_layout()
 fig.savefig(dir_path + '/' + 'results-execution-checkpoints.pdf')
