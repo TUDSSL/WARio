@@ -6,6 +6,8 @@ import matplotlib.patches as mpatches
 import sys
 import os
 
+from tabulate import tabulate
+
 # get the results file
 if len(sys.argv) < 2:
     print("provide the results file as an argument")
@@ -42,12 +44,37 @@ df = df.reindex(ConfigOrder)
 UninstrumentedCycles=df['Cycles']['uninstrumented']
 df['Execution'] = df['Cycles']/UninstrumentedCycles
 
+ExecutionBaseline=df['Execution']['opt-baseline']-1
+df['Overhead-baseline-%'] = (((df['Execution']-1)*100.0)/ExecutionBaseline)-100
+
+ExecutionRatchet=df['Execution']['opt-ratchet']-1
+df['Overhead-ratchet-%'] = (((df['Execution']-1)*100.0)/ExecutionRatchet)-100
+
+# Round the values
+df['Overhead-baseline-%'] = round(df['Overhead-baseline-%'],2)
+df['Overhead-ratchet-%'] = round(df['Overhead-ratchet-%'],2)
+
+
 # Rename the index
 df.rename(index=ConfigTitleMap, inplace=True)
 
 df_cp = df[['IR-checkpoints', 'Call-checkpoints', 'Pop-checkpoints', 'Spill-checkpoints']]
 
-print(df)
+#print(df)
+
+# Print and store the table
+table_text = tabulate(df, headers='keys', tablefmt='pretty')
+print(table_text)
+
+with open(dir_path + '/' + 'results-table.txt', 'w') as f:
+    f.write(table_text)
+
+# Store a .tex version
+with open(dir_path + '/' + 'results-table.tex', 'w') as f:
+    f.write(tabulate(df, headers='keys', tablefmt='latex'))
+
+# Store a .csv version
+df.to_csv(dir_path + '/' + 'results-table.csv')
 
 fig, ax0 = plt.subplots()
 ax1 = ax0.twinx()
