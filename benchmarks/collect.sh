@@ -1,7 +1,11 @@
 #!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-results_dir="results"
+if [ -z "$1"]; then
+    results_dir="results"
+else
+    results_dir="$1"
+fi
 
 Benchmarks=(
     "coremark"
@@ -67,6 +71,8 @@ cd "$DIR"
 rm -rf $results_dir
 mkdir $results_dir
 mkdir $results_dir/raw
+
+echo "Results directory: $DIR/$results_dir"
 
 # Collect the benchmarks
 collect
