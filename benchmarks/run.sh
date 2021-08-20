@@ -32,3 +32,6 @@ cd "$DIR"
 
 bench "quicksort"
 bench "coremark"
+bench "crc"
+bench "sha"
+bench "dijkstra"
