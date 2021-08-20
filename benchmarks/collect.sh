@@ -14,6 +14,18 @@ Benchmarks=(
     "dijkstra"
 )
 
+# Optional analyze, is currently also done when after running the benchmarks
+function analyze() {
+    for benchmark in ${Benchmarks[@]}; do
+        echo "Analyzing: \"$benchmark\""
+
+        pushd "$benchmark" > /dev/null
+        benchmark-compare
+        benchmark-analyze.py "benchmark-compare/results.csv"
+        popd > /dev/null
+    done
+}
+
 function collect() {
     for benchmark in ${Benchmarks[@]}; do
         echo "Collecting: \"$benchmark\" results"
@@ -73,6 +85,10 @@ mkdir $results_dir
 mkdir $results_dir/raw
 
 echo "Results directory: $DIR/$results_dir"
+
+# Analyze the benchmarks
+# Optional analyze, is currently also done when after running the benchmarks
+#analyze
 
 # Collect the benchmarks
 collect
