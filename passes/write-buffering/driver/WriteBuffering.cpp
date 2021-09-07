@@ -1,4 +1,4 @@
-#include "include/Transformer.hpp"
+#include "Transformer.hpp"
 
 namespace
 {
@@ -8,11 +8,11 @@ struct CAT : public ModulePass
 
     CAT() : ModulePass(ID) {}
 
-    bool doInitialization(Module &M) override 
-    {   
+    bool doInitialization(Module &M) override
+    {
         /*
          * Debugging setting
-         */ 
+         */
         Utils::ExitOnInit();
 
 
@@ -20,14 +20,14 @@ struct CAT : public ModulePass
     }
 
 
-    bool runOnModule(Module &M) override 
+    bool runOnModule(Module &M) override
     {
         /*
          * Fetch Noelle
          */
         auto &noelle = getAnalysis<Noelle>();
 
-        
+
         /*
          * Analyze each function
          */
@@ -53,14 +53,14 @@ struct CAT : public ModulePass
              */
             auto T = Transformer(F);
             Modified |= T.ClusterWritesWithinBasicBlocks(A);
-        } 
+        }
 
 
         return Modified;
     }
 
 
-    void getAnalysisUsage(AnalysisUsage &AU) const override 
+    void getAnalysisUsage(AnalysisUsage &AU) const override
     {
         AU.addRequired<Noelle>();
         return;
@@ -75,7 +75,7 @@ static RegisterPass<CAT> X("write-buffer", "Write Buffering Pass");
 static CAT* _PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if (!_PassMaker) { PM.add(_PassMaker = new CAT()); }}); 
+        if (!_PassMaker) { PM.add(_PassMaker = new CAT()); }});
 static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
         if (!_PassMaker) { PM.add(_PassMaker = new CAT()); }});

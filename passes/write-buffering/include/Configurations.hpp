@@ -48,9 +48,15 @@
 
 using namespace llvm;
 
-extern cl::opt<bool> ExitingOnInit;
+extern cl::opt<bool> NoVerify;
+
+extern cl::opt<bool> InitExit;
 
 extern cl::opt<bool> Debug;
 
-#define DEBUG_INFO if (Debug) errs() 
+#ifdef DEBUG_PRINT
+#define dbg() errs()
+#else
+#define dbg() if (Debug == false) {} else errs()
+#endif
 

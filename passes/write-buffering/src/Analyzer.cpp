@@ -1,4 +1,4 @@
-#include "../include/Analyzer.hpp"
+#include "Analyzer.hpp"
 
 /*
  * ---------- Constructors ----------
@@ -8,10 +8,10 @@ Analyzer::Analyzer(
     Noelle &noelle
 ) : F{F}, noelle{noelle}
 {
-    /* 
+    /*
      * Debugging
      */
-    DEBUG_INFO << F.getName() << "\n";
+    dbg() << F.getName() << "\n";
     return;
 } ;
 
@@ -27,7 +27,7 @@ void Analyzer::Analyze(void)
      * Analyze each write (store) in @this->F and its dependences
      * in the context of its respective parent basic blocks
      */
-    
+
 
     /*
      * <Step 1.> Record writes
@@ -36,7 +36,7 @@ void Analyzer::Analyze(void)
 
 
     /*
-     * <Step 2.> Record reads after writes (in parent) 
+     * <Step 2.> Record reads after writes (in parent)
      */
     _recordReadsAfterWriteInParentBasicBlock();
 
@@ -60,7 +60,7 @@ void Analyzer::Analyze(void)
 void Analyzer::Dump(void)
 {
     /*
-     * TOP --- Dump the statistics about writes that could be moved and 
+     * TOP --- Dump the statistics about writes that could be moved and
      * writes with dependences that need to be moved
      */
 
@@ -167,8 +167,8 @@ void Analyzer::_recordReadsAfterWriteInParentBasicBlock(void)
 {
     /*
      * TOP
-     * 
-     * For each store, record the reads (loads and calls) that are 
+     *
+     * For each store, record the reads (loads and calls) that are
      * topologically after the store within its parent basic block
      */
     for (auto Store : AllWrites)
@@ -178,7 +178,7 @@ void Analyzer::_recordReadsAfterWriteInParentBasicBlock(void)
          */
         BasicBlock *Parent = Store->getParent();
 
-        
+
         /*
          * Record reads (loads and calls) topologically after "Store"
          */
@@ -191,7 +191,7 @@ void Analyzer::_recordReadsAfterWriteInParentBasicBlock(void)
         {
             if (false
                 || isa<LoadInst>(Next)
-                || isa<CallInst>(Next)) 
+                || isa<CallInst>(Next))
                 TotalReadsAfterWriteInParentBasicBlock[Store].insert(Next);
 
             Next = Next->getNextNode();
@@ -201,9 +201,9 @@ void Analyzer::_recordReadsAfterWriteInParentBasicBlock(void)
         /*
          * Debugging
          */
-        DEBUG_INFO << *Store << " (ro): " << TotalReadsAfterWriteInParentBasicBlock[Store].size() << "\n";
+        dbg() << *Store << " (ro): " << TotalReadsAfterWriteInParentBasicBlock[Store].size() << "\n";
         for (auto Read : TotalReadsAfterWriteInParentBasicBlock[Store])
-            DEBUG_INFO << "     " << *Read << "\n";
+            dbg() << "     " << *Read << "\n";
     }
 
 
@@ -215,8 +215,8 @@ void Analyzer::_recordDependencesAfterWriteInParentBasicBlock(void)
 {
     /*
      * TOP
-     * 
-     * Get all outgoing dependence instructions for each write (store) that 
+     *
+     * Get all outgoing dependence instructions for each write (store) that
      * exist in its respective parent basic blocks --- based on the PDG
      */
 
@@ -230,7 +230,7 @@ void Analyzer::_recordDependencesAfterWriteInParentBasicBlock(void)
     {
         /*
          * Set up lambda iterator for PDG
-         */    
+         */
         std::unordered_set<Instruction *> Dependences;
         auto Iterator =
             [Store, &Dependences]
@@ -239,9 +239,9 @@ void Analyzer::_recordDependencesAfterWriteInParentBasicBlock(void)
             /*
              * 1. Arguments, globals, and other values are outside
              *    of the basic block already, ignore
-             * 
+             *
              * 2. If an instruction depends on itself, ignore
-             * 
+             *
              * 3. If the instruction is not part of the basic block, ignore
              */
             Instruction *DepInst = dyn_cast<Instruction>(DepValue);
@@ -286,9 +286,9 @@ void Analyzer::_recordDependencesAfterWriteInParentBasicBlock(void)
         /*
          * Debugging
          */
-        DEBUG_INFO << *Store << " (do): " << TotalDependencesAfterWriteInParentBasicBlock[Store].size() << "\n";
+        dbg() << *Store << " (do): " << TotalDependencesAfterWriteInParentBasicBlock[Store].size() << "\n";
         for (auto Dependence : TotalDependencesAfterWriteInParentBasicBlock[Store])
-            DEBUG_INFO << "     " << *Dependence << "\n";
+            dbg() << "     " << *Dependence << "\n";
     }
 
 
@@ -299,10 +299,10 @@ void Analyzer::_recordDependencesAfterWriteInParentBasicBlock(void)
 void Analyzer::_analyzeWriteMovementProfitability(void)
 {
     /*
-     * TOP --- Analyze each write and determine whether it's 
-     * profitable to move it or not. 
-     * 
-     * Profitability = 
+     * TOP --- Analyze each write and determine whether it's
+     * profitable to move it or not.
+     *
+     * Profitability =
      *   a) At least 1 read after write (in parent)
      *   b) No dependences after write (in parent)
      */
@@ -320,7 +320,7 @@ void Analyzer::_analyzeWriteMovementProfitability(void)
 
 
         /*
-         * <Profitability.b> 
+         * <Profitability.b>
          */
         if (TotalDependencesAfterWriteInParentBasicBlock[Store].size()) continue;
 
@@ -337,7 +337,7 @@ void Analyzer::_analyzeWriteMovementProfitability(void)
      * Debugging
      */
     for (auto Store : AllWrites)
-        DEBUG_INFO << *Store << " (profitable?): " << WritesProfitableToMove[Store] << "\n";
+        dbg() << *Store << " (profitable?): " << WritesProfitableToMove[Store] << "\n";
 
 
     return;

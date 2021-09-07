@@ -58,5 +58,6 @@ bool ReverseIterateOverInstructions(
         FucntionToInvokePerInstruction,
     bool DebugPrint = false);
 
+bool IsViableFunction(Function &F);
 
 }  // namespace Utils

@@ -199,3 +199,17 @@ bool Utils::ReverseIterateOverInstructions(
 
   return false;
 }
+
+/*
+ * IsViableFunction
+ *
+ * Return true if the function actually exists with a body inside
+ * the module
+ */
+bool Utils::IsViableFunction(Function &F)
+{
+    if (false
+        || F.empty()) return false;
+
+    return true;
+}

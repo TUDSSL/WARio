@@ -1,17 +1,20 @@
+# Common path
+set(COMMON_DIR "${PROJECT_SOURCE_DIR}/../common")
+
 # Sources
 set(PassSrc
     WriteBuffering.cpp
-    ${CMAKE_SOURCE_DIR}/src/Utils.cpp
     ${CMAKE_SOURCE_DIR}/src/Analyzer.cpp
     ${CMAKE_SOURCE_DIR}/src/Transformer.cpp
     ${CMAKE_SOURCE_DIR}/src/Configurations.cpp
+    ${COMMON_DIR}/src/PassUtils.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${PassSrc} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "WriteBuffer")
+set(PassName "write-buffer")
 
 # configure LLVM
 find_package(LLVM REQUIRED CONFIG)
@@ -30,6 +33,7 @@ include_directories(
     $ENV{NOELLE}/include
     $ENV{NOELLE}/include/svf
     ${CMAKE_SOURCE_DIR}/include
+    ${COMMON_DIR}/include
 )
 
 # Declare the LLVM pass to compile

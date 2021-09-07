@@ -1,6 +1,6 @@
 # Project
-cmake_minimum_required(VERSION 3.4.3)
-project(ICS)
+cmake_minimum_required(VERSION 3.12)
+project(WriteBufferingPass)
 
 # Programming languages to use
 enable_language(C CXX)
@@ -21,6 +21,7 @@ add_definitions(${LLVM_DEFINITIONS})
 add_definitions(
 -D__STDC_LIMIT_MACROS
 -D__STDC_CONSTANT_MACROS
+#-DDEBUG_PRINT
 )
 link_directories(${LLVM_LIBRARY_DIRS})
 
@@ -30,6 +31,3 @@ include(AddLLVM)
 
 # Pass
 add_subdirectory(driver)
-
-# Install
-#install(PROGRAMS bin/cat-c DESTINATION bin)
