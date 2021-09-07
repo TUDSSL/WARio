@@ -1,78 +1,62 @@
 #include "PassUtils.hpp"
 
-class Analyzer
-{
+class Analyzer {
+ public:
+  /*
+   * Constructors
+   */
+  Analyzer(Function &F, Noelle &noelle);
 
-public:
+  /*
+   * Drivers
+   */
+  void Analyze(void);
 
-    /*
-     * Constructors
-     */
-    Analyzer(
-        Function &F,
-        Noelle &noelle
-    ) ;
+  void Dump(void);
 
+  /*
+   * Getters/Analysis
+   */
+  std::unordered_set<StoreInst *> GetAnalyzedWrites(void);
 
-    /*
-     * Drivers
-     */
-    void Analyze(void) ;
+  std::unordered_set<Instruction *> GetReadsAfterWriteInBasicBlock(
+      StoreInst *I);
 
-    void Dump(void) ;
+  unsigned GetNumberOfTotalReadsAfterWriteInBasicBlock(StoreInst *I);
 
+  unsigned GetNumberOfReadDependenceConflictsAfterWriteInBasicBlock(
+      StoreInst *I);
 
+  bool IsWriteProfitableToMoveInBasicBlock(StoreInst *I);
 
-    /*
-     * Getters/Analysis
-     */
-    std::unordered_set<StoreInst *> GetAnalyzedWrites(void) ;
+ private:
+  /*
+   * Fields --- Some of these are overkill but who cares
+   */
+  Function &F;
 
-    std::unordered_set<Instruction *> GetReadsAfterWriteInBasicBlock(StoreInst *I);
+  Noelle &noelle;
 
-    unsigned GetNumberOfTotalReadsAfterWriteInBasicBlock(StoreInst *I) ;
+  std::unordered_set<StoreInst *> AllWrites;
 
-    unsigned GetNumberOfReadDependenceConflictsAfterWriteInBasicBlock(StoreInst *I) ;
+  std::unordered_map<StoreInst *, std::unordered_set<Instruction *> >
+      TotalReadsAfterWriteInParentBasicBlock;
 
-    bool IsWriteProfitableToMoveInBasicBlock(StoreInst *I) ;
+  std::unordered_map<StoreInst *, std::unordered_set<Instruction *> >
+      TotalDependencesAfterWriteInParentBasicBlock;
 
+  std::unordered_map<StoreInst *, bool> WritesProfitableToMove;
 
+  unsigned NumProfitableMoves = 0;
 
-private:
+  /*
+   * Private methods
+   */
+  void _recordWrites(void);
 
-    /*
-     * Fields --- Some of these are overkill but who cares
-     */
-    Function &F;
+  void _recordReadsAfterWriteInParentBasicBlock(void);
 
-    Noelle &noelle;
+  void _recordDependencesAfterWriteInParentBasicBlock(void);
 
-    std::unordered_set<StoreInst *> AllWrites;
-
-    std::unordered_map<
-        StoreInst *,
-        std::unordered_set<Instruction *>
-    > TotalReadsAfterWriteInParentBasicBlock;
-
-    std::unordered_map<
-        StoreInst *,
-        std::unordered_set<Instruction *>
-    > TotalDependencesAfterWriteInParentBasicBlock;
-
-    std::unordered_map<StoreInst *, bool> WritesProfitableToMove;
-
-    unsigned NumProfitableMoves=0;
-
-
-    /*
-     * Private methods
-     */
-    void _recordWrites(void);
-
-    void _recordReadsAfterWriteInParentBasicBlock(void);
-
-    void _recordDependencesAfterWriteInParentBasicBlock(void);
-
-    void _analyzeWriteMovementProfitability(void) ;
-
+  void _analyzeWriteMovementProfitability(void);
 };
