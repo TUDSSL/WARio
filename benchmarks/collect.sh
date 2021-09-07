@@ -32,7 +32,11 @@ function collect() {
 
         cp "$benchmark/benchmark-compare/results-table.txt" "$results_dir/raw/$benchmark-results-table.txt"
         cp "$benchmark/benchmark-compare/results-table.csv" "$results_dir/raw/$benchmark-results-table.csv"
-        cp "$benchmark/benchmark-compare/results-execution-checkpoints.pdf" "$results_dir/raw/$benchmark-results-execution-checkpoints.pdf"
+        # Copy all the pdf files
+        for f in $benchmark/benchmark-compare/*.pdf; do
+            fn="$(basename $f)"
+            cp "$f" "$results_dir/raw/$benchmark-$fn"
+        done
     done
 }
 
