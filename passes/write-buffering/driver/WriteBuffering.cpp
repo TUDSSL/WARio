@@ -24,7 +24,7 @@ struct CAT : public ModulePass {
     /*
      * Analyze each function
      */
-    bool Modified = false;
+    int TotalMoveCount = 0;
     for (auto &F : M) {
       /*
        * Check if the function should be handled or not
@@ -42,10 +42,19 @@ struct CAT : public ModulePass {
        * Perform necessary write buffering based on the analysis
        */
       auto T = Transformer(F);
-      Modified |= T.ClusterWritesWithinBasicBlocks(A);
+      int MoveCount = T.ClusterWritesWithinBasicBlocks(A);
+      TotalMoveCount += MoveCount;
     }
 
-    return Modified;
+    /*
+     * Print test information
+     */
+    dbg() << "\nTotal moves: " << TotalMoveCount << "\n";
+
+    /*
+     * Return true if any modification was made
+     */
+    return (TotalMoveCount > 0);
   }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {

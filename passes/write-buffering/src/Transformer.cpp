@@ -9,7 +9,7 @@ Transformer::Transformer(Function &F) : F{F} {};
 /*
  * ---------- Drivers ----------
  */
-bool Transformer::ClusterWritesWithinBasicBlocks(Analyzer &A) {
+int Transformer::ClusterWritesWithinBasicBlocks(Analyzer &A) {
   /*
    * TOP --- Cluster all writes that are profitable-to-move
    * to the terminator of their respective parent basic blocks
@@ -38,13 +38,13 @@ bool Transformer::ClusterWritesWithinBasicBlocks(Analyzer &A) {
    * Perform clustering for each marked instructions, set metadata following
    * move
    */
-  bool Modified = false;
+  int MoveCount = 0;
   for (auto &[Block, InstructionsToMove] : AllInstructionsToMove) {
     /*
      * Move
      */
     _moveInstructionsToTerminatorOfParentBasicBlock(InstructionsToMove);
-    Modified |= true;
+    ++MoveCount;
 
     /*
      * Metadata
@@ -54,7 +54,7 @@ bool Transformer::ClusterWritesWithinBasicBlocks(Analyzer &A) {
                                         "intra.clustered.write");
   }
 
-  return Modified;
+  return MoveCount;
 }
 
 /*

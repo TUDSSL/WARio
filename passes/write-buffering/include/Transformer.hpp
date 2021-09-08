@@ -10,7 +10,7 @@ class Transformer {
   /*
    * Drivers
    */
-  bool ClusterWritesWithinBasicBlocks(Analyzer &A);
+  int ClusterWritesWithinBasicBlocks(Analyzer &A);
 
  private:
   /*
