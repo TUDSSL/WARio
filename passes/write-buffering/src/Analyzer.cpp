@@ -7,7 +7,7 @@ Analyzer::Analyzer(Function &F, Noelle &noelle) : F{F}, noelle{noelle} {
   /*
    * Debugging
    */
-  dbg() << F.getName() << "\n";
+  dbg() << "Analyzing " << F.getName() << "\n";
   return;
 };
 
@@ -71,27 +71,32 @@ void Analyzer::Dump(void) {
   /*
    * Dump
    */
-  errs() << "\n---\nFor " << F.getName() << ":\n";
+  dbg() << "\n---\nFor " << F.getName() << ":\n";
 
-  errs() << "  Histogram for reads:\n";
+  dbg() << "  Histogram for reads:\n";
   for (auto const &[ReadTally, NumWrites] : NumReadsAfterWrites) {
-    errs() << "    " << ReadTally << " reads : " << NumWrites << " writes\n";
+    dbg() << "    " << ReadTally << " reads : " << NumWrites << " writes\n";
   }
 
-  errs() << "  Histogram for deps:\n";
+  dbg() << "  Histogram for deps:\n";
   for (auto const &[DepTally, NumWrites] : NumDependencesAfterWrites) {
-    errs() << "    " << DepTally << " deps : " << NumWrites << " writes\n";
+    dbg() << "    " << DepTally << " deps : " << NumWrites << " writes\n";
   }
 
-  errs() << "  Number of stores that should move: " << NumProfitableMoves
+  dbg() << "  Number of stores that should move: " << NumProfitableMoves
          << "\n";
   for (auto const &[Store, IsProfitableTomove] : WritesProfitableToMove) {
     if (IsProfitableTomove) {
-      errs() << "     " << *Store << "\n";
+      dbg() << "     " << *Store << "\n";
     }
   }
 
-  errs() << "\n\n";
+  dbg() << "\n\n";
+
+  /*
+   * Automated testing information
+   */
+  dbg() << "$PROFITABLE_MOVES: " << NumProfitableMoves << "\n";
 
   return;
 }
