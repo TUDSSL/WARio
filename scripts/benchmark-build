@@ -16,6 +16,7 @@ function build_benchmark() {
     local build_dir="build-$benchmark_name"
     echo "Building benchmark $benchmark_name in $build_dir"
 
+    rm -rf "$build_dir"
     mkdir -p "$build_dir"
     pushd "$build_dir"
 
@@ -49,6 +50,7 @@ function uninstrumented() {
     export ICLANG_PASS_IDEMP_FLAGS=""
     export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS=""
 
@@ -64,6 +66,7 @@ function opt_ratchet() {
     export ICLANG_PASS_IDEMP_FLAGS="-idemp -cp-ratchet"
     export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
 
@@ -79,6 +82,7 @@ function opt_baseline() {
     export ICLANG_PASS_IDEMP_FLAGS="-idemp"
     export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
 
@@ -93,6 +97,7 @@ function opt_loop() {
     export ICLANG_PASS_IDEMP_FLAGS="-idemp"
     export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8"
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
+    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
 
@@ -101,11 +106,25 @@ function opt_loop() {
 
 }
 
+function opt_writebuf() {
+    # Configure the benchmark
+    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
+    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+    export ICLANG_PASS_WRITE_BUFFER_FLAGS="-write-buffer"
+
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
+
+    # Build the benchmark
+    build_benchmark "opt-writebuf"
+}
+
 function opt_all() {
     # Configure the benchmark
     export ICLANG_PASS_IDEMP_FLAGS="-idemp"
-    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=4"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8"
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
+    export ICLANG_PASS_WRITE_BUFFER_FLAGS="-write-buffer"
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
 
@@ -149,6 +168,7 @@ function print_help() {
     echo "  opt-ratchet"
     echo "  opt-baseline"
     echo "  opt-loop"
+    echo "  opt-writebuf"
     echo "  opt-all"
     echo "  all-parallel (build all the benchmarks in parallel)"
 }
@@ -165,6 +185,7 @@ ConfigMap["uninstrumented"]=uninstrumented
 ConfigMap["opt-ratchet"]=opt_ratchet
 ConfigMap["opt-baseline"]=opt_baseline
 ConfigMap["opt-loop"]=opt_loop
+ConfigMap["opt-writebuf"]=opt_writebuf
 ConfigMap["opt-all"]=opt_all
 
 
