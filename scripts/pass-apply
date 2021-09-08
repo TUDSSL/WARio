@@ -36,6 +36,11 @@ case "$pass" in
     PASS_LIB="$ROOT/passes/loop-scheduler/build/loop-write-clusterer.so"
     PASS_ARGS="-loop-write-clusterer -lwc-loop-schedule"
     ;;
+  "write-buffer")
+    echo "Running write-buffer pass"
+    PASS_LIB="$ROOT/passes/write-buffering/build/write-buffer.so"
+    PASS_ARGS="-write-buffer"
+    ;;
   *)
     echo "Unknown pass: $pass"
     usage
@@ -48,4 +53,4 @@ echo "Using plugin options: $PASS_ARGS"
 
 
 # Run the pass
-$NOELLE_LOAD "-load $PASS_LIB $PASS_ARGS -S  $@"
+$NOELLE_LOAD "-load $PASS_LIB $PASS_ARGS -debug -S  $@"
