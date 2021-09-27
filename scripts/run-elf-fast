@@ -1,0 +1,8 @@
+#!/bin/bash
+# Pass the .elf file (and optional extra arguments) to this script
+
+# Run the ICEmu emulator with the appropriate flags
+icemu \
+    -p mock_putc_plugin.so -a putc-logfile=% \
+    -p mock_clockfunc_plugin.so \
+    "$@"

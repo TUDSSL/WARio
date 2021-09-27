@@ -3,12 +3,32 @@
 
 # Run the ICEmu emulator with the appropriate flags
 icemu \
-    -p mock_putc_plugin.so \
+    -p mock_putc_plugin.so -a putc-logfile=% \
     -p mock_clockfunc_plugin.so \
     -p instruction_profiling_plugin.so -a instruction-profiling-file=% \
     -p cycle_count_plugin.so -a cycle-count-file=% \
     -p final_value_plugin.so -a final-value=__checkpoint_count \
-    -p checkpoint_marker_plugin.so -a checkpoint-marker-file=% \
-    -p callsite_count_plugin.so -a callsite-count-track=__checkpoint -a callsite-count-file=% \
+    -p callsite_count_plugin.so \
+      -a callsite-count-track=__checkpoint \
+      -a callsite-count-track=__checkpoint_ir \
+      -a callsite-count-track=__checkpoint_call \
+      -a callsite-count-track=__checkpoint_pop \
+      -a callsite-count-track=__checkpoint_spill \
+      -a callsite-count-file=% \
+    -p call_count_plugin.so \
+      -a call-count-track=__checkpoint \
+      -a call-count-track=__checkpoint_ir \
+      -a call-count-track=__checkpoint_call \
+      -a call-count-track=__checkpoint_pop \
+      -a call-count-track=__checkpoint_spill \
+      -a call-count-file=% \
+    -p call_frequency_plugin.so \
+      -a call-frequency-track=__checkpoint \
+      -a call-frequency-track=__checkpoint_ir \
+      -a call-frequency-track=__checkpoint_call \
+      -a call-frequency-track=__checkpoint_pop \
+      -a call-frequency-track=__checkpoint_spill \
+      -a call-frequency-file=% \
     -p checkpoint_verification_plugin.so -a cpval-checkpoint-variable=__lclock -a cpval-ignore-variable=__first_boot -a cpval-uncaught-war-file=% \
     "$@"
+
