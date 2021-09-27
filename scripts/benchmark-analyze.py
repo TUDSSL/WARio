@@ -34,18 +34,17 @@ ConfigTitleMap = {
         'opt-all': 'Opt-all'
 }
 
-ConfigOrder = [
-        'uninstrumented',
-        'opt-ratchet',
-        'opt-baseline',
-        'opt-writebuf',
-        'opt-loop',
-        'opt-all'
-        ]
+ConfigOrder = list(ConfigTitleMap.keys())
 
 df = pd.read_csv(results_file)
 df = df.set_index('Configuration')
-df = df.reindex(ConfigOrder)
+
+# Get all the entries, place entries not in ConfigOrder at the end
+OtherEntries = list((set(df.index.values)-set(ConfigOrder)))
+AllEntries = ConfigOrder + OtherEntries
+
+# Reorder the entries
+df = df.reindex(AllEntries)
 
 UninstrumentedCycles=df['Cycles']['uninstrumented']
 df['Execution'] = df['Cycles']/UninstrumentedCycles
@@ -63,20 +62,47 @@ df['Overhead-ratchet-%'] = (((df['Execution']-1)*100.0)/ExecutionRatchet)-100
 df['Overhead-baseline-%'] = round(df['Overhead-baseline-%'],2)
 df['Overhead-ratchet-%'] = round(df['Overhead-ratchet-%'],2)
 
+# Save a print and save a version with all the entries
+df_all = df.copy(deep=True)
+df_all_cp = df[['IR-checkpoints', 'Call-checkpoints', 'Pop-checkpoints', 'Spill-checkpoints']]
+
+# Only keep the entries in ConfigOrder
+df = df.reindex(ConfigOrder)
 
 # Rename the index
 df.rename(index=ConfigTitleMap, inplace=True)
 
 df_cp = df[['IR-checkpoints', 'Call-checkpoints', 'Pop-checkpoints', 'Spill-checkpoints']]
 
+
 #
 # Store the processed data
 #
 
 # Print and store the table
+print("")
+print("All entries")
+table_text = tabulate(df_all, headers='keys', tablefmt='pretty')
+print(table_text)
+
+# Store a .txt version
+with open(dir_path + '/' + 'results-table-raw.txt', 'w') as f:
+    f.write(table_text)
+
+# Store a .tex version
+with open(dir_path + '/' + 'results-table-raw.tex', 'w') as f:
+    f.write(tabulate(df, headers='keys', tablefmt='latex'))
+
+# Store a .csv version
+df_all.to_csv(dir_path + '/' + 'results-table-raw.csv')
+
+
+print("")
+print("Processed entries")
 table_text = tabulate(df, headers='keys', tablefmt='pretty')
 print(table_text)
 
+# Store a .txt version
 with open(dir_path + '/' + 'results-table.txt', 'w') as f:
     f.write(table_text)
 
@@ -149,6 +175,29 @@ def plot_execution_bars(df, df_cp, name,
     fig.tight_layout()
     fig.savefig(dir_path + '/' + name)
 
+def plot_percentage_bars(df, name):
+    fig, ax0 = plt.subplots(figsize=(8,5), dpi=90)
+    perc_bar = df.plot(kind='bar', color=ExecutionColors, \
+            rot=20, ax=ax0, width=0.3, \
+            legend=False)
+    ax0.set_xlabel('Benchmark Configuration')
+    ax0.set_ylabel('Difference in overhead (%) compared to Ratchet+Noelle')
+    plt.xlim(left=-0.5)
+    ax0.axhline(0, color='grey', linewidth=0.8)
+
+    for i,v in enumerate(perc_bar.patches):
+        v = v.get_height()
+        y = v
+
+        s = '{0:+}%'.format(v)
+        ax0.text(x=i, y=y, s=s, color='black', fontweight='bold', va='center', ha='center')
+
+    # Save the figure
+    fig.savefig(dir_path + '/' + name)
+
+#
+# Versions with only the selected bars
+#
 
 # Normalized to C version starting at execution y=0
 plot_execution_bars(df['Execution'], df_cp,
@@ -164,28 +213,25 @@ plot_execution_bars(df.drop('Plain C')['Execution-baseline'], df_cp.drop('Plain 
         ylabel0='Normalized Exection Time w.r.t. Ratchet+Noelle')
 
 # Difference in overhead (in percentage) compared to Ratchet+Noelle (baseline)
-# TODO: This looks ugly...
-#plot_execution_bars(df.drop(['Plain C', 'Ratchet+Noelle'])['Overhead-baseline-%'], df_cp.drop(['Plain C', 'Ratchet+Noelle']),
-#        'results-overhead-checkpoints-percent-compared-to-baseline.pdf',
-#        ylabel0='Difference in overhead (%) compared to Ratchet+Noelle')
+plot_percentage_bars(df.drop(['Plain C', 'Ratchet+Noelle'])['Overhead-baseline-%'],
+        'results-overhead-checkpoints-percent-compared-to-baseline.pdf')
 
-fig, ax0 = plt.subplots(figsize=(8,5), dpi=90)
-df_plt = df.drop(['Plain C', 'Ratchet+Noelle'])['Overhead-baseline-%']
-perc_bar = df_plt.plot(kind='bar', color=ExecutionColors, \
-        rot=0, ax=ax0, width=0.3, \
-        legend=False)
-ax0.set_xlabel('Benchmark Configuration')
-ax0.set_ylabel('Difference in overhead (%) compared to Ratchet+Noelle')
-plt.xlim(left=-0.5)
-ax0.axhline(0, color='grey', linewidth=0.8)
 
-for i,v in enumerate(perc_bar.patches):
-    v = v.get_height()
-    y = v
+#
+# Plots with ALL the data
+#
+plot_execution_bars(df_all['Execution'], df_all_cp,
+        'ALL-results-execution-checkpoints.pdf')
 
-    s = '{0:+}%'.format(v)
-    ax0.text(x=i, y=y, s=s, color='black', fontweight='bold', va='center', ha='center')
+## Normalized to C version starting at execution y=1 not showing Plain C
+plot_execution_bars(df_all.drop('uninstrumented')['Execution'], df_all_cp.drop('uninstrumented'),
+        'ALL-results-execution-checkpoints-no-plain-c.pdf', ylim0=(1,None))
 
-# Save the figure
-#fig.tight_layout()
-fig.savefig(dir_path + '/' + 'results-overhead-checkpoints-percent-compared-to-baseline.pdf')
+# Plot normalized to Ratchet+Noelle (baseline)
+plot_execution_bars(df_all.drop('uninstrumented')['Execution-baseline'], df_all_cp.drop('uninstrumented'),
+        'ALL-results-execution-checkpoints-norm-baseline.pdf',
+        ylabel0='Normalized Exection Time w.r.t. Ratchet+Noelle')
+
+# Difference in overhead (in percentage) compared to Ratchet+Noelle (baseline)
+plot_percentage_bars(df_all.drop(['uninstrumented', 'opt-baseline'])['Overhead-baseline-%'],
+        'ALL-results-overhead-checkpoints-percent-compared-to-baseline.pdf')
