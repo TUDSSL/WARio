@@ -84,8 +84,9 @@ void LoopWriteScheduler::collectLoopInstructionDependencies(
 /*
  * Order the WAR store instructions in the order that they appear in.
  * This will be the order the reschedules stores will appear in.
+ * Returns true of the WARs should be rescheduled, false if not
  */
-void LoopWriteScheduler::orderWars(Noelle &N, LoopStructure *LS,
+bool LoopWriteScheduler::orderWars(Noelle &N, LoopStructure *LS,
                                    BasicBlock *latch,
                                    InstructionDependecyMapTy &WarDepMap,
                                    list<Instruction *> &WarDepOrder) {
@@ -106,12 +107,19 @@ void LoopWriteScheduler::orderWars(Noelle &N, LoopStructure *LS,
     } else {
       dbg() << "War Instruction: " << *war_inst
              << " does not dominate the latch, can not schedule\n";
+
+      /*
+       * NB. For now ONLY reschedule if ALL the WARs dominate the latch
+       */
+      return false;
     }
   }
 
   // Sort the list
   WarDepOrder.sort(
       [&](Instruction *a, Instruction *b) { return D.dominates(a, b); });
+
+  return true;
 }
 
 void LoopWriteScheduler::findLoadsDependingOnRescheduledStores(
@@ -271,7 +279,15 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
      * Order the WAR stores correctly
      */
     list<Instruction *> WarDepOrder;
-    orderWars(N, LS, latch, WarDepMap, WarDepOrder);
+    auto valid = orderWars(N, LS, latch, WarDepMap, WarDepOrder);
+
+    /*
+     * We can not manage to reschedule this loop
+     */
+    if (!valid) {
+      dbg() << "  Failed to reschedule loop\n";
+      continue;
+    }
 
     /*
      * If a WAR store is:
@@ -284,7 +300,7 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
       auto *Store = dyn_cast<StoreInst>(war);
       assert(Store != nullptr);
 
-      if (Store->getParent() == latch) continue;
+      //if (Store->getParent() == latch) continue;
       if (Store->isVolatile()) continue;
 
       warRescheduleInst.push_back(Store);
@@ -324,12 +340,16 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
      * Find the WAR store insertion point in the latch block
      */
     Instruction *StoreInsertPoint;
+#if 0
     for (Instruction &inst : *latch) {
       StoreInsertPoint = &inst;
       if (dyn_cast<StoreInst>(&inst)) {
         break;
       }
     }
+#else
+    StoreInsertPoint = &latch->back();
+#endif
 
     /*
      * Print some information
@@ -361,26 +381,59 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
     dbg() << " Store insertion point (before) in latch: " << *StoreInsertPoint
            << "\n";
 
+    int RescheduledWars = 0;
+    int ResolvedLoads = 0;
+    int InsertedLoadChecks = 0;
+
+    RescheduledWars = warRescheduleInst.size();
+    ResolvedLoads = affectedLoadStoresMap.size();
+
+    /*
+     * Count all writes connected to affected loads
+     */
+    for (auto &kv : affectedLoadStoresMap) {
+      for (auto *Store : kv.second) ++InsertedLoadChecks;
+    }
+
+    /*
+     * If there are no rescheduled WARs we stop
+     */
+    if (RescheduledWars == 0) {
+      dbg() << " No WARs to reschedule\n";
+      dbg() << " Aborting loop transformation\n";
+      continue;
+    }
+
+    /*
+     * Cancel the loop transformation if the ratio between Rescheduled WARs
+     * and Inserted Load checks exceeds a configured amount.
+     *
+     * When the number of load checks increase we put pressure on the registers
+     * potentially causing more register-spilling. Handling register spills is
+     * done in the back-end, but it does introduce checkpoints. So too many load
+     * checks will:
+     *   1. Introduce a lot of extra instructions that compare addresses.
+     *   2. Add a lot of register pressure that might lead to more checkpoints.
+     */
+    float RescheduleRatio = (float)InsertedLoadChecks/RescheduledWars;
+    dbg() << " Reschedule ratio: " << RescheduleRatio << "\n";
+
+    if (RescheduleRatio > RescheduleRatioMax) {
+      dbg() << " Maximum reschedule ratio (" << RescheduleRatioMax
+            << ") exceeded\n";
+      dbg() << " Aborting loop transformation\n";
+      continue;
+    }
+
     /*
      * Print debug information used in automated unit tests
      */
     if (AutomatedTestingPrint) {
-        int RescheduledWars = 0;
-        int ResolvedLoads = 0;
-        int InsertedLoadChecks = 0;
-
-        RescheduledWars = warRescheduleInst.size();
-        ResolvedLoads = affectedLoadStoresMap.size();
-
-        // Count all writes connected to affected loads
-        for (auto &kv : affectedLoadStoresMap) {
-          for (auto *Store : kv.second) ++InsertedLoadChecks;
-        }
-
-        dbg() << "$LOOP_WRITE_RESCHEDULED_STORES: " << RescheduledWars << "\n";
-        dbg() << "$LOOP_WRITE_RESOLVED_LOADS: " << ResolvedLoads << "\n";
-        dbg() << "$LOOP_WRITE_INSERTED_LOAD_CHECKS: " << InsertedLoadChecks << "\n";
+      dbg() << "$LOOP_WRITE_RESCHEDULED_STORES: " << RescheduledWars << "\n";
+      dbg() << "$LOOP_WRITE_RESOLVED_LOADS: " << ResolvedLoads << "\n";
+      dbg() << "$LOOP_WRITE_INSERTED_LOAD_CHECKS: " << InsertedLoadChecks << "\n";
     }
+
 
     /*
      * Transform the IR

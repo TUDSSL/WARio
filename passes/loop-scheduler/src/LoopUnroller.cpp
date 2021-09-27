@@ -122,7 +122,7 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    */
   for (const auto &I : LS->getInstructions()) {
     if (isa<CallInst>(I) && (isa<IntrinsicInst>(I) == false)) {
-      dbg() << "Loop contains a function call\n";
+      dbg() << "    Loop contains a function call: " << *I << "\n";
       return false;
     }
   }

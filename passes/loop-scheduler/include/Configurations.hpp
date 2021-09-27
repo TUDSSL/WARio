@@ -64,6 +64,8 @@ extern cl::opt<unsigned int> LoopUnrollInstructionThreshold;
 
 extern cl::opt<bool> LoopScheduleStep;
 
+extern cl::opt<float> RescheduleRatioMax;
+
 #ifdef DEBUG_PRINT
 #define dbg() errs()
 #else

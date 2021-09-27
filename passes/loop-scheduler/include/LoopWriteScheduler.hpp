@@ -22,7 +22,7 @@ void collectLoopInstructionDependencies(LoopDependenceInfo *loop,
                                     InstructionDependecyMapTy &WarDepMap,
                                     InstructionDependecyMapTy &RawDepMap);
 
-void orderWars(Noelle &N, LoopStructure *LS,
+bool orderWars(Noelle &N, LoopStructure *LS,
                                    BasicBlock *latch,
                                    InstructionDependecyMapTy &WarDepMap,
                                    list<Instruction *> &WarDepOrder);

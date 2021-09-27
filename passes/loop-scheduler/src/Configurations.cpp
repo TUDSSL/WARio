@@ -51,3 +51,9 @@ cl::opt<bool> LoopScheduleStep(
   cl::init(false),
   cl::desc("Execute the ICS loop WAR store schedule step")
 );
+
+cl::opt<float> RescheduleRatioMax(
+  "lwc-reschedule-ratio",
+  cl::init(2.5),
+  cl::desc("The maximum reschedule ratio (RescheduledWrites/LoadChecks) allowed")
+);
