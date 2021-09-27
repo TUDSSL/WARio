@@ -5472,28 +5472,23 @@ void ARMBaseInstrInfo::insertCheckpoint(MachineBasicBlock &MBB,
   // Optionally insert a checkpoint reason marker
   //
   const char *FN;
-  if (IdempCheckpointReasonMarkers) {
     switch (CPR) {
-      case CheckpointReason::CHECKPOINTR_IR:
-        FN = "__checkpoint_marker_ir";
-        break;
-      case CheckpointReason::CHECKPOINTR_CALL:
-        FN = "__checkpoint_marker_call";
-        break;
-      case CheckpointReason::CHECKPOINTR_POP:
-        FN = "__checkpoint_marker_pop";
-        break;
-      case CheckpointReason::CHECKPOINTR_SPILL:
-        FN = "__checkpoint_marker_spill";
-        break;
+    case CheckpointReason::CHECKPOINTR_IR:
+      FN = "__checkpoint_ir";
+      break;
+    case CheckpointReason::CHECKPOINTR_CALL:
+      FN = "__checkpoint_call";
+      break;
+    case CheckpointReason::CHECKPOINTR_POP:
+      FN = "__checkpoint_pop";
+      break;
+    case CheckpointReason::CHECKPOINTR_SPILL:
+      FN = "__checkpoint_spill";
+      break;
 
-      default:
-        assert(false && "Unhandled checkpoint reason marker");
-        break;
-    }
-    BuildMI(MBB, MI, DebugLoc(), get(ARM::tBL))
-        .add(predOps(ARMCC::AL))
-        .addExternalSymbol(FN);
+    default:
+      assert(false && "Unhandled checkpoint reason marker");
+      break;
   }
 
   //
@@ -5519,8 +5514,7 @@ void ARMBaseInstrInfo::insertCheckpoint(MachineBasicBlock &MBB,
     // Insert the checkpoint call
     BuildMI(MBB, MI, DebugLoc(), get(ARM::tBL))
         .add(predOps(ARMCC::AL))
-        .addExternalSymbol("__checkpoint");
-
+        .addExternalSymbol(FN);
   }
 }
 
