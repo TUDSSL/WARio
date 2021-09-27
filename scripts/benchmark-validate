@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Validate benchmarks in a directory
+# $1 - bechmark to be validated
+# $2 - valid benchmark run-directory (including *.stdout) (defaults to build-uninstrumented)
+
+bench_compare="$1"
+bench_valid="build-uninstrumented"
+
+STDOUT_FILE="*.stdout"
+
+if [ ! -z "$2" ]; then
+  bench_valid="$2"
+fi
+
+#echo "Comparing \"$bench_compare\" to valid benchmark \"$bench_valid\""
+diff $bench_compare/$STDOUT_FILE $bench_valid/$STDOUT_FILE > /dev/null
+err=$?
+
+# If the file is different, there is either an error, or it's CoreMark
+# CoreMark also prints time information, meaning that the text is not exactly
+# the same. So here we check if the CRCs of CoreMark are in the file, meaning
+# CoreMark ran successfully
+if [ $err -ne 0 ]; then
+   if grep -q "\[0\]crcfinal      : 0xf24c" $bench_compare/$STDOUT_FILE; then
+     err=0
+   fi
+fi
+
+exit $err

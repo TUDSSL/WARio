@@ -4,7 +4,7 @@
 # Compare them
 # Generate some output
 
-set -e
+#set -e
 
 benchmark_dir="benchmark-compare"
 results_file="results.csv"
@@ -14,7 +14,9 @@ if [ -z "$1" ]; then
     target="all"
 fi
 
-mkdir -p $benchmark_dir
+# Clean the benchmark directory if it exists
+rm -rf "$benchmark_dir" && mkdir "$benchmark_dir"
+
 echo -n "" > $benchmark_dir/$results_file
 echo "Configuration,Cycles,Checkpoints,IR-checkpoints,Call-checkpoints,Pop-checkpoints,Spill-checkpoints" >> $benchmark_dir/$results_file
 
@@ -23,6 +25,8 @@ if [[ "$target" == "all" ]]; then
     echo "Comparing all the benchmarks"
     target="build-*"
 fi
+
+err=0
 
 for i in $(find . -type d \( -iname "$target" -or -iname "build-$target" \)); do
     # Strip the benchmark name from the build-
@@ -61,10 +65,10 @@ for i in $(find . -type d \( -iname "$target" -or -iname "build-$target" \)); do
     POP="0"
     SPILL="0"
 
-    marker_file=$(find "$i" -type f -name "*.checkpointmarker.csv")
-    if [[ ! -z "$marker_file" ]]; then
-        for marker_line in $(cat $marker_file); do
-            marker_line=${marker_line//"__checkpoint_marker_"/}
+    checkpoint_call_count_file=$(find "$i" -type f -name "*callcount.csv")
+    if [[ ! -z "$checkpoint_call_count_file" ]]; then
+        for marker_line in $(cat $checkpoint_call_count_file); do
+            marker_line=${marker_line//"__checkpoint_"/}
             marker=$(echo "$marker_line" | awk -F ',' '{print $1'})
             count=$(echo "$marker_line" | awk -F ',' '{print $2'})
 
@@ -82,5 +86,18 @@ for i in $(find . -type d \( -iname "$target" -or -iname "build-$target" \)); do
 
     # New line
     echo "" >> "$f"
+
+    # Check if the benchmark is valid (compare to uninstrumented)
+    if [ -d "build-uninstrumented" ]; then
+        benchmark-validate "build-$benchmark_name"
+        if [ $? -ne 0 ]; then
+            echo "  BENCHMARK $benchmark_name INVALID!"
+            touch "$benchmark_dir/$benchmark_name-INVALID"
+            #err=1
+            err=0
+        fi
+    fi
 done
+
+exit $err
 
