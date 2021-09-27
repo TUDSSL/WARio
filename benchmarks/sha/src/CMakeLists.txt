@@ -18,7 +18,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ${OUTPUT_SUFFIX})
 
 target_include_directories(${PROJECT_NAME}
        PUBLIC
-       bitcount
+       sha
        portme
      )
 

@@ -7,6 +7,14 @@ add_executable(${PROJECT_NAME}
 # Change target suffix
 set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ${OUTPUT_SUFFIX})
 
+# Optionally overwrite the default optmization level
+if (NOT DEFINED OPT_LEVEL)
+    message(STATUS "Using default opt-level -O3")
+    set(OPT_LEVEL "-O3")
+else()
+    message(STATUS "Using opt-level ${OPT_LEVEL}")
+endif()
+
 # Compiler options for this project
 target_compile_options(${PROJECT_NAME}
     PUBLIC -mfloat-abi=soft
@@ -14,7 +22,7 @@ target_compile_options(${PROJECT_NAME}
     PRIVATE -Wall
     PRIVATE -std=c99
     PRIVATE -g
-    PRIVATE -O1
+    PRIVATE ${OPT_LEVEL}
     )
 
 # Linker options for this project

@@ -6,6 +6,14 @@ project(sha LANGUAGES C ASM)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+# Optionally overwrite the default optmization level
+if (NOT DEFINED OPT_LEVEL)
+    message(STATUS "Using default opt-level -O3")
+    set(OPT_LEVEL "-O3")
+else()
+    message(STATUS "Using opt-level ${OPT_LEVEL}")
+endif()
+
 # Compiler options for this project
 add_compile_options(
     -mfloat-abi=soft
@@ -13,7 +21,7 @@ add_compile_options(
     -Wall
     -std=c99
     -g
-    -O3
+    ${OPT_LEVEL}
     )
 
 # Linker options for this project
