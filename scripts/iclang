@@ -38,6 +38,9 @@ WRITE_BUFFER_PASS_LIB="$DIR/../passes/write-buffering/build/write-buffer.so"
 
 CHECKPOINT_ARCH_SRC="$DIR/../toolchain-arm/checkpoint/checkpoint.c"
 
+# Enable debug flag for all the passes
+ICLANG_PASS_COMMON_FLAGS="-debug"
+
 if [[ ! -z "${ICLANG_VERBOSE}" ]]; then
     # Output all pass output to stdout
     ICLANG_PASS_STDOUT=""
@@ -93,20 +96,44 @@ function apply_pass() {
     local passargs="$5"
 
     # Normalize
-    run "$NOELLE_NORM -S $input_ir -o $basename-norm.ll $ICLANG_PASS_STDOUT"
+    run "$NOELLE_NORM -S $input_ir -o $basename-$passname-input.ll $ICLANG_PASS_STDOUT"
 
     # Apply the pass
     run "$NOELLE_LOAD -load $passlib $passargs $ICLANG_PASS_COMMON_FLAGS \
- -S $basename-norm.ll -o $basename-$passname.ll 2>&1 | \
+ -S $basename-$passname-input.ll -o $basename-$passname.ll 2>&1 | \
  tee $basename-$passname.txt | grep -v XAN: $ICLANG_PASS_STDOUT"
 
     # Set the return
     apply_pass_output="$basename-$passname.ll"
 }
 
+# $1 - name
+# $2 - basename
+# $3 - input-llvmir
+# $4 - opt-args
+# return output-llvmir
+function apply_opt() {
+    local name="$1"
+    local basename="$2"
+    local input_ir="$3"
+    local optargs="$4"
+
+    # Apply the opt
+    run "opt $optargs -S $input_ir -o $basename-$name.ll 2>&1 | \
+ tee $basename-$name.txt $ICLANG_PASS_STDOUT"
+
+    # Set the return
+    apply_opt_output="$basename-$name.ll"
+}
+
 function apply_passes() {
     local basename="$1"
     local ir="$2"
+    local opt_level="$3"
+
+    # Apply optimization
+    apply_opt "opt-pre-loop" "$basename" "$ir" "-always-inline -inline"
+    local ir="$apply_opt_output"
 
     # Loop Unroll step
     apply_pass $LOOP_PASS_LIB "loop-unroll" "$basename" "$ir" "$ICLANG_PASS_LOOP_UNROLL_FLAGS"
@@ -115,6 +142,10 @@ function apply_passes() {
     # Loop write cluster step
     apply_pass $LOOP_PASS_LIB "loop-cluster" "$basename" "$ir" "$ICLANG_PASS_LOOP_CLUSTER_FLAGS"
     local ir="$apply_pass_output"
+
+    # Apply optimization
+    apply_opt "opt-pre-war" "$basename" "$ir" "$opt_level"
+    local ir="$apply_opt_output"
 
     # Write buffer step
     apply_pass $WRITE_BUFFER_PASS_LIB "write-buffer" "$basename" "$ir" "$ICLANG_PASS_WRITE_BUFFER_FLAGS"
@@ -138,6 +169,9 @@ function compile_intermittent() {
     local compile_args="$(<${compile_args_dir}/compile_args.txt)"
     local obj_pass="$obj_dir/$obj_filename-pass.obj"
 
+    # Get the -Ox optimization level
+    local opt_level=$(echo "$compile_args" | grep -o '\-O.')
+
     # Remove unneeded args
     compile_args="${compile_args//-MD/}"
     compile_args="${compile_args//-MMD/}"
@@ -148,12 +182,13 @@ function compile_intermittent() {
     compile_args_with_includes="$compile_args"
     compile_args=$(echo "${compile_args}" | sed -E 's/-I\S+//g')
 
+
     # If we want to run the passes
     if [[ -z "${ICLANG_NO_PASSES}" ]]; then
         local ir="$bitcode_input"
 
         # Apply all the passes
-        apply_passes "$basename" "$ir"
+        apply_passes "$basename" "$ir" "$opt_level"
         local ir="$apply_passes_output"
 
         # Compile the instrumented IR file
