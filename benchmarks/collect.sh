@@ -12,6 +12,8 @@ Benchmarks=(
     "crc"
     "sha"
     "dijkstra"
+    "aes"
+    "picojpeg"
 )
 
 # Optional analyze, is currently also done when after running the benchmarks
@@ -32,6 +34,8 @@ function collect() {
 
         cp "$benchmark/benchmark-compare/results-table.txt" "$results_dir/raw/$benchmark-results-table.txt"
         cp "$benchmark/benchmark-compare/results-table.csv" "$results_dir/raw/$benchmark-results-table.csv"
+        cp "$benchmark/benchmark-compare/results-table-raw.txt" "$results_dir/raw/$benchmark-results-table-raw.txt"
+        cp "$benchmark/benchmark-compare/results-table-raw.csv" "$results_dir/raw/$benchmark-results-table-raw.csv"
         # Copy all the pdf files
         for f in $benchmark/benchmark-compare/*.pdf; do
             fn="$(basename $f)"
@@ -73,9 +77,13 @@ function gen_html_report() {
         echo "</br>" >> $results_file
 
         # Embed the pdf figure
-        echo "<embed src=\"raw/$benchmark-results-execution-checkpoints.pdf\" width=\"1200\" height=\"400\" type=\"application/pdf\">" >> $results_file
-
+        echo "<embed src=\"raw/$benchmark-ALL-results-execution-checkpoints.pdf\" width=\"1200\" height=\"400\" type=\"application/pdf\">" >> $results_file
         echo "</br>" >> $results_file
+
+        # Embed the percent pdf figure
+        echo "<embed src=\"raw/$benchmark-ALL-results-overhead-checkpoints-percent-compared-to-baseline.pdf\" width=\"1200\" height=\"400\" type=\"application/pdf\">" >> $results_file
+        echo "</br>" >> $results_file
+
         echo "</br>" >> $results_file
     done
 
