@@ -418,7 +418,7 @@ bool LoopWriteScheduler::schedule(Noelle &N, Module &M) {
     float RescheduleRatio = (float)InsertedLoadChecks/RescheduledWars;
     dbg() << " Reschedule ratio: " << RescheduleRatio << "\n";
 
-    if (RescheduleRatio > RescheduleRatioMax) {
+    if ((NoRescheduleRatio == false) && (RescheduleRatio > RescheduleRatioMax)) {
       dbg() << " Maximum reschedule ratio (" << RescheduleRatioMax
             << ") exceeded\n";
       dbg() << " Aborting loop transformation\n";
