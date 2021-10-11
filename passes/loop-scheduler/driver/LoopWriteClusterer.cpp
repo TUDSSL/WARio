@@ -43,7 +43,7 @@ struct LoopWriteClusterer : public ModulePass {
            "step.");
     #endif
 
-    if (LoopUnrollStep == true) {
+    if (LoopUnrollStep == true && LoopUnrollCount > 0) {
       /*
        * Collect loop unroll candidates
        */

@@ -66,6 +66,8 @@ extern cl::opt<bool> LoopScheduleStep;
 
 extern cl::opt<float> RescheduleRatioMax;
 
+extern cl::opt<bool> NoRescheduleRatio;
+
 #ifdef DEBUG_PRINT
 #define dbg() errs()
 #else

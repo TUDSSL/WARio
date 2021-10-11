@@ -57,3 +57,9 @@ cl::opt<float> RescheduleRatioMax(
   cl::init(2.5),
   cl::desc("The maximum reschedule ratio (RescheduledWrites/LoadChecks) allowed")
 );
+
+cl::opt<bool> NoRescheduleRatio(
+  "lwc-no-reschedule-ratio",
+  cl::init(false),
+  cl::desc("Disable the RescheduleRatio check (should only be used for benchmarking)")
+);
