@@ -36,15 +36,6 @@ void __checkpoint(void) {
 
 __attribute__((naked))
 void __checkpoint_restore(void) {
-#ifdef RESTORE_COUNT_ENABLE
-    // Optional checkpoint count, only works properly on continuous power.
-    // It can overflow. It was an implicit WAR!, it is purely meant for debugging!
-    LIBCP_ASM("ldr r1, =__restore_count");    // Load the restore_count address
-    LIBCP_ASM("ldr r0, [r1]");              // load the value
-    LIBCP_ASM("add r0, 1");                 // increment the value
-    LIBCP_ASM("str r0, [r1]");              // Store the new restore_count
-#endif /* RESTORE_COUNT_ENABLE */
-
     // Load the logical clock location
     LIBCP_ASM("ldr r0, =__lclock");
     LIBCP_ASM("ldr r0, [r0]");
@@ -54,26 +45,21 @@ void __checkpoint_restore(void) {
     LIBCP_ASM("eor r0, r0, #1");
 
     // Load the register checkpoint location (double buffered)
-    LIBCP_ASM("ldr r12, =__registers_checkpoint_ptr");
+    LIBCP_ASM("ldr r2, =__registers_checkpoint_ptr");
     // Get what checkpoint to restore CP => registers_checkpoint_ptr[lclock XOR 1]
-    LIBCP_ASM("ldr r12, [r12, r0, lsl #2]");
+    LIBCP_ASM("ldr r2, [r2, r0, lsl #2]");
 
-    // Restore the checkpoint
-    // TODO: We can probably reduce the number of moves, but the __restore
-    // operation happens less often, so does not require too much optimization.
-    LIBCP_ASM("add r12, #40");          // point to r13 in the checkpoint
-    LIBCP_ASM("ldmia r12, {r4-r9}");    // load sp, lr, psr, r0, r1, r2 into r4, r5, r6, r7, r8, r9
-    LIBCP_ASM("mov sp, r4");            // restore sp
-    LIBCP_ASM("mov lr, r5");            // restore lr
-    LIBCP_ASM("msr xpsr, r6");          // restore psr
-    LIBCP_ASM("mov r0, r7");            // restore r0
-    LIBCP_ASM("mov r1, r8");            // restore r1
-    LIBCP_ASM("mov r2, r9");            // restore r2
+    // Restore the registers
+    LIBCP_ASM("ldmia r2, {r3-r12}");   // restore r3-r12
+    LIBCP_ASM("add r2, #40");          // point to r13 in the checkpoint
 
-    LIBCP_ASM("sub r12, #40");          // point to r3 in the checkpoint
-    LIBCP_ASM("ldmia r12, {r3-r12}");   // restore r3-r12
+    LIBCP_ASM("ldr sp, [r2, #0]");     // restore sp
+    LIBCP_ASM("ldr lr, [r2, #4]");     // restore lr
+    LIBCP_ASM("ldr r1, [r2, #8]");     // load psr
+    LIBCP_ASM("msr xpsr, r1");         // restore psr
 
-    LIBCP_ASM("bx lr"); // return
+    LIBCP_ASM("add r2, #12");          // point to r0 in the checkpoint
+    LIBCP_ASM("ldmia r2, {r0-r2, pc}"); // restore r0-r2 and load the return LR into PC
 }
 
 /*
@@ -162,18 +148,4 @@ __attribute__((alias("__checkpoint"))) void __checkpoint_call(void);
 __attribute__((alias("__checkpoint"))) void __checkpoint_pop(void);
 __attribute__((alias("__checkpoint"))) void __checkpoint_spill(void);
 #endif /* CHECKPOINT_MARKERS_DISABLE */
-///*
-// * These functions are used as markers and are skipped during emulation, if they
-// * are actually called they will mess up the LR which can lead to strange bugs
-// * we therefore add a breakpoint to the body just in case (so it can be
-// * found)
-// */
-//
-//#define CHECKPOINT_MARKER(name) \
-//    NAKED void __checkpoint_marker_##name(void) {LIBCP_ASM("bkpt");}
-//
-//CHECKPOINT_MARKER(ir)
-//CHECKPOINT_MARKER(call)
-//CHECKPOINT_MARKER(pop)
-//CHECKPOINT_MARKER(spill)
 
