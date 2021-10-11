@@ -79,32 +79,32 @@ function opt-baseline() {
 }
 
 
-function opt-stackspill() {
-    # Configure the benchmark
-    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
-    export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
-    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
-    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+#function opt-stackspill() {
+#    # Configure the benchmark
+#    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+#    export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
+#    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+#    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+#
+#    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
+#
+#    # Build the benchmark
+#    build_benchmark "${FUNCNAME[0]}"
+#}
 
-    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
 
-    # Build the benchmark
-    build_benchmark "${FUNCNAME[0]}"
-}
-
-
-function opt-loop-unroll-only() {
-    # Configure the benchmark
-    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
-    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8 -lwc-loop-unroll-threshold=400"
-    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
-    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
-
-    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
-
-    # Build the benchmark
-    build_benchmark "${FUNCNAME[0]}"
-}
+#function opt-loop-unroll-only() {
+#    # Configure the benchmark
+#    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+#    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8 -lwc-loop-unroll-threshold=400"
+#    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+#    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+#
+#    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
+#
+#    # Build the benchmark
+#    build_benchmark "${FUNCNAME[0]}"
+#}
 
 # Loop
 # Uses the loop write clustering pass
@@ -148,8 +148,26 @@ function opt-all() {
 }
 
 
+# All regular targets
 funcs=$(declare -F)
 targets="${funcs//declare -f /}"
+
+
+# Hidden targets
+function loop-unroll() {
+    local loop_unroll_count="$1"
+
+    # Configure the benchmark
+    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=$loop_unroll_count -lwc-loop-unroll-threshold=400"
+    export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule -lwc-no-reschedule-ratio"
+    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
+
+    # Build the benchmark
+    build_benchmark "loop-unroll-$loop_unroll_count"
+}
 
 function help() {
     echo "Usage: benchmark-build [target]"
@@ -167,6 +185,7 @@ function help() {
 function targets() {
     echo $targets
 }
+
 
 
 # Build the benchmark using the environment variables set in the targets
@@ -197,6 +216,11 @@ fi
 # Run the function that generates the target
 if [[ $(type -t $target) == function ]]; then
     $target "$target"
+
+elif [[ $target =~ loop-unroll-.+ ]]; then
+    cnt="${target//loop-unroll-/}"
+    loop-unroll "$cnt"
+
 else
     echo "Target '$target' does not exist"
     help

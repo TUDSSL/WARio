@@ -17,6 +17,14 @@ fi
 # Clean the benchmark directory if it exists
 rm -rf "$benchmark_dir" && mkdir "$benchmark_dir"
 
+
+# Create the checkpoint frequency result directory
+mkdir "$benchmark_dir/checkpoint-frequency"
+
+# Create the directory for all the elf files
+mkdir "$benchmark_dir/elf"
+
+# Create the results file
 echo -n "" > $benchmark_dir/$results_file
 echo "Configuration,Cycles,Checkpoints,IR-checkpoints,Call-checkpoints,Pop-checkpoints,Spill-checkpoints" >> $benchmark_dir/$results_file
 
@@ -86,6 +94,23 @@ for i in $(find . -type d \( -iname "$target" -or -iname "build-$target" \)); do
 
     # New line
     echo "" >> "$f"
+
+    # Copy the callfrequency csv file
+    callfreq_file=$(find "$i" -type f -name "*.elf.callfrequency.csv")
+    callfreq_outfile=${callfreq_file//".elf.callfrequency"/"-checkpointfreq-$benchmark_name"}
+    callfreq_outfile="$(basename $callfreq_outfile)"
+    cp "$callfreq_file" "$benchmark_dir/checkpoint-frequency/$callfreq_outfile"
+
+    # Copy all the final .elf files
+    elf_file=$(find "$i" -type f -name "*.elf" -not -name "*.uninstr*" -not -name "*.gclang*")
+    elf_outfile=${elf_file//".elf"/"-$benchmark_name.elf"}
+    elf_outfile="$(basename $elf_outfile)"
+    cp "$elf_file" "$benchmark_dir/elf/$elf_outfile"
+
+    # Get the size of each elf file
+    elf_size_file=${elf_outfile//".elf"/"-size.txt"}
+    size "$elf_file" > "$benchmark_dir/elf/$elf_size_file"
+
 
     # Check if the benchmark is valid (compare to uninstrumented)
     if [ -d "build-uninstrumented" ]; then
