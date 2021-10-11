@@ -41,6 +41,11 @@ function collect() {
             fn="$(basename $f)"
             cp "$f" "$results_dir/raw/$benchmark-$fn"
         done
+
+        # Copy the content of the 'checkpoint-frequency dir
+        mkdir -p "$results_dir/raw/checkpoint-frequency"
+        cp $benchmark/benchmark-compare/checkpoint-frequency/* "$results_dir/raw/checkpoint-frequency/"
+
     done
 }
 
