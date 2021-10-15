@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# $1 = ontime (cycles)
+# $2 = stdev (default=0)
+# $3 = elf file
+
+on_time="$1"
+stdev="$2"
+elf_file="$3"
+result_dir="$4"
+
+# Default value for stdev
+if [[ -z "$stdev" ]]; then
+  stdev="0"
+fi
+
+# Run the emulator
+icemu -p powertrace_plugin.so \
+  -p display_instructions_plugin.so \
+  -p mock_putc_plugin.so -a putc-logfile="$result_dir/stdout-$on_time-$stdev.csv" \
+  -a powertrace-on-cycles="$on_time" \
+  -a powertrace-stdev="$stdev" \
+  -a powertrace-stats-file="$result_dir/powertrace-stats-$on_time-$stdev.csv" \
+  -p checkpoint_verification_plugin.so -a cpval-checkpoint-variable=__lclock \
+  -a cpval-ignore-variable=__first_boot -a cpval-uncaught-war-file="$result_dir/war-stats-$on_time-$stdev.csv" \
+  "$elf_file"

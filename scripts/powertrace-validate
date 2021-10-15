@@ -1,0 +1,27 @@
+#!/bin/bash
+
+check="$1"
+err=0
+
+function validate {
+  lines="$(cat "$1" | wc -l)"
+  if [[ "$lines" -ne 1 ]]; then
+    echo "*** ERROR ***: WARs found in file: '$1'"
+    #err=1
+  fi
+}
+
+# Verify the output
+if [[ -f "$check" ]]; then
+    # Check a single file
+    validate "$check"
+else
+    # Check the whole directory
+    cd $check
+    for i in war-stats-*; do
+      [ -f "$i" ] || break
+      validate "$i"
+    done
+fi
+
+exit $err

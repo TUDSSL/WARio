@@ -1,0 +1,19 @@
+#!/bin/bash
+
+check="$1"
+
+if [[ ! -d "$check" ]]; then
+    echo "powertrace directory: $check does not exist"
+    exit 1
+fi
+
+# Combine the output
+cd "$check"
+combine_file="powertrace-stats.csv"
+for i in powertrace-stats-*; do
+  [ -f "$i" ] || break
+  cat "$i" >> "$combine_file"
+done
+
+# Sort the output for convenience
+ sort -t"," -k1n,1 -o $combine_file $combine_file
