@@ -35,17 +35,6 @@ LIBCP_ASM("mov lr, r4");            // move the LR before the checkpoint call ba
 LIBCP_ASM("eor r0, r0, #1");        // XOR the logical clock (1=>0, 0=>1)
 LIBCP_ASM("str r0, [r1]");          // Store the logical clock CHECKPOINT
 
-#ifdef CHECKPOINT_COUNT_ENABLE
-// Optional checkpoint count, only works properly on continuous power, as
-// this part might not be executed (if the system dies just after writing
-// to lclock [r1]. It can overflow. It was an implicit WAR!, it is purely
-// meant for debugging!
-LIBCP_ASM("ldr r1, =__checkpoint_count"); // Load the checkpoint_count address
-LIBCP_ASM("ldr r0, [r1]");              // load the value
-LIBCP_ASM("add r0, 1");                 // increment the value
-LIBCP_ASM("str r0, [r1]");              // Store the new checkpoint_count
-#endif /* CHECKPOINT_COUNT_ENABLE */
-
 // Restore the registers before return (never executed during restore)
 LIBCP_ASM("sub r2, #64");           // Point to r3-r8
 LIBCP_ASM("ldmia r2, {r3-r8}");     // restore r3-r8

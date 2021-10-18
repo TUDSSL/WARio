@@ -21,14 +21,6 @@ volatile uint32_t *const __registers_checkpoint_ptr[2] = {
 
 volatile uint32_t __first_boot = 0;
 
-#ifdef CHECKPOINT_COUNT_ENABLE
-volatile uint32_t __checkpoint_count = 0;
-#endif /* __CHECKPOINT_COUNT_ENABLE */
-
-#ifdef RESTORE_COUNT_ENABLE
-volatile uint32_t __restore_count = 0;
-#endif /* RESTORE_COUNT_ENABLE */
-
 NAKED
 void __checkpoint(void) {
   #include "checkpoint-body.h"
