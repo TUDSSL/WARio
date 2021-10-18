@@ -16,6 +16,8 @@ namespace llvm {
 
   extern cl::opt<bool> IdempStackSpillHittingSet;
 
+  extern cl::opt<bool> IdempDisableInterruptDuringPop;
+
 } // namespace llvm
 
 #ifdef IDEMP_DEBUG_PRINT

@@ -984,6 +984,10 @@ void TargetPassConfig::addMachinePasses() {
   // Add passes that directly emit MI after all other MI passes.
   addPreEmitPass2();
 
+  // Reduce epilog checkpoints idemp
+  addPass(createReduceEpilogCheckpoints());
+
+
   AddingMachinePasses = false;
 }
 

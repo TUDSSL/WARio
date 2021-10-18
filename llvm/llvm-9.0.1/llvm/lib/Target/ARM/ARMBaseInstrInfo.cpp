@@ -5499,12 +5499,31 @@ void ARMBaseInstrInfo::insertCheckpoint(MachineBasicBlock &MBB,
   bool LRMayBeLive = ((LRLiveness != MachineBasicBlock::LivenessQueryResult::LQR_Dead));
 
   if (ForceSaveLR || LRMayBeLive) {
-    // Push lr to SP-16
-    BuildMI(MBB, MI, DebugLoc(), get(ARM::t2STRi8))
-          .addReg(ARM::LR)
-          .addReg(ARM::SP)
-          .addImm(-16)
-          .add(predOps(ARMCC::AL));
+    auto R2Liveness = MBB.computeRegisterLiveness(TRI, ARM::R2, MI);
+    bool R2MayBeLive = ((R2Liveness != MachineBasicBlock::LivenessQueryResult::LQR_Dead));
+
+    auto R3Liveness = MBB.computeRegisterLiveness(TRI, ARM::R3, MI);
+    bool R3MayBeLive = ((R3Liveness != MachineBasicBlock::LivenessQueryResult::LQR_Dead));
+
+    /*
+     * We can only use the nostack pop if we can use R2 and R3 as scratch
+     * registers. This is the case if there is no tailcall etc.
+     */
+    if ((CPR == CheckpointReason::CHECKPOINTR_POP) &&
+        (R2MayBeLive == false) && (R3MayBeLive == false)) {
+      // Move lr to R3
+      BuildMI(MBB, MI, DebugLoc(), get(ARM::tMOVr), ARM::R3)
+            .addReg(ARM::LR)
+            .add(predOps(ARMCC::AL));
+      FN = "__checkpoint_pop_nostack";
+    } else {
+      // Push lr to SP-16
+      BuildMI(MBB, MI, DebugLoc(), get(ARM::t2STRi8))
+            .addReg(ARM::LR)
+            .addReg(ARM::SP)
+            .addImm(-16)
+            .add(predOps(ARMCC::AL));
+    }
   }
 
   //
@@ -5518,6 +5537,46 @@ void ARMBaseInstrInfo::insertCheckpoint(MachineBasicBlock &MBB,
   }
 }
 
+void ARMBaseInstrInfo::removeCheckpoint(MachineBasicBlock &MBB,
+                                        MachineBasicBlock::iterator MI) const {
+
+    // Check if we also need to remove the store to cp-16
+    // TODO: Move to metadata based detection?
+    auto *StackStore = MI->getPrevNode();
+    if (StackStore->getOpcode() == ARM::t2STRi8) {
+      if (StackStore->getNumOperands() >= 3) {
+        auto StackOp = StackStore->getOperand(2);
+        if (StackOp.isImm() && (StackOp.getImm() == -16)) {
+          StackStore->removeFromParent();
+        }
+      }
+    }
+
+    // Check if we also need to remove the store to R3
+    auto *LRMov = MI->getPrevNode();
+    if (LRMov->getOpcode() == ARM::tMOVr) {
+      if (LRMov->getNumOperands() >= 2) {
+        auto &Op0 = LRMov->getOperand(0);
+        auto &Op1 = LRMov->getOperand(1);
+
+        if (Op0.isReg() && (Op0.getReg() == ARM::R3) &&
+            Op1.isReg() && (Op1.getReg() == ARM::LR)) {
+          LRMov->removeFromParent();
+        }
+      }
+    }
+
+    // Remove the checkpoint call
+    MI->removeFromParent();
+}
+
+void ARMBaseInstrInfo::insertSetInterrupts(MachineBasicBlock &MBB,
+                                        MachineBasicBlock::iterator MI,
+                                        bool InterruptState) const {
+  auto PROC = ARM_PROC::ID;
+  if (InterruptState) PROC = ARM_PROC::IE;
+  BuildMI(MBB, MI, DebugLoc(), get(ARM::tCPS)).addImm(PROC).addImm(ARM_PROC::I);
+}
 
 /// replaceWithIdemPop - Replace a POP with an idempotent POP
 void ARMBaseInstrInfo::replaceWithIdempPop(MachineFunction &MF) const {

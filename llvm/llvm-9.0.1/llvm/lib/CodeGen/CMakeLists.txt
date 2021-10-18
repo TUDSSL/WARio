@@ -166,6 +166,7 @@ add_llvm_library(LLVMCodeGen
   XRayInstrumentation.cpp
 
   MachineIdempotentRegions.cpp
+  ReduceEpilogCheckpoints.cpp
   IdempotenceOptions.cpp
 
   ADDITIONAL_HEADER_DIRS

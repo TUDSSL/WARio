@@ -1727,10 +1727,24 @@ public:
                      "TargetInstrInfo::insertCheckpoint!");
   }
 
+  // Remove a checkpoint
+  virtual void removeCheckpoint(MachineBasicBlock &MBB,
+                                MachineBasicBlock::iterator MI) const {
+    llvm_unreachable("Target didn't implement "
+                     "TargetInstrInfo::removeCheckpoint!");
+  }
+
   /// replaceWithIdemPop - Replace a POP with an idempotent POP
   virtual void replaceWithIdempPop(MachineFunction &MF) const {
     llvm_unreachable("Target didn't implement "
                      "TargetInstrInfo::replaceWithIdemPop!");
+  }
+
+  virtual void insertSetInterrupts(MachineBasicBlock &MBB,
+                                        MachineBasicBlock::iterator MI,
+                                        bool InterruptState) const {
+    llvm_unreachable("Target didn't implement "
+                     "TargetInstrInfo::insertSetInterrupts!");
   }
 
 private:

@@ -466,8 +466,17 @@ public:
                                 enum CheckpointReason CPR,
                                 bool ForceSaveLR = false) const override;
 
+  /// Remove a checkpoint
+  virtual void removeCheckpoint(MachineBasicBlock &MBB,
+                                MachineBasicBlock::iterator MI) const override;
+
   /// replaceWithIdemPop - Replace a POP with an idempotent POP
   virtual void replaceWithIdempPop(MachineFunction &MF) const override;
+
+  // Insert a interrupt enable or disable call
+  virtual void insertSetInterrupts(MachineBasicBlock &MBB,
+                                        MachineBasicBlock::iterator MI,
+                                        bool InterruptState) const override;
 
 };
 

@@ -112,6 +112,7 @@ void llvm::initializeCodeGen(PassRegistry &Registry) {
 
   // Idempotent region pass
   initializeMachineIdempotentRegionsPass(Registry);
+  initializeReduceEpilogCheckpointsPass(Registry);
 }
 
 void LLVMInitializeCodeGen(LLVMPassRegistryRef R) {

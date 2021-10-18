@@ -417,6 +417,7 @@ void initializeXRayInstrumentationPass(PassRegistry&);
 
 // Idempotent region pass
 void initializeMachineIdempotentRegionsPass(PassRegistry&);
+void initializeReduceEpilogCheckpointsPass(PassRegistry&);
 
 } // end namespace llvm
 

@@ -35,4 +35,9 @@ cl::opt<bool> IdempStackSpillHittingSet(
     "idemp-stack-spill-hitting-set", cl::init(false),
     cl::desc("Use a hitting-set algorithm to place stack-stipp checkpoints"));
 
+cl::opt<bool> IdempDisableInterruptDuringPop(
+    "idemp-disable-interrupt-during-pop", cl::init(false),
+    cl::desc("Disable interrupts during a sequence of pop instructions to "
+             "reduce checkpoints"));
+
 } // namespace llvm

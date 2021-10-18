@@ -161,6 +161,10 @@ namespace llvm {
   MachineFunctionPass *createMachineIdempotentRegions();
   extern char &MachineIdempotentRegionsID;
 
+  // This pass reduces the number of checkpoints needed for the function epilog
+  MachineFunctionPass *createReduceEpilogCheckpoints();
+  extern char &ReduceEpilogCheckpointsID;
+
   /// FastRegisterAllocation Pass - This pass register allocates as fast as
   /// possible. It is best suited for debug code where live ranges are short.
   ///
