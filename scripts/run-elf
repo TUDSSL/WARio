@@ -13,6 +13,7 @@ icemu \
       -a callsite-count-track=__checkpoint_ir \
       -a callsite-count-track=__checkpoint_call \
       -a callsite-count-track=__checkpoint_pop \
+      -a callsite-count-track=__checkpoint_pop_nostack \
       -a callsite-count-track=__checkpoint_spill \
       -a callsite-count-file=% \
     -p call_count_plugin.so \
@@ -20,6 +21,7 @@ icemu \
       -a call-count-track=__checkpoint_ir \
       -a call-count-track=__checkpoint_call \
       -a call-count-track=__checkpoint_pop \
+      -a call-count-track=__checkpoint_pop_nostack \
       -a call-count-track=__checkpoint_spill \
       -a call-count-file=% \
     -p call_frequency_plugin.so \
@@ -27,6 +29,7 @@ icemu \
       -a call-frequency-track=__checkpoint_ir \
       -a call-frequency-track=__checkpoint_call \
       -a call-frequency-track=__checkpoint_pop \
+      -a call-frequency-track=__checkpoint_pop_nostack \
       -a call-frequency-track=__checkpoint_spill \
       -a call-frequency-file=% \
     -p checkpoint_verification_plugin.so -a cpval-checkpoint-variable=__lclock -a cpval-ignore-variable=__first_boot -a cpval-uncaught-war-file=% \

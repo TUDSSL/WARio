@@ -23,7 +23,8 @@ BASE_ICLANG_CODEGEN_FLAGS="\
 -mllvm --idemp-checkpoint-reason-markers \
 "
 
-EXTRA_ICLANG_CODEGEN_FLAGS="-mllvm --idemp-stack-spill-hitting-set"
+STACK_SPILL_ICLANG_CODEGEN_FLAGS="-mllvm --idemp-stack-spill-hitting-set"
+REDUCED_POP_ICLANG_CODEGEN_FLAGS="-mllvm --idemp-disable-interrupt-during-pop"
 
 #
 # The different target configurations
@@ -78,33 +79,21 @@ function opt-baseline() {
     build_benchmark "${FUNCNAME[0]}"
 }
 
+# Baseline+ Reduced pop
+# Uses the Ratched way of finding checkpoint locations but improved to use
+# Noelle information and to work with our other passes
+function opt-reducedpop() {
+    # Configure the benchmark
+    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
+    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
 
-#function opt-stackspill() {
-#    # Configure the benchmark
-#    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
-#    export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
-#    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
-#    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
-#
-#    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
-#
-#    # Build the benchmark
-#    build_benchmark "${FUNCNAME[0]}"
-#}
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $REDUCED_POP_ICLANG_CODEGEN_FLAGS"
 
-
-#function opt-loop-unroll-only() {
-#    # Configure the benchmark
-#    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
-#    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8 -lwc-loop-unroll-threshold=400"
-#    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
-#    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
-#
-#    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
-#
-#    # Build the benchmark
-#    build_benchmark "${FUNCNAME[0]}"
-#}
+    # Build the benchmark
+    build_benchmark "${FUNCNAME[0]}"
+}
 
 # Loop
 # Uses the loop write clustering pass
@@ -115,7 +104,7 @@ function opt-loop() {
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
     export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
 
-    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $STACK_SPILL_ICLANG_CODEGEN_FLAGS"
 
     # Build the benchmark
     build_benchmark "${FUNCNAME[0]}"
@@ -128,7 +117,7 @@ function opt-writebuf() {
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
     export ICLANG_PASS_WRITE_BUFFER_FLAGS="-write-buffer"
 
-    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $STACK_SPILL_ICLANG_CODEGEN_FLAGS"
 
     # Build the benchmark
     build_benchmark "${FUNCNAME[0]}"
@@ -141,7 +130,7 @@ function opt-all() {
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
     export ICLANG_PASS_WRITE_BUFFER_FLAGS="-write-buffer"
 
-    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $STACK_SPILL_ICLANG_CODEGEN_FLAGS $REDUCED_POP_ICLANG_CODEGEN_FLAGS"
 
     # Build the benchmark
     build_benchmark "${FUNCNAME[0]}"
@@ -163,7 +152,7 @@ function loop-unroll() {
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule -lwc-no-reschedule-ratio"
     export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
 
-    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $EXTRA_ICLANG_CODEGEN_FLAGS"
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $STACK_SPILL_ICLANG_CODEGEN_FLAGS"
 
     # Build the benchmark
     build_benchmark "loop-unroll-$loop_unroll_count"

@@ -68,10 +68,10 @@ for i in $(find . -type d \( -iname "$target" -or -iname "build-$target" \)); do
 
     # Get the markers
     # order: IR, CALL, POP, SPILL
-    IR="0"
-    CALL="0"
-    POP="0"
-    SPILL="0"
+    IR=0
+    CALL=0
+    POP=0
+    SPILL=0
 
     checkpoint_call_count_file=$(find "$i" -type f -name "*callcount.csv")
     if [[ ! -z "$checkpoint_call_count_file" ]]; then
@@ -80,16 +80,18 @@ for i in $(find . -type d \( -iname "$target" -or -iname "build-$target" \)); do
             marker=$(echo "$marker_line" | awk -F ',' '{print $1'})
             count=$(echo "$marker_line" | awk -F ',' '{print $2'})
 
-            [[ "$marker" == "ir" ]] && IR="$count"
-            [[ "$marker" == "call" ]] && CALL="$count"
-            [[ "$marker" == "pop" ]] && POP="$count"
-            [[ "$marker" == "spill" ]] && SPILL="$count"
+            [[ "$marker" == "ir" ]] && IR=$count
+            [[ "$marker" == "call" ]] && CALL=$count
+            [[ "$marker" == "pop" ]] && POP=$count
+            [[ "$marker" == "pop_nostack" ]] && POP_NOSTACK=$count
+            [[ "$marker" == "spill" ]] && SPILL=$count
         done
     fi
 
+    POP_SUM=`expr $POP + $POP_NOSTACK`
     echo -n ",$IR" >> "$f"
     echo -n ",$CALL" >> "$f"
-    echo -n ",$POP" >> "$f"
+    echo -n ",$POP_SUM" >> "$f"
     echo -n ",$SPILL" >> "$f"
 
     # New line
