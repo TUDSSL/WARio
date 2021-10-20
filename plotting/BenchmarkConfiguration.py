@@ -6,6 +6,7 @@ ConfigurationNameMap = {
     'opt-baseline': 'Improved Ratchet',
     'opt-writebuf': 'Write Clustering',
     'opt-loop': 'Loop Clustering',
+    'opt-reducedpop': 'Epilog Clustering',
     'opt-all': 'Complete System'
 }
 
@@ -14,5 +15,6 @@ ConfigurationColorMap = {
     'opt-baseline': Color['grey'],
     'opt-writebuf': Color['teal'],
     'opt-loop': Color['blue'],
+    'opt-reducedpop': Color['green'],
     'opt-all': Color['cyan']
 }
