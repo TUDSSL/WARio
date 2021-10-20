@@ -86,17 +86,17 @@ struct ReduceEpilogCheckpoints : public MachineFunctionPass {
     // call.
     //
     // e.g.
-    //  str.w	lr, [sp, #-16]
+    //  mov	r3, lr
     //  bl	f2be <__checkpoint_pop>
     //  add	sp, #4
-    //  str.w	lr, [sp, #-16]
+    //  mov	r3, lr
     //  bl	f2be <__checkpoint_pop>
     //  add	sp, #4
     //
     // will become
     //  CPSID i
     //  add	sp, #4
-    //  str.w	lr, [sp, #-16]
+    //  mov	r3, lr
     //  bl	f2be <__checkpoint_pop>
     //  add	sp, #4
     //  CPSIE i
