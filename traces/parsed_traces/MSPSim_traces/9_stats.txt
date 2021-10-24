@@ -1,0 +1,1 @@
+Total measurement time: 25.191 secondsTotal number of samples: 25192
