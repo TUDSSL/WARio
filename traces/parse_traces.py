@@ -42,33 +42,17 @@ for traces_directory in traces_directories:
             lines = file.readlines()
             # Get time samples as integers
             # One sample unit: [milliseconds]
-            time_samples = [int(line.split()[0]) for line in lines]
+            time_samples_raw = [int(line.split()[0]) for line in lines]
             # Get voltage samples as floats
             # One sample unit: [volts]
-            voltage_samples = [float(line.split()[1]) for line in lines]
+            voltage_samples_raw = [float(line.split()[1]) for line in lines]
+        # Make copy of input data for further processing
+        time_samples = time_samples_raw.copy()
+        voltage_samples = voltage_samples_raw.copy()
 
-        # [Extract basic statistics and save them to a file]
-        # Calculate total measurement time of the loaded trace file
-        # Result unit: [seconds]
-        # Samples are of increasing order; first sample starts at arbitrary value
-        total_time = (time_samples[-1] - time_samples[0]) / 1000
-        # Calculate total number of samples
-        total_samples_number = len(time_samples)
-        # Print results
+        # Output file name
         print('File name:', str(trace_file))
-        print('Total measurement time:', total_time, 'seconds')
-        print('Total number of samples:', total_samples_number)
         print('--')
-        # Change to a directory holding parsed data
-        os.chdir(cwd + '/' + parsed_traces_path + '/' + traces_directory)
-        # Remove file extension from a raw trace file
-        stats_file_name_prefix = trace_file.replace('.txt', '')
-        # Open file
-        file = open(stats_file_name_prefix + '_stats.txt', 'w')
-        # Write statistics
-        file.write('Total measurement time: ' + str(total_time) + ' seconds')
-        file.write('Total number of samples: ' + str(total_samples_number))
-        file.close()
 
         # [Get values to plot all samples above voltage threshold]
         # Find all samples over voltage threshold
@@ -80,6 +64,7 @@ for traces_directory in traces_directories:
         over_voltage_threshold_time_samples = [time_samples[j] for j in over_voltage_threshold_indices]
 
         # [Calculate (time_samples_voltage_threshold) and (on_off_samples_list)]
+        # [Remove data discontinuity from the input data]
         # List containing duration of all samples (in samples) above voltage threshold
         # Result unit: [sample = one microsecond]
         above_threshold_duration_samples_list = []
@@ -87,7 +72,27 @@ for traces_directory in traces_directories:
         above_threshold_on_time_sample_list = []
         # Counter incremented at each sample from the first on sample to the last on sample (i.e. off sample)
         counter = 0
-        for x in range(len(voltage_samples)):
+        # Temporary append last samples (for 'time_samples' and 'voltage_samples') for easier loop traversing
+        length_before_appending = len(voltage_samples)
+        time_samples.append(time_samples[-1] + 1)
+        voltage_samples.append(voltage_samples[-1] + 1)
+        for x in range(length_before_appending):
+            # Check for sample discontinuity
+            if time_samples[x + 1] - time_samples[x] > 2:
+                # Case 1 discontinuity: single non-continuous sample
+                if time_samples[x + 2] < time_samples[x + 1]:
+                    # Move sample to the right location
+                    time_samples[x + 1] = time_samples[x] + 1
+                else:
+                    # Case 2: samples are missing
+                    # Find missing samples
+                    range_nan = list(range(time_samples[x], time_samples[x + 1]))
+                    # Create 'NaN' list (as NaN will not be plotted)
+                    NaNs = [float('nan') for x in range_nan]
+                    # Assign 'NaN' for both time and voltage samples (as NaN will not be plotted)
+                    time_samples[x+1:x+1] = NaNs
+                    voltage_samples[x+1:x+1] = NaNs
+            # Check for samples above voltage threshold
             if voltage_samples[x] > voltage_threshold:
                 if counter == 0:
                     above_threshold_on_time_sample_list.append(time_samples[x])
@@ -96,6 +101,10 @@ for traces_directory in traces_directories:
                 if counter != 0:
                     above_threshold_duration_samples_list.append(counter)
                     counter = 0
+        # Remove previously appended samples
+        del time_samples[-1]
+        del voltage_samples[-1]
+
         # List of sample points for each above voltage threshold
         # Format: [on_11, on_12, on_13, ..., on_21, on_22, on_23, ... ]
         above_voltage_threshold_samples_list = []
@@ -109,7 +118,7 @@ for traces_directory in traces_directories:
             off_time_sample = above_threshold_on_time_sample_list[count] + above_threshold_duration_samples_list[count]
             # Extend list with new sample [first_sample_x, last_sample_x]
             on_off_samples_list.extend([on_time_sample, off_time_sample])
-            # Calculate length of new sample
+            # Calculate length of a new sample
             range_sample = list(range(on_time_sample, off_time_sample))
             # Extend list with new sample (duration)
             above_voltage_threshold_samples_list.extend(range_sample)
@@ -121,6 +130,24 @@ for traces_directory in traces_directories:
                 time_samples_voltage_threshold.append(float('nan'))
             else:
                 time_samples_voltage_threshold.append(v)
+
+        # [Extract basic statistics and save them to a file]
+        # Calculate total measurement time of the loaded trace file
+        # Result unit: [seconds]
+        # Samples are of increasing order; first sample starts at arbitrary value
+        total_time = (time_samples[-1] - time_samples[0]) / 1000
+        # Calculate total number of samples
+        total_samples_number = len(time_samples)
+        # Change to a directory holding parsed data
+        os.chdir(cwd + '/' + parsed_traces_path + '/' + traces_directory)
+        # Remove file extension from a raw trace file
+        stats_file_name_prefix = trace_file.replace('.txt', '')
+        # Open file
+        file = open(stats_file_name_prefix + '_stats.txt', 'w')
+        # Write statistics
+        file.write('Total measurement time: ' + str(total_time) + ' seconds')
+        file.write('Total number of samples: ' + str(total_samples_number))
+        file.close()
 
         # [Store (on_off_samples_list) in a file]
         file = open(stats_file_name_prefix + '_on_off_samples_list.txt', 'w')
@@ -134,25 +161,36 @@ for traces_directory in traces_directories:
         line_voltage_threshold = [voltage_threshold for x in time_samples]
         # Get voltage threshold line for only on and off (start and end) samples above voltage threshold
         line_voltage_threshold_per_on_off_sample = [voltage_threshold for x in on_off_samples_list]
-        # Plot original samples
-        plt.plot(time_samples, voltage_samples, '-g')
+        # Set figure
+        figure, axis = plt.subplots(1, 2)
+        # Figure 1
+        axis[0].plot(time_samples_raw, voltage_samples_raw, '-g')
+        axis[0].set_title('Raw input data')
+        axis[0].set_xlabel('Timestamp (millisecond)')
+        axis[0].set_ylabel('Voltage (V)')
+        # Figure 2
+        # Plot original samples (without discontinuity)
+        axis[1].plot(time_samples, voltage_samples, '-g')
         # Plot voltage threshold for all collected samples
-        plt.plot(time_samples, line_voltage_threshold, '-r')
+        axis[1].plot(time_samples, line_voltage_threshold, '-r')
         # Plot voltage threshold for all samples above voltage threshold
-        plt.plot(time_samples_voltage_threshold, line_voltage_threshold, '.-k')
+        axis[1].plot(time_samples_voltage_threshold, line_voltage_threshold, '.-k')
         # Plot only on and off (start and end) samples above voltage threshold
-        plt.plot(on_off_samples_list, line_voltage_threshold_per_on_off_sample, 'xk')
+        axis[1].plot(on_off_samples_list, line_voltage_threshold_per_on_off_sample, 'xk')
         # Plot all samples above voltage threshold
-        plt.plot(over_voltage_threshold_time_samples, over_voltage_threshold_voltage_samples, '.b')
-        # Figure setup
-        plt.xlabel('Timestamp (millisecond)')
-        plt.ylabel('Voltage (V)')
-        plt.tight_layout()
+        axis[1].plot(over_voltage_threshold_time_samples, over_voltage_threshold_voltage_samples, '.b')
+        axis[1].set_title('Parsed')
+        axis[1].set_title('Processed input data')
+        axis[1].set_xlabel('Timestamp (millisecond)')
+        axis[1].set_ylabel('Voltage (V)')
+        # Legend
         legend = ['Original samples',
                   'Voltage threshold',
                   'Samples within above voltage threshold',
                   'First and last sample within above voltage threshold',
                   'Original samples above voltage threshold']
         plt.legend(legend, loc = 'best')
+        # Save figure
         plt.savefig(stats_file_name_prefix + '_parsed_figure.pdf')
-        plt.show()
+        # Plot all
+        # plt.show()
