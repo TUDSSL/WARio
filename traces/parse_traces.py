@@ -5,6 +5,7 @@
 
 import matplotlib.pyplot as plt
 import os
+import math
 
 # Interpretation of the sample based on the description from
 # https://github.com/ransford/mspsim/blob/mementos/traces/README
@@ -17,6 +18,7 @@ parsed_traces_path = 'parsed_traces'
 # Set voltage threshold over which we assume a microcontroller works
 # Threshold unit: [volts]
 voltage_threshold = 1.5
+voltage_threshold_min = 1.3
 
 # Current working directory
 cwd = os.getcwd()
@@ -81,7 +83,7 @@ for traces_directory in traces_directories:
             if time_samples[x + 1] - time_samples[x] > 2:
                 # Case 1 discontinuity: single non-continuous sample
                 if time_samples[x + 2] < time_samples[x + 1]:
-                    # Move sample to the right location
+                    # Move sample to the correct location
                     time_samples[x + 1] = time_samples[x] + 1
                 else:
                     # Case 2: samples are missing
@@ -92,25 +94,50 @@ for traces_directory in traces_directories:
                     # Assign 'NaN' for both time and voltage samples (as NaN will not be plotted)
                     time_samples[x+1:x+1] = NaNs
                     voltage_samples[x+1:x+1] = NaNs
+            # Remove previously appended samples
+        del time_samples[-1]
+        del voltage_samples[-1]
+
+        isnan = math.isnan(time_samples[0])
+        for x in range(len(voltage_samples)):
             # Check for samples above voltage threshold
             if voltage_samples[x] > voltage_threshold:
                 if counter == 0:
                     above_threshold_on_time_sample_list.append(time_samples[x])
                 counter = counter + 1
             else:
-                if counter != 0:
+                if counter != 0 and not math.isnan(voltage_samples[x]):
                     above_threshold_duration_samples_list.append(counter)
                     counter = 0
-        # Remove previously appended samples
-        del time_samples[-1]
-        del voltage_samples[-1]
+                    isnan = 0
+                elif counter != 0 and math.isnan(voltage_samples[x]):
+                    del above_threshold_on_time_sample_list[-1]
+                    counter = 0
+                    isnan = 1
+                elif counter == 0 and math.isnan(voltage_samples[x]):
+                    isnan = 1
+                elif counter == 0 and not math.isnan(voltage_samples[x]):
+                    isnan = 0
+        # Remove on samples that starts from discontinuity
+        for counter, value in enumerate(above_threshold_on_time_sample_list):
+            idx = time_samples.index(value)
+            if math.isnan(time_samples[idx-1]):
+                del above_threshold_duration_samples_list[counter]
+                del above_threshold_on_time_sample_list[counter]
 
         # List of sample points for each above voltage threshold
         # Format: [on_11, on_12, on_13, ..., on_21, on_22, on_23, ... ]
         above_voltage_threshold_samples_list = []
+        # List of sample durations for each above voltage threshold sample
+        # Format: [last_sample_1 - first_sample_1, last_sample_2 - first_sample_2, ...]
+        above_voltage_threshold_samples_duration_list = []
         # List of sample points for each above voltage threshold samples
         # Format: [first_sample_1, last_sample_1, first_sample_2, last_sample_2, ... ]
         on_off_samples_list = []
+        # List of differentially-cumulatively-formatted samples list
+        # Format: [0, (last_sample_1 - first_sample_1) + 0,
+        #   (last_sample_2 - first_sample_2) + ((last_sample_1 - first_sample_1) + 0), ... ]
+        on_off_difference_samples_list = [0]
         for count in range(len(above_threshold_on_time_sample_list)-1):
             # First sample
             on_time_sample = above_threshold_on_time_sample_list[count]
@@ -118,9 +145,14 @@ for traces_directory in traces_directories:
             off_time_sample = above_threshold_on_time_sample_list[count] + above_threshold_duration_samples_list[count]
             # Extend list with new sample [first_sample_x, last_sample_x]
             on_off_samples_list.extend([on_time_sample, off_time_sample])
-            # Calculate length of a new sample
+            # Calculate differentially-cumulatively-formatted samples list
+            new_differential_value = (off_time_sample - on_time_sample) + on_off_difference_samples_list[count]
+            on_off_difference_samples_list.append(new_differential_value)
+            # Calculate sample durations for each above voltage threshold sample
+            above_voltage_threshold_samples_duration_list.append(off_time_sample - on_time_sample)
+            # Calculate all samples for the whole duration of a new sample
             range_sample = list(range(on_time_sample, off_time_sample))
-            # Extend list with new sample (duration)
+            # Calculate list of sample points for each above voltage threshold
             above_voltage_threshold_samples_list.extend(range_sample)
         # List of sample points above voltage threshold interspersed by NaN at time_samples under voltage threshold
         # Note: NaN is needed to get rid of straight line plotted by Matplotlib at non-continous points
@@ -144,16 +176,26 @@ for traces_directory in traces_directories:
         stats_file_name_prefix = trace_file.replace('.txt', '')
         # Open file
         file = open(stats_file_name_prefix + '_stats.txt', 'w')
+        # Calculate statistics
+        min_val = min(above_voltage_threshold_samples_duration_list)
+        max_val = max(above_voltage_threshold_samples_duration_list)
+        avg_val = sum(above_voltage_threshold_samples_duration_list) \
+                  / len(above_voltage_threshold_samples_duration_list)
         # Write statistics
-        file.write('Total measurement time: ' + str(total_time) + ' seconds')
-        file.write('Total number of samples: ' + str(total_samples_number))
+        file.write('Total measurement time: ' + str(total_time) + ' seconds' + '\n')
+        file.write('Total number of raw samples: ' + str(total_samples_number) + '\n')
+        file.write('Upper voltage threshold: ' + str(voltage_threshold) + ' volts' + '\n')
+        file.write('Lower voltage threshold: ' + str(voltage_threshold_min) + ' volts' + '\n')
+        file.write('Shortest `on` time above voltage threshold: ' + str(min_val) + ' microseconds' + '\n')
+        file.write('Longest `on` time above voltage threshold: ' + str(max_val) + ' microseconds' + '\n')
+        file.write('Average `on` time above voltage threshold: ' + str(avg_val) + ' microseconds' + '\n')
         file.close()
 
-        # [Store (on_off_samples_list) in a file]
+        # [Store (on_off_difference_samples_list) in a file]
         file = open(stats_file_name_prefix + '_on_off_samples_list.txt', 'w')
         # Write statistics
-        for x in on_off_samples_list:
-            file.write(str(x)+'\n')
+        for x in on_off_difference_samples_list:
+            file.write(str(x) + '\n')
         file.close()
 
         # [Plot all results]
