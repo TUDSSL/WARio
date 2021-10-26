@@ -188,6 +188,17 @@ void WarAnalysis::collectDominatingPaths() {
           Path.push_back(I);
         } else if (cast<Instruction>(Cursor) == Load) {
           break;
+        } else {
+          if (UseMoreInstructionsInPath) {
+            /*
+             * Add all instructions in between the WAR to the Path, instead of
+             * only Store instructions.
+             */
+            auto PI = cast<Instruction>(Cursor);
+            if (!isa<PHINode>(PI) && !isa<IntrinsicInst>(PI)) {
+              Path.push_back(cast<Instruction>(Cursor));
+            }
+          }
         }
       }
       // Move on to the Immediate Dominator if it exists, otherwise we are done

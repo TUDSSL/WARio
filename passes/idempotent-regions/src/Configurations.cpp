@@ -36,3 +36,6 @@ cl::opt<bool> InsertCheckpointBeforeCall("cp-before-call", cl::init(false),
 
 cl::opt<bool> InsertCheckpointAfterCall("cp-after-call", cl::init(false),
                     cl::desc("Insert a checkpoint after each call"));
+
+cl::opt<bool> UseMoreInstructionsInPath("cp-big-path", cl::init(false),
+                    cl::desc("Add more instructions to the Path"));
