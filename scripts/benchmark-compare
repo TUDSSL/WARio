@@ -26,7 +26,7 @@ mkdir "$benchmark_dir/elf"
 
 # Create the results file
 echo -n "" > $benchmark_dir/$results_file
-echo "Configuration,Cycles,Checkpoints,IR-checkpoints,Call-checkpoints,Pop-checkpoints,Spill-checkpoints" >> $benchmark_dir/$results_file
+echo "Configuration,Cycles,Checkpoints,IR-checkpoints,Call-checkpoints,Pop-checkpoints,Spill-checkpoints,ELF-size" >> $benchmark_dir/$results_file
 
 # Analyze all the benchmarks we can find
 if [[ "$target" == "all" ]]; then
@@ -94,9 +94,6 @@ for i in $(find . -type d \( -iname "$target" -or -iname "build-$target" \)); do
     echo -n ",$POP_SUM" >> "$f"
     echo -n ",$SPILL" >> "$f"
 
-    # New line
-    echo "" >> "$f"
-
     # Copy the callfrequency csv file
     callfreq_file=$(find "$i" -type f -name "*.elf.callfrequency.csv")
     callfreq_outfile=${callfreq_file//".elf.callfrequency"/"-checkpointfreq-$benchmark_name"}
@@ -113,6 +110,12 @@ for i in $(find . -type d \( -iname "$target" -or -iname "build-$target" \)); do
     elf_size_file=${elf_outfile//".elf"/"-size.txt"}
     size "$elf_file" > "$benchmark_dir/elf/$elf_size_file"
 
+    # Get the .elf size
+    elf_size="$(size -A $elf_file | grep .text | awk '{print $2}')"
+    echo -n ",$elf_size" >> "$f"
+
+    # New line
+    echo "" >> "$f"
 
     # Check if the benchmark is valid (compare to uninstrumented)
     if [ -d "build-uninstrumented" ]; then
