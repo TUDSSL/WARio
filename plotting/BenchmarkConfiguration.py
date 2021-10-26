@@ -3,11 +3,12 @@ from Color import *
 # Configurations in order of use and with the name to use
 ConfigurationNameMap = {
     'opt-ratchet': 'Ratchet',
-    'opt-baseline': 'Improved Ratchet',
-    'opt-writebuf': 'Write Clustering',
-    'opt-loop': 'Loop Clustering',
-    'opt-reducedpop': 'Epilog Clustering',
-    'opt-all': 'Complete System'
+    'opt-baseline': 'R-PDG',
+    'opt-writebuf': r'\textit{write clustering}',
+    'opt-loop': r'\textit{loop write clustering}',
+    'opt-reducedpop': r'\textit{epilog optimization}',
+    'opt-all': r'\textbf{Wario} (complete)',
+    'opt-all-expander': r'\textbf{Wario}+expander'
 }
 
 ConfigurationColorMap = {
@@ -16,5 +17,6 @@ ConfigurationColorMap = {
     'opt-writebuf': Color['teal'],
     'opt-loop': Color['blue'],
     'opt-reducedpop': Color['green'],
-    'opt-all': Color['cyan']
+    'opt-all': Color['cyan'],
+    'opt-all-expander': '#6699cc', # add hashing?
 }
