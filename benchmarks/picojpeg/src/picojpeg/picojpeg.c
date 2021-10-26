@@ -12,7 +12,7 @@
 #define PJPG_RIGHT_SHIFT_IS_ALWAYS_UNSIGNED 0
 
 // Define PJPG_INLINE to "inline" if your C compiler supports explicit inlining
-#define PJPG_INLINE
+#define PJPG_INLINE inline
 //------------------------------------------------------------------------------
 typedef unsigned char   uint8;
 typedef unsigned short  uint16;
