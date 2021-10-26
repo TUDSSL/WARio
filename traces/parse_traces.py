@@ -1,6 +1,3 @@
-# Copyright (C) 2021 TU Delft Embedded and Networked
-# Systems Group/Sustainable Systems Laboratory.
-#
 # File licensed under the terms of the MIT license.
 
 import matplotlib.pyplot as plt
@@ -18,8 +15,8 @@ parsed_traces_path = 'parsed_traces'
 
 # Set voltage threshold hysteresis over which we assume a microcontroller works
 # Threshold unit: [volts]
-voltage_threshold_on  = 1.5
-voltage_threshold_off = 1.45
+voltage_threshold_on  = 3.3
+voltage_threshold_off = 1.8
 # Sanity check for voltage hysteresis
 if voltage_threshold_on < voltage_threshold_off:
     print('Startup voltage threshold is lower than the turn off voltage threshold. Exiting.')
@@ -62,8 +59,8 @@ for traces_directory in traces_directories:
 
         # [Check if set voltage threshold is appropriate for the input data]
         if voltage_threshold_on  >= max(voltage_samples):
-            print('Voltage threshold larger than maximum input voltage. Exiting.')
-            sys.exit()
+            print('Voltage threshold larger than maximum input voltage. Skipping.')
+            continue
 
         # [Remove sample discontinuity and find missing samples in the input data]
         # Initiate iterator over expanding list of time samples
@@ -203,9 +200,9 @@ for traces_directory in traces_directories:
         file.write('Upper voltage threshold: ' + str(voltage_threshold_on) + ' volts' + '\n')
         file.write('Lower voltage threshold: ' + str(voltage_threshold_off) + ' volts' + '\n')
         file.write('Total number of `on` samples: ' + str(number_samples) + '\n')
-        file.write('Shortest `on` time above voltage threshold: ' + str(min_val) + ' microseconds' + '\n')
-        file.write('Longest `on` time above voltage threshold: ' + str(max_val) + ' microseconds' + '\n')
-        file.write('Average `on` time above voltage threshold: ' + str(avg_val) + ' microseconds' + '\n')
+        file.write('Shortest `on` time above voltage threshold: ' + str(min_val) + ' milliseconds' + '\n')
+        file.write('Longest `on` time above voltage threshold: ' + str(max_val) + ' milliseconds' + '\n')
+        file.write('Average `on` time above voltage threshold: ' + str(avg_val) + ' milliseconds' + '\n')
         file.write('Complete `on` samples list: ' + str(above_threshold_duration_samples_list))
         file.close()
 
