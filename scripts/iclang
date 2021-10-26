@@ -12,6 +12,7 @@
 #   ICLANG_PASS_LOOP_UNROLL_FLAGS=""
 #   ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
 #   ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+#   ICLANG_PASS_EXPANDER_FLAGS=""
 #   ICLANG_CODEGEN_FLAGS=""
 
 set -e
@@ -35,6 +36,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 WAR_PASS_LIB="$DIR/../passes/idempotent-regions/build/idemp-regions.so"
 LOOP_PASS_LIB="$DIR/../passes/loop-scheduler/build/loop-write-clusterer.so"
 WRITE_BUFFER_PASS_LIB="$DIR/../passes/write-buffering/build/write-buffer.so"
+EXPANDER_PASS_LIB="$DIR/../passes/idempotent-expander/build/idempotent-expander.so"
 
 CHECKPOINT_ARCH_SRC="$DIR/../toolchain-arm/checkpoint/checkpoint.c"
 
@@ -56,6 +58,7 @@ if [[ ! -z "${ICLANG_VERBOSE}" ]]; then
     echo "ICLANG_PASS_LOOP_UNROLL_FLAGS: ${ICLANG_PASS_LOOP_UNROLL_FLAGS}"
     echo "ICLANG_PASS_LOOP_CLUSTER_FLAGS: ${ICLANG_PASS_LOOP_CLUSTER_FLAGS}"
     echo "ICLANG_PASS_WRITE_BUFFER_FLAGS: ${ICLANG_PASS_WRITE_BUFFER_FLAGS}"
+    echo "ICLANG_PASS_EXPANDER_FLAGS: ${ICLANG_PASS_EXPANDER_FLAGS}"
     echo "ICLANG_CODEGEN_FLAGS: ${ICLANG_CODEGEN_FLAGS}"
 else
     # Disable noelle print output
@@ -146,6 +149,10 @@ function apply_passes() {
     # Apply optimization
     apply_opt "opt-pre-war" "$basename" "$ir" "$opt_level"
     local ir="$apply_opt_output"
+
+    # Idempotent expander step
+    apply_pass $EXPANDER_PASS_LIB "expander" "$basename" "$ir" "$ICLANG_PASS_EXPANDER_FLAGS"
+    local ir="$apply_pass_output"
 
     # Write buffer step
     apply_pass $WRITE_BUFFER_PASS_LIB "write-buffer" "$basename" "$ir" "$ICLANG_PASS_WRITE_BUFFER_FLAGS"

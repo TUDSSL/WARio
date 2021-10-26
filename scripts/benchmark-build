@@ -38,6 +38,7 @@ function uninstrumented() {
     export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
     export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+    export ICLANG_PASS_EXPANDER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS=""
 
@@ -56,6 +57,7 @@ function opt-ratchet() {
     export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
     export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+    export ICLANG_PASS_EXPANDER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
 
@@ -72,6 +74,7 @@ function opt-baseline() {
     export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
     export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+    export ICLANG_PASS_EXPANDER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
 
@@ -88,6 +91,7 @@ function opt-reducedpop() {
     export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
     export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+    export ICLANG_PASS_EXPANDER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $REDUCED_POP_ICLANG_CODEGEN_FLAGS"
 
@@ -103,6 +107,7 @@ function opt-loop() {
     export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8 -lwc-loop-unroll-threshold=400"
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
     export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+    export ICLANG_PASS_EXPANDER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $STACK_SPILL_ICLANG_CODEGEN_FLAGS"
 
@@ -116,6 +121,7 @@ function opt-writebuf() {
     export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
     export ICLANG_PASS_WRITE_BUFFER_FLAGS="-write-buffer"
+    export ICLANG_PASS_EXPANDER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $STACK_SPILL_ICLANG_CODEGEN_FLAGS"
 
@@ -123,12 +129,55 @@ function opt-writebuf() {
     build_benchmark "${FUNCNAME[0]}"
 }
 
+function opt-expander() {
+    # Configure the benchmark
+    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
+    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+    export ICLANG_PASS_EXPANDER_FLAGS="-expander"
+
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
+
+    # Build the benchmark
+    build_benchmark "${FUNCNAME[0]}"
+}
+
+#function opt-bigpath() {
+#    # Configure the benchmark
+#    export ICLANG_PASS_IDEMP_FLAGS="-idemp -cp-big-path"
+#    export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
+#    export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+#    export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+#    export ICLANG_PASS_EXPANDER_FLAGS=""
+#
+#    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS"
+#
+#    # Build the benchmark
+#    build_benchmark "${FUNCNAME[0]}"
+#}
+
 function opt-all() {
     # Configure the benchmark
     export ICLANG_PASS_IDEMP_FLAGS="-idemp"
     export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8 -lwc-loop-unroll-threshold=400"
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
     export ICLANG_PASS_WRITE_BUFFER_FLAGS="-write-buffer"
+    export ICLANG_PASS_EXPANDER_FLAGS=""
+
+    export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $STACK_SPILL_ICLANG_CODEGEN_FLAGS $REDUCED_POP_ICLANG_CODEGEN_FLAGS"
+
+    # Build the benchmark
+    build_benchmark "${FUNCNAME[0]}"
+}
+
+function opt-all-expander() {
+    # Configure the benchmark
+    export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+    export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8 -lwc-loop-unroll-threshold=400"
+    export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
+    export ICLANG_PASS_WRITE_BUFFER_FLAGS="-write-buffer"
+    export ICLANG_PASS_EXPANDER_FLAGS="-expander"
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $STACK_SPILL_ICLANG_CODEGEN_FLAGS $REDUCED_POP_ICLANG_CODEGEN_FLAGS"
 
@@ -151,6 +200,7 @@ function loop-unroll() {
     export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=$loop_unroll_count -lwc-loop-unroll-threshold=400"
     export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule -lwc-no-reschedule-ratio"
     export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+    export ICLANG_PASS_EXPANDER_FLAGS=""
 
     export ICLANG_CODEGEN_FLAGS="$BASE_ICLANG_CODEGEN_FLAGS $STACK_SPILL_ICLANG_CODEGEN_FLAGS"
 

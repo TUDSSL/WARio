@@ -29,7 +29,7 @@ case "$pass" in
   "loop-unroll")
     echo "Running loop-unroll pass"
     PASS_LIB="$ROOT/passes/loop-scheduler/build/loop-write-clusterer.so"
-    PASS_ARGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=3 -lwc-loop-unroll-threshold=400"
+    PASS_ARGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8 -lwc-loop-unroll-threshold=400"
     ;;
   "loop-buffer")
     echo "Running Loop-write-buffer pass"
@@ -40,6 +40,11 @@ case "$pass" in
     echo "Running write-buffer pass"
     PASS_LIB="$ROOT/passes/write-buffering/build/write-buffer.so"
     PASS_ARGS="-write-buffer"
+    ;;
+  "expander")
+    echo "Running expander pass"
+    PASS_LIB="$ROOT/passes/idempotent-expander/build/idempotent-expander.so"
+    PASS_ARGS="-expander"
     ;;
   *)
     echo "Unknown pass: $pass"
