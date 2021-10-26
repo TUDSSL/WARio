@@ -139,7 +139,7 @@ for traces_directory in traces_directories:
                 del above_threshold_on_time_sample_list[count]
         # Remove last sample from `above_threshold_on_time_sample_list` if it is greater than voltage_threshold
         # Note: we must remove it as we do not know how long this sample actually is
-        if voltage_samples[-1] > voltage_threshold_on :
+        if voltage_threshold_off > voltage_samples[-1] > voltage_threshold_on:
             del above_threshold_on_time_sample_list[-1]
 
         # List of sample points for each above voltage threshold
@@ -152,7 +152,7 @@ for traces_directory in traces_directories:
         # Format: [0, (last_sample_1 - first_sample_1) + 0,
         #   (last_sample_2 - first_sample_2) + ((last_sample_1 - first_sample_1) + 0), ... ]
         on_off_difference_samples_list = [0]
-        for count in range(len(above_threshold_on_time_sample_list)):
+        for count in range(len(above_threshold_duration_samples_list)):
             # First sample
             on_time_sample = above_threshold_on_time_sample_list[count]
             # Last sample
