@@ -1,7 +1,9 @@
 Total measurement time: 39.517 seconds
 Total number of raw samples: 39518
 Upper voltage threshold: 1.5 volts
-Lower voltage threshold: 1.3 volts
-Shortest `on` time above voltage threshold: 1 microseconds
-Longest `on` time above voltage threshold: 3066 microseconds
-Average `on` time above voltage threshold: 667.875 microseconds
+Lower voltage threshold: 1.45 volts
+Total number of `on` samples: 10
+Shortest `on` time above voltage threshold: 18 microseconds
+Longest `on` time above voltage threshold: 3079 microseconds
+Average `on` time above voltage threshold: 1089.3 microseconds
+Complete `on` samples list: [3079, 1280, 140, 471, 2004, 1326, 607, 873, 1095, 18]
