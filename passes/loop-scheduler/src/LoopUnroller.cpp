@@ -80,12 +80,14 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
 
   assert(LS != nullptr);
 
+  bool candidate = true;
+
   /*
    * Only transform inner loops
    */
   if (n_subloops > 0) {
-    dbg() << "The loop has subloops, not a candidate\n";
-    return false;
+    dbg() << "    [no-loop-candidate] loop has subloops\n";
+    candidate = false;
   }
 
   /*
@@ -93,8 +95,8 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    */
   auto latches = LS->getLatches();
   if (latches.size() > 1) {
-    dbg() << "Loop has multiple latches, not a candidate\n";
-    return false;
+    dbg() << "    [no-loop-candidate] loop has multiple latches\n";
+    candidate = false;
   }
 
   /*
@@ -102,18 +104,18 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    * (The LLVM Unroller does not like unrolling infinite loops)
    */
   if (LS->getLoopExitEdges().size() == 0) {
-    dbg() << "Loop has no exit edges, not a candidate\n";
-    return false;
+    dbg() << "    [no-loop-candidate] loop has no exit edges\n";
+    candidate = false;
   }
 
   /*
    * Decide the unroll factor depending on the number of instructions
    */
   if (LS->getNumberOfInstructions() > LoopUnrollInstructionThreshold) {
-    dbg() << "Loop has " << LS->getNumberOfInstructions()
+    dbg() << "    [no-loop-candidate] loop has " << LS->getNumberOfInstructions()
            << " instructions, the threshold is configured as "
            << LoopUnrollInstructionThreshold << "\n";
-    return false;
+    candidate = false;
   }
 
 
@@ -122,8 +124,8 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    */
   for (const auto &I : LS->getInstructions()) {
     if (isa<CallInst>(I) && (isa<IntrinsicInst>(I) == false)) {
-      dbg() << "    Loop contains a function call: " << *I << "\n";
-      return false;
+      dbg() << "    [no-loop-candidate] loop contains a function call: " << *I << "\n";
+      candidate = false;
     }
   }
 
@@ -163,8 +165,8 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
    * is not a candidate loop
    */
   if (LoopWars == 0 && LoopCarriedWars == 0) {
-    dbg() << "Loop does not contain WAR violations\n";
-    return false;
+    dbg() << "    [no-loop-candidate] loop does not contain WAR violations\n";
+    candidate = false;
   }
 
   /*
@@ -179,7 +181,7 @@ bool LoopUnroller::IsCandidate(Noelle &N, LoopDependenceInfo *LDI,
   LCI.LoopCarriedWarCount = LoopCarriedWars;
 
   // Is a candidate
-  return true;
+  return candidate;
 }
 
 LoopUnroller::LoopUnrollCandidatesTy LoopUnroller::CollectUnrollCandidates(
