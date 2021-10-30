@@ -35,11 +35,11 @@ was as follows: the analog front-end from an Intel DL WISP 4.1 connected to a
 30 kohm resistor instead of the WISP's digital back-end.  (The MSP430F2132 in
 active mode is approximately 20 kohm.)
 >
-> Each line in each trace looks like this:
-><time> <voltage>
+> Each line in each trace looks like this:<br>
+>&#60;time&#62; &#60;voltage&#62; 
 >
-> The <time> field starts at an arbitrary number and counts milliseconds.  The
-<voltage> field is just voltage in volts.
+> The &#60;time&#62; field starts at an arbitrary number and counts milliseconds.  The
+&#60;voltage&#62; field is just voltage in volts.
 
 ### Copyright
 
