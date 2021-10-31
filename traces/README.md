@@ -11,7 +11,7 @@ This file describes the content of the repository where this [README](README.md)
     - `X_parsed_figure.pdf`: Image of the processed input trace with superimposed voltage thresholds and marked periods of battery-free device activity.
     - `X_thumbnail.pdf`: Image of the processed input trace _only_, i.e. without axes, labels, voltage thresholds and marked periods of battery-free device activity.
 - `raw_traces`: Directory containing traces of voltage measurements at the output of energy harvester of a battery-free device. Specifically, the following measurement traces are stored.
-  - `MSPSim_traces`: Copy of traces from [MSPSim (mementos branch)](https://github.com/ransford/mspsim/tree/mementos/traces) repository. Detail explanation of these traces is given in a separate [README](MSPSim_traces/README.md).
+  - `MSPSim_traces`: Copy of traces from [MSPSim (mementos branch)](https://github.com/ransford/mspsim/tree/mementos/traces) repository. Detail explanation of these traces is given in a separate [README](raw_traces/MSPSim_traces/README.md).
 - `parse_traces.py`: Script to process each input trace from each directory in `raw_traces` directory and store them into respective directories in `parsed_traces`. The script generates output files for each input trace file, as listed for `parsed_traces` directory above.
 - `README.md`: This file.
 
