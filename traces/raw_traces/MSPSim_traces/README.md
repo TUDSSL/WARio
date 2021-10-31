@@ -5,7 +5,7 @@ This file describes the content of the repository where this [README](README.md)
 ### Structure of this repository
 
 - `1.txt`, `2.txt`, ..., `10.txt`: Ten text files containing measurement data following the structure as explained in the [History](#history) section of this file.
-- `README.md`: this file
+- `README.md`: This file.
 
 ### History
 
