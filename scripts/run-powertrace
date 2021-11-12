@@ -16,7 +16,6 @@ fi
 
 # Run the emulator
 icemu -p powertrace_plugin.so \
-  -p display_instructions_plugin.so \
   -p mock_putc_plugin.so -a putc-logfile="$result_dir/stdout-$on_time-$stdev.csv" \
   -a powertrace-on-cycles="$on_time" \
   -a powertrace-stdev="$stdev" \
