@@ -4,11 +4,11 @@ from Color import *
 ConfigurationNameMap = {
     'opt-ratchet': 'Ratchet',
     'opt-baseline': 'R-PDG',
-    'opt-writebuf': r'\textit{write clustering}',
-    'opt-loop': r'\textit{loop write clustering}',
-    'opt-reducedpop': r'\textit{epilog optimization}',
-    'opt-all': r'\textbf{Wario} (complete)',
-    'opt-all-expander': r'\textbf{Wario}+expander'
+    'opt-reducedpop': r'Epilog Optimizer',
+    'opt-writebuf': r'Write Clusterer',
+    'opt-loop': r'Loop Write Clusterer',
+    'opt-all': r'\textbf{WARio} (complete)',
+    'opt-all-expander': r'\textbf{WARio}\,+\,Expander'
 }
 
 ConfigurationColorMap = {
@@ -19,4 +19,13 @@ ConfigurationColorMap = {
     'opt-reducedpop': Color['green'],
     'opt-all': Color['cyan'],
     'opt-all-expander': '#6699cc', # add hashing?
+}
+
+BenchmarkNameMap = {
+    'coremark': r'CoreMark',
+    'sha': r'SHA',
+    'crc': r'CRC',
+    'aes': r'Tiny AES',
+    'dijkstra': r'Dijkstra',
+    'picojpeg': r'picojpeg'
 }
