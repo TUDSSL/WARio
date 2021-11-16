@@ -4,7 +4,7 @@
 RESULT_DIR="results-powertrace"
 COMBINE_FILE="powertrace-stats.csv"
 
-N=100
+N=1
 if [[ ! -z "$1" ]]; then
     N=$1
 fi
@@ -23,6 +23,8 @@ echo "running the powertrace benchmark ${N}x"
 for (( c=1; c<=$N; c++)) do
     make -f make-powertrace-benchmarks.mk all -j14
 done
+
+# Run the real-world powertraces
 
 # Combine the output
 echo "combining results"

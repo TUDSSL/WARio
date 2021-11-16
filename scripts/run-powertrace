@@ -3,6 +3,7 @@
 # $1 = ontime (cycles)
 # $2 = stdev (default=0)
 # $3 = elf file
+# $4 = result dir
 
 on_time="$1"
 stdev="$2"

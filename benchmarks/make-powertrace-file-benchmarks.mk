@@ -1,28 +1,23 @@
 CONFIG = opt-loop
-RESULTS_DIR = results-powertrace
+RESULTS_DIR = results-powertrace-files
+
+#BENCHMARKS := \
+#		coremark \
+#		crc \
+#		sha \
+#		dijkstra \
+#		aes \
+#		picojpeg
 
 BENCHMARKS := \
-		coremark \
-		crc \
-		sha \
-		dijkstra \
-		aes \
-		picojpeg
+		sha
 
-ON_TIMES := \
-		0 \
-		50000 \
-		100000 \
-		200000 \
-		500000 \
-  	1000000 \
-  	2000000 \
-  	5000000 \
-  	10000000 \
-  	20000000 \
-  	50000000 \
+TRACE_DIR := ../traces/parsed_traces/MSPSim_traces/
 
-STDEV := 1000
+  	#7_on_off_samples_list.txt
+FILES := \
+  	2_on_off_samples_list.txt \
+
 
 define powertrace_benchmark
 POWERTRACE_BENCH_ALL += powertrace-$(1)
@@ -48,10 +43,10 @@ endef
 
 define powertrace_benchmark
 powertrace-$(1)-$(2): prepare-$(1)
-		@echo "running powertrace $(1) [$(2)]"
-		@run-powertrace $(2) $(STDEV) $(RESULTS_DIR)/$(1)/$(1).elf $(RESULTS_DIR)/$(1) > $(RESULTS_DIR)/$(1)/$(1)-$(2).emu 2>&1
+		@echo "running powertrace file $(1) [$(TRACE_DIR)/$(2)]"
+		run-powertrace-file $(TRACE_DIR)/$(2) $(2) $(RESULTS_DIR)/$(1)/$(1).elf $(RESULTS_DIR)/$(1) > $(RESULTS_DIR)/$(1)/$(1)-$(2).emu 2>&1
 		@echo "validating powertrace $(1) [$(2)]..."
-		@powertrace-validate $(RESULTS_DIR)/$(1)/war-stats-$(2)-$(STDEV).csv
+		@powertrace-validate $(RESULTS_DIR)/$(1)/war-stats-trace-file-$(2)-8000000.csv
 
 POWERTRACE_$(1)_ALL += powertrace-$(1)-$(2)
 POWERTRACE_ALL += powertrace-$(1)-$(2)
@@ -66,7 +61,7 @@ endef
 $(foreach bench,$(BENCHMARKS),$(eval $(call prepare_benchmark,$(bench))))
 
 # Generate the powertrace targets for each benchmark
-$(foreach bench,$(BENCHMARKS),$(foreach ontime, $(ON_TIMES),$(eval $(call powertrace_benchmark,$(bench),$(ontime)))))
+$(foreach bench,$(BENCHMARKS),$(foreach tracefile, $(FILES),$(eval $(call powertrace_benchmark,$(bench),$(tracefile)))))
 
 # Generate the powertrace target for all on-times
 $(foreach bench,$(BENCHMARKS),$(eval $(call powertrace_all,$(bench))))
