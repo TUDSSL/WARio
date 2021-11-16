@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# $1 = trace_file (ms)
+# $2 = elf file
+# $3 = result dir
+
+trace_file="$1"
+trace_name="$2"
+elf_file="$3"
+result_dir="$4"
+powertrace_freq=8000000
+
+
+# Run the emulator
+icemu -p powertrace_plugin.so \
+  -p mock_putc_plugin.so -a putc-logfile="$result_dir/stdout-trace-file-$trace_name-$powertrace_freq.csv" \
+  -a powertrace-input-file="$trace_file" \
+  -a powertrace-freq="$powertrace_freq" \
+  -a powertrace-stats-file="$result_dir/powertrace-stats-trace-file-$trace_name-$powertrace_freq.csv" \
+  -p checkpoint_verification_plugin.so -a cpval-checkpoint-variable=__lclock \
+  -a cpval-ignore-variable=__first_boot -a cpval-uncaught-war-file="$result_dir/war-stats-trace-file-$trace_name-$powertrace_freq.csv" \
+  "$elf_file"
