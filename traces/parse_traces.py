@@ -270,8 +270,8 @@ def parse_trace_file(cwd, raw_traces_path, traces_directory, trace_file):
     # plt.show()
 
     # Save thumbnail of the input data (for the paper figures)
-    fig, ax = plt.subplots(1, 1)
-    ax.plot(time_samples, voltage_samples, 'black', linewidth=0.2)
+    fig, ax = plt.subplots(1, 1,figsize=(30,3))
+    ax.plot(time_samples, voltage_samples, 'black', linewidth=0.001)
     ax.set_xticklabels([])
     ax.set_xticks([])
     ax.axis('off')
