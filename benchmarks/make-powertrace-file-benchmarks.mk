@@ -1,22 +1,22 @@
 CONFIG = opt-loop
-RESULTS_DIR = results-powertrace-files
-
-#BENCHMARKS := \
-#		coremark \
-#		crc \
-#		sha \
-#		dijkstra \
-#		aes \
-#		picojpeg
+RESULTS_DIR = results-powertrace-tracefiles
 
 BENCHMARKS := \
-		sha
+		coremark \
+		crc \
+		sha \
+		dijkstra \
+		aes \
+		picojpeg
+
+#BENCHMARKS := \
+#		sha
 
 TRACE_DIR := ../traces/parsed_traces/MSPSim_traces/
 
-  	#7_on_off_samples_list.txt
 FILES := \
   	2_on_off_samples_list.txt \
+  	7_on_off_samples_list.txt
 
 
 define powertrace_benchmark
