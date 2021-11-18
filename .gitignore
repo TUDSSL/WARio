@@ -3,3 +3,4 @@ vgcore*
 *.swp
 *.swo
 **/.DS_Store
+benchmarks/results*
