@@ -2,10 +2,12 @@
 
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+# Configure the PATHs
 export PATH="$ROOT_DIR/scripts/:$PATH"
 export PATH="$ROOT_DIR/tools/:$PATH"
 export PATH="$ROOT_DIR/llvm/llvm-9.0.1/install/bin:$PATH"
 export PATH="$ROOT_DIR/noelle/noelle/install/bin:$PATH"
+export PATH="$ROOT_DIR/icemu/icemu/bin:$PATH"
 
 export LLVM_ROOT="$ROOT_DIR/llvm/llvm-9.0.1/install/"
 
