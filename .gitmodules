@@ -3,4 +3,4 @@
 	url = https://github.com/scampanoni/noelle.git
 [submodule "icemu/icemu"]
 	path = icemu/icemu
-	url = git@github.com:TUDSSL/ICEmu.git
+	url = https://github.com/TUDSSL/ICEmu.git
