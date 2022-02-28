@@ -75,6 +75,17 @@ $ cd WARio/passes
 $ ./build.sh
 ```
 
-### Running the benchmarks
+### Building and Running the Benchmarks
+Building and running the benchmarks in WARio can be done per benchmark using the makefiles in [benchmarks/](benchmarks/). Some benchmarks require a significant amount of memory to compile and emulate (primarily `picojpeg`). Because of this, the [`build-run.sh`](benchmarks/build-run.sh) script does not enable multi-threaded compilation. If you have a machine with more than 16GB of memory, you may consider changing the script's `-j` parameter. The high memory usage results from prioritizing readability and simplicity while developing the transformations and is not a direct effect of the algorithms used by WARio.
+```
+$ cd WARio/benchmarks
+$ ./build-run.sh
+```
+
+### Plotting the Results
+During the emulation of the benchmarks a lot of information is collected and analyzed. A set of [Jupyter Notebook](https://jupyter.org/) scripts parse the results and plot them using matplotlib and LaTeX (used for the text generation in matplotlib to match the paper).
+```
 TODO
+```
+
 
