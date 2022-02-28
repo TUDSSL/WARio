@@ -20,39 +20,44 @@ RUN apt-get update && \
 # Change the working directory
 WORKDIR /root
 
-# Setup SSH
-RUN --mount=type=ssh mkdir -p  ~/.ssh && \
-    ssh-keyscan github.com >> ~/.ssh/known_hosts
+# Clone the WARio directory
+RUN git clone https://github.com/TUDSSL/WARio.git
 
-# Download ICEmu
-RUN --mount=type=ssh git clone git@github.com:iiKoe/ICEmu.git
-RUN --mount=type=ssh cd ICEmu/ && git submodule update --init --recursive
+# Get all the submodules
+RUN cd WARio && git submodule update --init --recursive
 
-# Download intermittent-compiler-collection
-RUN --mount=type=ssh git clone git@github.com:iiKoe/intermittent-compiler-collection.git
-RUN --mount=type=ssh cd intermittent-compiler-collection && \
-    git submodule update --init --recursive
-
-# Build ICEmu
-RUN cd ICEmu && \
-    ./setup-lib.sh && \
-    mkdir -p build && cd build && cmake ../ && make -j
+# Build the ICEmu emulator
+RUN cd WARio/icemu && ./build.sh
 
 # Build the modified llvm
-RUN cd intermittent-compiler-collection/llvm && ./download.sh && ./build.sh
+RUN cd WARio/llvm && ./download.sh && ./build.sh
 
-# Install gllvm
+# Install gllvm (https://github.com/SRI-CSL/gllvm)
 RUN go get github.com/SRI-CSL/gllvm/cmd/...
 
 # Configure the paths
-RUN echo "export PATH=/root/go/bin:\$PATH" >> "$HOME/.env"
-RUN echo "source $HOME/intermittent-compiler-collection/setup.sh" >> "$HOME/.env"
-RUN echo "export PATH=$HOME/ICEmu/bin:\$PATH" >> "$HOME/.env"
+RUN echo "export PATH=$HOME/go/bin:\$PATH" >> "$HOME/.env"
+RUN echo "source $HOME/WARio/setup.sh" >> "$HOME/.env"
 
 RUN echo "source $HOME/.env" >> "$HOME/.bashrc"
 
-# Build noelle
-RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/intermittent-compiler-collection/noelle && ./build.sh"]
+# Build noelle (https://github.com/scampanoni/noelle)
+# Bash is specified in order to source the paths
+RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/WARio/noelle && ./build.sh"]
 
-# Build the compiler passes
-RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/intermittent-compiler-collection/passes/idempotent-regions && make -j"]
+# Build the transformations
+RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/WARio/passes && ./build.sh"]
+
+
+##
+# All the tools are build, now we compile and run the benchmarks
+##
+
+# Build and run the benchmarks (can take a long time)
+RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/WARio/benchmarks && ./build-run.sh"]
+
+##
+# Plot the results. 
+# Optional. Remove this to avoid installing Jupyter Notebook and LaTeX
+##
+
