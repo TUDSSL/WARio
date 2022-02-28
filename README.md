@@ -8,7 +8,7 @@ We provide a [Dockerfile](docker/Dockerfile) that can be used to build WARio and
 Below we go through each of the steps needed to build WARio.
 
 ### Requirements
-WARio was built and tested on `Ubuntu 12.04`. The build process should translate to other Linux distributions, but these are not tested.
+WARio was built and tested on `Ubuntu 20.04`. The build process should translate to other Linux distributions, but these are not tested.
 Building WARio from scratch and running all the experiments is time and memory-consuming. We recommend using a system with a minimum of 16GB of main memory. The complete process will take several hours. In addition to the Dockerfile, we provide a prebuild version.
 
 *** We recommend using the Dockerfile instead of manual compilation as described below! The steps described below are the exact steps specified in the Dockerfile and included to provide insight into the components of WARio. ***
