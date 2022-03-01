@@ -1,6 +1,25 @@
 # WARio: Efficient Code Generation for Intermittent Computing via Compiler Support
 
-## Building WARio
+This is the official public repository for a compiler-support runtime called WARio for **intermittently-powered** platforms. WARIo has been published as the following publication.
+
+```
+@article{kortbeek:pldi:2022:wario,
+author = {Kortbeek, Vito and Ghosh, Souradip and Hester, Josiah and Campanoni, Simone and Pawe\l{}czak, Przemys\l{}aw},
+title = {},
+journal = {Proc. ACM Conference on Programming Language Design and Implementation},
+year = {2022},
+month = jun,
+volume = {},
+number = {},
+articleno = {},
+numpages = {},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/XYZ}
+}
+```
+
+## Getting Stated Guide: How to Build WARio
 The easiest way to use WARio is through a docker container. This way, all the required dependencies are handled correctly and it will keep WARio's compilation environment seperate from the host machine.
 
 We provide a [Dockerfile](docker/Dockerfile) that can be used to build WARio and all its components from scratch. Additionally the Dockerfile will build and run all the experiments from the paper. 
@@ -82,8 +101,9 @@ $ cd WARio/benchmarks
 $ ./build-run.sh
 ```
 
-### Plotting the Results
+### Artifact Evaluation: Plotting the Results
 During the emulation of the benchmarks a lot of information is collected and analyzed. A set of [Jupyter Notebook](https://jupyter.org/) scripts parse the results and plot them using matplotlib and LaTeX (used for the text generation in matplotlib to match the paper).
+
 ```
 TODO
 ```
