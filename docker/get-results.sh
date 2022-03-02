@@ -2,9 +2,9 @@
 
 # Get the result plots (i.e., the plots in the paper) from a running WARio docker container
 
-# Get the image id (using docker ps)
-# Overwrite this if you have multiple WARio image instances running
-image=$(docker ps | grep wario | awk '{ print $1 }')
+# Get the image id (using docker ps) Make sure the container is running
+# Overwrite this if you have multiple wario-experiments image instances running
+image=$(docker ps | grep wario-experiments | awk '{ print $1 }')
 
 # Create a results directory
 mkdir -p generated

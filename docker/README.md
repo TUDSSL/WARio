@@ -1,20 +1,58 @@
-# Build a docker image including this repository and the ICEmu emulator
+# Dockerfiles for WARio
 
-NB. this Dockerfile shares the ssh keys of the host using `SSH_AUTH_SOCK`
-(see ./build.sh) to pull the private github repositories.
+We split WARio into multiple docker containers, depending on what part you need or want to customize/run yourself.
 
-Access is needed to this repository (https://github.com/iiKoe/intermittent-compiler-collection)
-and ICEmu (https://github.com/iiKoe/ICEmu).
+**The containers build upon each other, so make sure to take note of the order.**
 
-Run the container with:
+Each of the configurations is a directory that the Dockerfile that generates
+them and the generated image (in tar.gz format) that can be imported into docker.
+
+## The Containers
+
+Below we describe the containers and their relationships. Each of them can be build
+using their respective Dockerfile.
+
+### wario-source
+This container holds all the source files for all the components to build and
+evaluate WARio and has all the dependencies installed to correctly build/run them.
+
+### wario-compiler
+*depends on wario-source*
+This container holds a pre-compiled version of all of WARio's components, namely the:
+* ICEmu emulator (based on Unicorn/QEMU) used for evaluation
+* LLVM with a modified WARio back-end for ARM
+* Noelle LLVM extension
+* WARio middle-end transformations (LLVM passes)
+
+### wario-experiments
+*depends on wario-compiler*
+This container holds the build versions of all the benchmarks and configurations
+listed in the paper and holds the evaluation results after running the different
+benchmarks
+
+
+## Building a Container
+You can build a container by navigating to its directory and running:
 ```
-docker run --rm -it intermittent-compiler-dev /bin/bash
+$ ./build.sh
 ```
 
-To share the ssh keys of the host (for git access) use:
+## Running a Container Interactively
+You can build a container by navigating to its directory and running:
 ```
-eval $(ssh-agent)
-ssh-add
-docker run --rm -it -v $(dirname $SSH_AUTH_SOCK):$(dirname $SSH_AUTH_SOCK) -e SSH_AUTH_SOCK=$SSH_AUTH_SOCK intermittent-compiler-dev /bin/bash
+$ ./run.sh
 ```
 
+## Retrieving the Figures and Tables
+After building the *wario-experiments* container you can retrieve the generated
+results, including the Figures and Tables generated in the paper (that depend on the benchmarks).
+* Figures 4, 5, 6 and 7
+* Tables 1 and 2
+
+To retrieve the generated results, while the  *wario-experiments* container is
+running, in another terminal (on the host) run:
+```
+$ ./get-results.sh
+```
+
+This will copy all the results into a directory called `generated`.
