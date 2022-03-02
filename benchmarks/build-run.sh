@@ -5,4 +5,4 @@
 # Are both CPU and Memory intensive. For 16GB of system memory we recoment not
 # using more than 1 thread.
 # This limitation is mainly due to the larger 'picojpeg' benchmark.
-make -j 1
+make -j 3
