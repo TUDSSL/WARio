@@ -15,7 +15,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y build-essential cmake python3 libboost-filesystem-dev  \
     libboost-system-dev libboost-program-options-dev vim git ninja-build clang \
-    gcc-arm-none-eabi wget python3-distutils python3-pandas golang python3-tabulate
+    gcc-arm-none-eabi wget golang \
+
 
 # Change the working directory
 WORKDIR /root
@@ -49,15 +50,23 @@ RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/WARio/noelle && ./build.s
 RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/WARio/passes && ./build.sh"]
 
 
-##
-# All the tools are build, now we compile and run the benchmarks
-##
+#################################################################
+# All the tools are built, now we compile and run the benchmarks
+#################################################################
 
 # Build and run the benchmarks (can take a long time)
 RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/WARio/benchmarks && ./build-run.sh"]
 
-##
+#################################################################
 # Plot the results. 
 # Optional. Remove this to avoid installing Jupyter Notebook and LaTeX
-##
+#################################################################
+RUN apt-get install -y cm-super dvipng texlive-latex-extra fonts-linuxlibertine \
+    python3-distutils python3-tabulate python3-pip
 
+RUN pip install matplotlib==3.5.1
+RUN pip install pandas==1.4.1
+RUN pip install jupyterlab
+
+# Generate the figures and tables as seen in the paper
+RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/WARio/plotting && ./build.sh"]
