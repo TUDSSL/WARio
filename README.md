@@ -1,6 +1,7 @@
 # WARio: Efficient Code Generation for Intermittent Computing via Compiler Support
 
-This is the official public repository for a compiler-support runtime called WARio for **intermittently-powered** platforms. WARIo has been published as the following publication.
+## Background
+This is the official public repository for a compiler-support runtime for **intermittently-powered** platforms called WARio. WARIo has been presented first in the following publication.
 
 ```
 @article{kortbeek:pldi:2022:wario,
@@ -19,21 +20,20 @@ url = {https://doi.org/XYZ}
 }
 ```
 
-## Getting Stated Guide: How to Build WARio
-The easiest way to use WARio is through a docker container. This way, all the required dependencies are handled correctly and it will keep WARio's compilation environment seperate from the host machine.
+## Getting Stated Guide: Building WARio through a Docker Container
+The easiest way to start using WARio is through a Docker container. This way, all the required WARio dependencies will be handled correctly and Docker will keep WARio's compilation environment seperate from the host machine. For that reason we provide a [Dockerfile](docker/Dockerfile) to build WARio and all its components from scratch. Additionally, the Docker container will be used to build and run all the experiments presented in the paper (listed above) that introduced WARio. 
 
-We provide a [Dockerfile](docker/Dockerfile) that can be used to build WARio and all its components from scratch. Additionally the Dockerfile will build and run all the experiments from the paper. 
-
-Below we go through each of the steps needed to build WARio.
+We shall now go through each of the steps needed to build WARio through the Docker container.
 
 ### Requirements
-WARio was built and tested on `Ubuntu 20.04`. The build process should translate to other Linux distributions, but these are not tested.
-Building WARio from scratch and running all the experiments is time and memory-consuming. We recommend using a system with a minimum of 16GB of main memory. The complete process will take several hours. In addition to the Dockerfile, we provide a prebuild version.
+WARio was built and tested on `Ubuntu 20.04` operating system. The build process should translate to other Linux distributions, but these are not tested.
+
+Building WARio from scratch and running all the experiments is time and memory-consuming. We recommend using a system with a minimum of 16 GB of main memory. The complete process will take several hours. In addition to the Dockerfile, we provide a prebuild version.
 
 *** We recommend using the Dockerfile instead of manual compilation as described below! The steps described below are the exact steps specified in the Dockerfile and included to provide insight into the components of WARio. ***
 
 ### Dependencies
-First, update and install the required packages.
+First, update and install the required packages executing the following command.
 ```
 # apt-get update && \
     apt-get install -y build-essential cmake python3 libboost-filesystem-dev  \
@@ -107,5 +107,3 @@ During the emulation of the benchmarks a lot of information is collected and ana
 ```
 TODO
 ```
-
-
