@@ -6,7 +6,7 @@ This is the official public repository for a compiler-support runtime for **inte
 ```
 @article{kortbeek:pldi:2022:wario,
 author = {Kortbeek, Vito and Ghosh, Souradip and Hester, Josiah and Campanoni, Simone and Pawe\l{}czak, Przemys\l{}aw},
-title = {},
+title = {WARio: Efficient Code Generation for Intermittent Computing via Compiler Support},
 journal = {Proc. ACM Conference on Programming Language Design and Implementation},
 year = {2022},
 month = jun,
@@ -16,7 +16,7 @@ articleno = {},
 numpages = {},
 publisher = {Association for Computing Machinery},
 address = {New York, NY, USA},
-url = {https://doi.org/XYZ}
+url = {https://doi.org/}
 }
 ```
 
