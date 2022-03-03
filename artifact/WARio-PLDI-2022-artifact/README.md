@@ -140,14 +140,13 @@ $ echo "source $HOME/.env" >> "$HOME/.bashrc"
 ```
 
 ### The `wario-compiler` Container
-*depends on wario-source*
-This container holds a pre-compiled version of all of WARio's components, namely the:
-* ICEmu emulator (based on Unicorn/QEMU) used for evaluation
-* LLVM with a modified WARio back-end for ARM
-* Noelle LLVM extension
-* WARio middle-end transformations (LLVM passes)
+This container holds a pre-compiled version of all of WARio's components, namely:
+* ICEmu emulator (based on [Unicorn](https://github.com/unicorn-engine/unicorn)) used for evaluation,
+* LLVM with a modified WARio back-end for ARM,
+* [Noelle](https://github.com/scampanoni/noelle) LLVM extension,
+* WARio middle-end transformations (LLVM passes).
 
-The container is build by:
+The container is build in the following steps.
 
 #### Step 1: Build the ICEmu Emulator
 WARio uses the ICEmu ARM processor architeture emulator, which is built using [Unicorn](https://github.com/unicorn-engine/unicorn). ICEmu uses several custom plugins to WARio's performance without introducing additional code. To build ICEmu execute the following command.
@@ -157,7 +156,7 @@ $ ./build.sh
 ```
 
 #### Step 2: Build LLVM
-WARio uses `LLVM version 9.0.1` in combination with a custom backend for ARM Thumb2, where ARM Thumb2 is enabled using several LLVM compiler flags. Additionally, LLVM version 9.0.1 is used to compile [Noelle](https://github.com/scampanoni/noelle) (an LLVM extension) and all the transformations. Parts of LLVM are not in this WARio git repository but are downloaded to keep this repository (relatively) small. To build LLVM execute the following command.
+WARio uses `LLVM version 9.0.1` in combination with a custom backend for ARM Thumb2, where ARM Thumb2 is enabled using several LLVM compiler flags. Additionally, LLVM version 9.0.1 is used to compile [Noelle](https://github.com/scampanoni/noelle) (an LLVM extension) and all the transformations. Parts of LLVM are not in the [WARio GitHub repository](https://github.com/TUDSSL/WARio) repository but are downloaded to keep this repository (relatively) small. To build LLVM execute the following command.
 ```
 $ cd WARio/llvm
 $ ./download.sh
@@ -178,13 +177,10 @@ $ cd WARio/passes
 $ ./build.sh
 ```
 
-### The `wario-experiments` container
-*depends on wario-compiler*
-This container holds the build versions of all the benchmarks and configurations
-listed in the paper and holds the evaluation results after running the different
-benchmarks.
+### The `wario-experiments` Container
+This container holds the build versions of all the benchmarks and configurations listed in the paper and holds the evaluation results after running the different benchmarks.
 
-The container is build by:
+The container is build in the following steps.
 
 #### Step 1: Build and Run the Benchmarks
 Building and running the benchmarks in WARio can be done **per benchmark** using the makefiles in [benchmarks/](benchmarks/). Some benchmarks require a significant amount of memory to compile and emulate (primarily `picojpeg`). Because of this, the [`build-run.sh`](benchmarks/build-run.sh) script does not enable multi-threaded compilation. If you have a machine with more than 16 GB of memory, you may consider changing the script's `-j` parameter. The high memory usage results from prioritizing readability and simplicity while developing the transformations and is not a direct effect of the algorithms used by WARio. To build and run the benchmarks execute the following command.
@@ -206,8 +202,7 @@ $ ./collect.sh
 ```
 
 #### Step 4: Install the Dependencies to Plot the Results
-As this is an "optional" step, and as it requires large packages, we only
-install the dependencies for plotting here.
+As this is an "optional" step, and as it requires large packages, we only install the dependencies for plotting here.
 ```
 # apt-get update && apt-get install -y texlive-latex-extra fonts-linuxlibertine
 $ pip install jupyterlab==3.2.9
@@ -222,13 +217,13 @@ $ ./build.sh
 ---
 
 ## Building a Container
-You can build a container by navigating to its directory and running:
+You can build a container by navigating to its directory and running the following command.
 ```
 $ ./build.sh
 ```
 
 ## Running a Container Interactively
-You can build a container by navigating to its directory and running:
+You can build a container by navigating to its directory by running the following command.
 ```
 $ ./run.sh
 ```
