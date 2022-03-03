@@ -67,7 +67,7 @@ $ cd wario-compiler
 $ ./build.sh
 ```
 
-## Step 3: Building and Evaluating the Benchmarks
+### Step 3: Building and Evaluating the Benchmarks
 
 The evaluation of WARio (including compiling the benchmarks using different
 configurations of WARio, etc.) is done in the `wario-experiments` Dockerfile.
@@ -86,7 +86,7 @@ single threaded manner to make sure the evaluation can be done on a machine with
 16GB memory (strictly only needed for one of the experiments, but to be safe we
 extend this to the complete evaluation).
 
-### Step 3: Retrieving the WARio Results
+### Step 4: Retrieving the WARio Results
 After building the `wario-experiments` container, it will hold all the figures
 and tables in the paper that depend on generated data. That is:
 * Figures 4, 5, 6 and 7
@@ -104,7 +104,7 @@ Next, in another terminal on the host machine, execute:
 $ ./get-results.sh
 ```
 To copy all the results from the **running** `wario-experiments` container to
-the host machine a directory named: `generated`.
+the host machine, in a directory named: `generated`.
 
 The plots used in the WARio paper can be found in `generated/plots`
 
@@ -115,7 +115,7 @@ The plots used in the WARio paper can be found in `generated/plots`
 In this section we go over each of the docker containers and describe each of
 the steps in more detail.
 
-### The `wario-source` Container
+## The `wario-source` Container
 This container holds all the source files for all the components to build and
 evaluate WARio and has all the dependencies installed to correctly build/run them.
 
@@ -156,7 +156,7 @@ $ echo "source $HOME/WARio/setup.sh" >> "$HOME/.env"
 $ echo "source $HOME/.env" >> "$HOME/.bashrc"
 ```
 
-### The `wario-compiler` Container
+## The `wario-compiler` Container
 *depends on wario-source*
 This container holds a pre-compiled version of all of WARio's components, namely the:
 * ICEmu emulator (based on Unicorn/QEMU) used for evaluation
@@ -196,7 +196,7 @@ $ ./build.sh
 ```
 
 
-### The `wario-experiments` container
+## The `wario-experiments` container
 *depends on wario-compiler*
 This container holds the build versions of all the benchmarks and configurations
 listed in the paper and holds the evaluation results after running the different
