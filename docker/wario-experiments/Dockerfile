@@ -10,7 +10,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 WORKDIR /root
 
 # Build and run the benchmarks (can take a long time)
-RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/WARio/benchmarks && ./build-run.sh"]
+RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/WARio/benchmarks && make -j1"]
 
 # Run the powertrace benchmarks
 RUN ["/bin/bash", "-c", "source $HOME/.env && cd $HOME/WARio/benchmarks && ./benchmark-powertrace.sh"]
