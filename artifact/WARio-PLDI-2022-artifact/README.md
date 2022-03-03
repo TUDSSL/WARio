@@ -34,92 +34,77 @@ First, to guarantee correct WARio execution we recommend `Ubuntu 20.04` operatin
 
 To evaluate the artifact, you can start from scratch (i.e. when all resources are downloaded from the [WARIo Git repository](https://github.com/TUDSSL/WARio) and the respective code repositiores that WARIo needs) by starting with the `wario-source` Docker file. However, we recommend importing the pre-built docker image for `wario-source`: this way all source code is already in the container and nothing needs to be downloaded from the internet.
 
-**Note:** At the bottom of this document in the [The Docker Containers](#The-Docker-Containers) section we elaborate on the commands executed in each Dockerfile to build the respective docker containers. 
+**Note:** In the [The Docker Containers](#The-Docker-Containers) section of this document we elaborate on the commands executed in each Dockerfile to build the respective docker containers. 
 
-### Step 1: Importing the Docker Container With All the Source Code
+### Step 1: Import the Docker Container With All the Source Code
 
-Import the `wario-source` image by executing:
+Import the `wario-source` image by executing the followig command.
 ```
 $ docker load < docker/wario-source/wario-source.tar.gz
 ```
 
-You can verify the image is imported by executing:
+You can verify the image is imported by executing
 ```
 $ docker images
 ```
 which should report the `wario-source` container image.
 
-### Step 2: Building the WARio Toolchain and Tools used for Evaluation
+### Step 2: Build the WARio Toolchain and Tools used for Evaluation
 
-The WARio toolchain is build in the `wario-compiler` Dockerfile.
-To evaluate this artifact we recommend building this container from the Dockerfile.
-The `wario-compiler` container builds on the `wario-source` container, so that
-container should be build or imported first.
+The WARio toolchain is build in the `wario-compiler` Dockerfile. To evaluate this artifact we recommend building this container from the Docker file. The `wario-compiler` container builds on the `wario-source` container, so that container should be build or imported first.
 
-To build the `wario-compiler` docker container execute:
+To build the `wario-compiler` docker container execute the following command.
 ```
 $ cd wario-compiler
 $ ./build.sh
 ```
 
-### Step 3: Building and Evaluating the Benchmarks
+### Step 3: Build and Evaluate the Benchmarks
 
-The evaluation of WARio (including compiling the benchmarks using different
-configurations of WARio, etc.) is done in the `wario-experiments` Dockerfile.
-The `wario-experiments` container builds on the `wario-compiler` container, so
-that container should be build or imported first.
+The evaluation of WARio (including compiling the benchmarks using different configurations of WARio, etc.) is done in the `wario-experiments` Docker file. The `wario-experiments` container builds on the `wario-compiler` container, so that container should be build or imported first.
 
-To build the `wario-experiments` docker container execute:
+To build the `wario-experiments` docker container execute the following command.
 ```
 $ cd wario-experiments
 $ ./build.sh
 ```
 
-This can take a significant amount of time (approximately 12 hours depending on
-the host machine). This is because we evaluate the benchmark configurations in a
-single threaded manner to make sure the evaluation can be done on a machine with
-16GB memory (strictly only needed for one of the experiments, but to be safe we
-extend this to the complete evaluation).
+Note that the above command *can take a significant amount of time* (approximately 12 hours depending on the host machine). This is because we evaluate the benchmark configurations in a single threaded manner to make sure the evaluation can be done on a machine with 16 GB memory (strictly only needed for one of the experiments, but to be safe we extend this to the complete evaluation).
 
-### Step 4: Retrieving the WARio Results
-After building the `wario-experiments` container, it will hold all the figures
-and tables in the paper that depend on generated data. That is:
-* Figures 4, 5, 6 and 7
-* Tables 1 and 2
+### Step 4: Retrieve the WARio Results
+After building the `wario-experiments` container, it will hold all the figures and tables in the paper that depend on generated data, that is
+* Figures 4, 5, 6 and 7, and
+* Tables 1 and 2.
 
-To retrieve these results (and more), first start the `wario-experiments` container
-by executing:
+To retrieve these results (and more), first start the `wario-experiments` container by executing the following command.
 ```
 $ cd wario-experiments
 $ ./run.sh
 ```
 
-Next, in another terminal on the host machine, execute:
+Next, in another terminal on the host machine execute
 ```
 $ ./get-results.sh
 ```
-To copy all the results from the **running** `wario-experiments` container to
-the host machine, in a directory named: `generated`.
+to copy all the results from the **running** `wario-experiments` container to the host machine in a directory named `generated`.
 
 The plots used in the WARio paper can be found in `generated/plots`
 
 ## Verifying the Claims in the Paper
-To verify the results generated by the containers, the results in `generated/plots` can be compared
-with the respective figures and tables in the paper (Figures 4,5,6 and 7; Tables 1 and 2). 
-The plots should be nearly identical.
+To verify the results generated by the containers, the results in `generated/plots` can be compared with the respective figures and tables presented in the paper (that is, Figures 4, 5, 6 and 7 as well as Tables 1 and 2). The plots should be nearly identical.
+
+---
 
 ## The Docker Containers
 
-In this section we go over each of the docker containers and describe each of
-the steps in more detail.
+In this section we go over each of the Docker containers and describe each of the steps in more detail.
 
-## The `wario-source` Container
-This container holds all the source files for all the components to build and
-evaluate WARio and has all the dependencies installed to correctly build/run them.
+### The `wario-source` Container
+This container holds all the source files for all the components to build and evaluate WARio and has all the dependencies installed to correctly build/run them.
 
-The container is build by:
+The container is build in the following steps.
 
-#### Step 1: Installing the Dependencies
+#### Step 1: Instal the Dependencies
 ```
 # apt-get update && \
     apt-get install -y build-essential cmake python3 libboost-filesystem-dev  \
@@ -131,30 +116,30 @@ $ pip install matplotlib==3.5.1
 $ pip install pandas==1.4.1
 ```
 
-#### Step 2: Installing `gllvm`
+#### Step 2: Instal `gllvm`
 ```
 $ go get github.com/SRI-CSL/gllvm/cmd/...
 ```
 
-#### Step 3: Downloading WARio
+#### Step 3: Download WARio
 ```
 $ git clone https://github.com/TUDSSL/WARio.git
 $ cd WARio && git submodule update --init --recursive
 ```
 
-#### Step 4: Downloading the Remaining Parts of LLVM
+#### Step 4: Download the Remaining Parts of LLVM
 ```
 $ cd WARio/llvm && ./download.sh
 ```
 
-#### Step 5: Configuring the Environment
+#### Step 5: Configure the Environment
 ```
 $ echo "export PATH=$HOME/go/bin:\$PATH" >> "$HOME/.env"
 $ echo "source $HOME/WARio/setup.sh" >> "$HOME/.env"
 $ echo "source $HOME/.env" >> "$HOME/.bashrc"
 ```
 
-## The `wario-compiler` Container
+### The `wario-compiler` Container
 *depends on wario-source*
 This container holds a pre-compiled version of all of WARio's components, namely the:
 * ICEmu emulator (based on Unicorn/QEMU) used for evaluation
@@ -193,7 +178,7 @@ $ cd WARio/passes
 $ ./build.sh
 ```
 
-## The `wario-experiments` container
+### The `wario-experiments` container
 *depends on wario-compiler*
 This container holds the build versions of all the benchmarks and configurations
 listed in the paper and holds the evaluation results after running the different
