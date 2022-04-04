@@ -385,11 +385,12 @@ struct MachineIdempotentRegions : public MachineFunctionPass {
       } while (DT.dominates(LoadBB, BB)); // Every node dominates itself
 
       // Also consider placing it in the LoadBB. Good for loops.
+      // But only add the instruction if it might be a sore
       MachineBasicBlock::iterator LoadBBCursor(Load);
       while (++LoadBBCursor != LoadBB->end()) {
         if (LoadBBCursor == Store) break;
         auto *MI = cast<MachineInstr *>(LoadBBCursor);
-        if (isPossiblePathInstruction(MI)) {
+        if (MI->mayStore()) {
           Path.push_back(MI);
         }
       }
