@@ -273,7 +273,7 @@ Next, navigate to the `quicksort` project.
 $ cd WARio/benchmarks/quicksort
 ```
 
-To set up the environment for a certain configuration (e.g., `R-PDG`, `Loop Write Clusterer` in the paper in Figure 4 and 5), we can use the `WARio/scripts/benchmark-build` script to set all the environment variables associated with the configuration. We can also do this manually, but we will use the script.
+To set up the environment for a certain configuration (e.g., `R-PDG`, `Loop Write Clusterer` in the paper in Figure 4 and 5), we can use the `WARio/scripts/benchmark-build` script to set all the environment variables associated with the configuration. We can also do this manually, but we will use the script. For details on how to configure the environment variables for `iclang` manually, and their purpose, see the _"`iclang` Configuration"_ section below.
 
 To get all the possible targets of `WARio/scripts/benchmark-build`, open the script, or run `benchmark-build targets`.
 
@@ -315,7 +315,7 @@ The output will show that the benchmark took approximately 2361 clock cycles (47
 
 
 ---
-## Source Code Overview
+# Source Code Overview
 
 WARio is a collection of compiler transformations, or "passes, " that optimize code for checkpoint placement and eventually place checkpoints.
 Some of WARio's transformations operate in the middle-end, and some in the back-end, as shown in Figure 2 of the paper.
@@ -406,3 +406,57 @@ Below we listed all the files that are either added or modified to make it easie
 * `llvm/lib/Target/ARM/ARMInstrThumb2.td`
   * Adds idempotent alternative pseudo instructions implemented in
     `ARMBaseInstrInfo` and also used in `FrameLowering`
+    
+
+--
+# `iclang` Configuration
+
+`iclang` is the wrapper script for clang that applies different transformations depending on the configuration. This configuration is done by setting environment variables. For an example of __how to use__ `iclang`, please read the "Step By Step Example" section in this README.
+
+These configuration environment variables instruct `iclang` to apply middle-end transformations or enable back-end features by providing command-line options to the modified `clang` build. If an environment variable is either not set or empty, it is ignored by `iclang`.
+
+The possible environment variables are:
+* `ICLANG_PASS_IDEMP_FLAGS` - enables the _(PDG) Checkpoint Inserter_ transformation
+  * `-idemp` - enables checkpoint placement
+  * `-cp-ratchet` - places checkpoints using the Ratchet source code directly (default is WARio using PDG)
+* `ICLANG_PASS_LOOP_UNROLL_FLAGS` - enables the loop unrolling of the _Loop Write Clusterer_ transformation
+  * `-loop-write-clusterer` - enables the transformation
+  * `-lwc-loop-unroll` - perform the unroll step
+  * `-lwc-loop-unroll-count=8` - unroll candidate loops 8 times
+  * `-lwc-loop-unroll-threshold=400` - don't unroll if the candidate loop exceeds 400 instructions (limit code size growth)
+* `ICLANG_PASS_LOOP_CLUSTER_FLAGS` - enables the write clustering of the _Loop Write Clusterer_ transformation
+  * `-loop-write-clusterer` - enables the transformation
+  * `-lwc-loop-schedule` - perform the write cluster step
+* `ICLANG_PASS_WRITE_BUFFER_FLAGS` - enables the _Write Clusterer_ transformation
+  * `-write-buffer` - enable the transformation
+* `ICLANG_PASS_EXPANDER_FLAGS`  - enables the _Expander_ transformation
+  * `-expander` - enable the transformation
+* `ICLANG_CODEGEN_FLAGS` - sets the _back-end_ flags to enable
+  * `-mllvm --idemp-force-lr-spill` - enable checkpoints for stack spill WARs
+  * `-mllvm --idemp-code-gen` - convert checkpoint intrinsic calls to actual checkpoints
+  * `-mllvm --idemp-pop` - convert `pop` instructions to not have WARs
+  * `-mllvm --idemp-checkpoint-reason-markers` - insert special markers to track the cause of a checkpoint
+  * `-mllvm --idemp-stack-spill-hitting-set` - use a hitting-set algorithm to place stack-spill checkpoints
+  * `-mllvm --idemp-disable-interrupt-during-pop` - pefrorm the _Epilog Optimizer_ transformation
+
+As an example, the `iclang` configuration for `R-PDG` in the paper would be:
+```
+export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+export ICLANG_PASS_LOOP_UNROLL_FLAGS=""
+export ICLANG_PASS_LOOP_CLUSTER_FLAGS=""
+export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
+export ICLANG_PASS_EXPANDER_FLAGS=""
+export ICLANG_CODEGEN_FLAGS=-mllvm --idemp-force-lr-spill -mllvm --idemp-code-gen -mllvm --idemp-pop -mllvm --idemp-checkpoint-reason-markers 
+```
+
+And the `iclang` configuration for `WARio+Expander` would be:
+```
+export ICLANG_PASS_IDEMP_FLAGS="-idemp"
+export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8 -lwc-loop-unroll-threshold=400"
+export ICLANG_PASS_LOOP_CLUSTER_FLAGS="-loop-write-clusterer -lwc-loop-schedule"
+export ICLANG_PASS_WRITE_BUFFER_FLAGS="-write-buffer"
+export ICLANG_PASS_EXPANDER_FLAGS="-expander"
+export ICLANG_CODEGEN_FLAGS="-mllvm --idemp-force-lr-spill -mllvm --idemp-code-gen -mllvm --idemp-pop -mllvm --idemp-checkpoint-reason-markers -mllvm --idemp-stack-spill-hitting-set -mllvm --idemp-disable-interrupt-during-pop"
+```
+
+To view all the configutations used in the paper, see `WARio/scripts/benchmark-build`.
