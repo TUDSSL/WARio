@@ -305,13 +305,24 @@ The output will show that the benchmark took approximately 2837 clock cycles, an
 
 To close out this quick demonstration, we will also compile quicksort using the WARio configuration, i.e., `opt-all` to show that it contains fewer checkpoints (although, for such a small application, the difference is minimal and just for illustration).
 
-To compile the WARio  version of quicksort, navigate to `WARio/benchmarks/quicksort` and execute:
+To compile and run the WARio version of quicksort, navigate to `WARio/benchmarks/quicksort` and execute:
 ```
 $ benchmark-build opt-baseline
 $ cd build-opt-all
 $ run-elf quicksort.elf
 ```
 The output will show that the benchmark took approximately 2361 clock cycles (476 cycles less), and there were 18 checkpoints executed (7 less).
+
+To run the program intermittently, i.e., with power failures, we can use the `run-powertrace` script (`WARio/scripts/run-powertrace`). This script takes three arguments, the on-time in cycles (i.e., the number of cycles between power failures), a stdev (currently unused), the `.elf` file, and the output directory for the intermittency statistics.
+
+To run our `quicksort` example intermittently with power failures every 500 clock cycles, execute:
+```
+$ mkdir powertrace-test
+$ run-powertrace 500 0 quicksort.elf powertrace-test
+```
+
+The emulator will output how many cycles were executed, including re-execution due to power failures. This example ran for 2780 cycles, compared to 2361 without power failures, this means that the re-execution cost of this example was 419 cycles. Additionally, the emulator will show how many times the system was reset due to power failures, which should be 4 in this example.
+
 
 
 ---
