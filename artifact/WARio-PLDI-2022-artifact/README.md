@@ -211,7 +211,7 @@ $ ./build.sh
 
 ---
 
-## Importing a prebuilt image
+## Importing a Prebuilt Image
 You can load any of the three WARio images availible in the `docker.zip` file (instead of building them).
 ```
 $ docker load < docker/wario-source/wario-source.tar.gz
@@ -229,4 +229,44 @@ $ ./build.sh
 You can build a container by navigating to its directory by running the following command.
 ```
 $ ./run.sh
+```
+
+---
+## Source Code Overview
+
+WARio is a collection of compiler transformations, or "passes, " that optimize code for checkpoint placement and eventually place checkpoints.
+Some of WARio's transformations operate in the middle-end, and some in the back-end, as shown in Figure 2 of the paper.
+
+Transformations in the middle-end are implemented as "plugins" for LLVM and operate directly on the LLVMIR files; You can build each middle-end transformation by running `make` in the respective root directory (e.g., `WARio/passes/loop-scheduler`), or alternitively, by running the `build.sh` script in `WARio/passes` to build all the transformation at once. 
+
+The middle-end transformations are described below.
+
+### Loop Write Clusterer
+This transformation clusters write operations in loops together to reduce the number of required checkpoints to resolve all WAR violations.
+You can find the code for this transformation in: 
+```
+WARio/passes/loop-scheduler
+```
+The transformation consists of two steps. First, candidate loops are detected and unrolled in `WARio/passes/loop-scheduler/src/LoopUnroller.cpp`, next they are transformed in `WARio/passes/loop-scheduler/src/LoopWriteScheduler.cpp`
+
+
+### Expander
+This transformation inlines or expands functions that might reduce the number of required checkpoints to resolve all WAR violations.
+You can find the code for this transformation in: 
+```
+WARio/passes/idempotent-expander
+```
+
+### Write Clusterer
+This transformation attempts to cluster writes throughout the program, not limiting itself to loops, as is the case with the "Loop Write Clusterer," however, it is less aggressive.
+You can find the code for this transformation in: 
+```
+WARio/passes/write-buffering
+```
+
+### (PDG) Checkpoint Inserter
+This transformation places the checkpoint intrinsics, i.e., temporary markers that the back end will transform into actual checkpoints. In the transformation, there are checkpoint placement possibilities. First is the original Ratchet checkpoint placement code. And second is the WARio version, which uses a more accurate alias analysis through the Noelle PDG to reduce the number of required checkpoints.
+You can find the code for this transformation in:
+```
+WARio/passes/idempotent-regions
 ```
