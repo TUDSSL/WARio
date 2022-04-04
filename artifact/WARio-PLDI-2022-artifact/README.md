@@ -33,7 +33,7 @@ $ unzip docker.zip
 
 ### Step 1: Import the Docker Container With All the Source Code
 
-Import the `wario-source` image by executing the followig command. _[time estimate: 15 min]_
+Import the `wario-source` image by executing the followig command. __[time estimate: 15 minutes]__
 ```
 $ docker load < docker/wario-source/wario-source.tar.gz
 ```
@@ -48,7 +48,7 @@ which should report the `wario-source` container image.
 
 The WARio toolchain is built in the `wario-compiler` Dockerfile. The `wario-compiler` container builds on the `wario-source` container, so that container should be built or imported first. We recommend building this container from the Docker file to evaluate this artifact.
 
-To build the `wario-compiler` docker container execute the following command.  _[time estimate: 30~60 min]_
+To build the `wario-compiler` docker container execute the following command.  __[time estimate: 60 minutes]__
 ```
 $ cd wario-compiler
 $ ./build.sh
@@ -230,95 +230,88 @@ $ ./run.sh
 
 ---
 
-# Step By Step Example
-We will now go through a small example of using WARio for your own project. We will show the difference between a `CMake` based embedded ARM application that uses "standard" LLVM and one using WARio to create an intermittently executable version.
+## How to use WARio: A Step By Step Example
+We will now explan how to use WARio for your own project. Our explanation will be based on a small example. Therein, we will show the difference between a `CMake`-based embedded ARM application that uses "standard" LLVM, and the one using WARio--allowing to create an intermittently-executable version of the embedded ARM application.
 
-## Compilation Flow
-For a typical application, each C source file is compiled separately to an object file, and at the end of the compilation process, they are linked into an `.elf.` file.
-WARio does things slightly differently. To improve the PDG results, WARio uses whole program analysis. Therefore, we require an LLVMIR file that holds *all* the source code instead of separate object files.
-Therefore, we first use `gllvm` (https://github.com/SRI-CSL/gllvm) to compile a special `.elf` file that holds the whole program LLVMIR, then we extract that. Next, we apply our transformations on that "whole program" LLVMIR. After all the transformations are applied, we generate an intermittently executable version of the program. This flow is shown in Figure 2 of the paper.
+### WARio Compilation Flow
+For a typical application, each C source file is compiled separately to an object file. At the end of the compilation process, these C source files are linked into an `.elf.` file. WARio does things slightly different: WARio uses the *whole program* analysis needed to improve the PDG results. Therefore, we require an LLVMIR file that holds *all* the source code instead of separate object files. Therefore, we first use [gllvm](https://github.com/SRI-CSL/gllvm) to compile a special `.elf` file that holds the whole program LLVMIR, which we then extract. Next, we apply our transformations on this "whole program" LLVMIR. After all the transformations are applied, we generate an intermittently executable version of the program.
 
-###  Converting an Application to use WARio
+#### How to Convert an Application to use WARio
 
-We created a drop-in replacement script for `clang` to simplify the compilation process to make the transition as straightforward as possible. The script that manages all the steps in the compilation flow is `iclang` located here:
+We created a drop-in replacement script for `clang` to simplify the compilation process to make the *C to WARio-transformed C* transition as straightforward as possible. The script that manages all the steps in the compilation flow is `iclang` located in the directory listed below.
 ```
  WARio/scripts/iclang
 ```
 With `iclang` the transition from a typical CMake-based ARM application compiled with LLVM, to one compiled with WARio is as simple as specifying `iclang` as the C compiler instead of `clang` in the `toolchain.cmake` file.
-An example of this can be seen in:
+An example of this can be seen in the following file.
 ```
 WARio/toolchain-arm/toolchain.cmake:16
 ```
-Everything else remains exactly the same. However, to configure WARio, some environment variables have to be configured. This is done to make benchmarking as easy as possible, as we can use the same compilation commands but with different environment variables.
+Please note, however, that to configure WARio, some environment variables have to be configured. This is needed to make benchmarking as easy as possible, as we can use the same compilation commands but with different environment variables.
 
-### Compiling `quicksort` with WARio
-To demonstrate how to compile a demo application with WARio, we will be compiling a small `quicksort` application located here:
+#### How to Compile `quicksort` with WARio
+To demonstrate how to compile a demo application with WARio, we will compile a small `quicksort` application located in the following directory.
 ```
 WARio/benchmarks/quicksort
 ```
-Again, this project does not hold any WARio specific commands; this is all handled by the `iclang` script, which is set as the compiler in the toolchain file we will specify.
+Again, the directory above does not hold any WARio-specific commands; this is all handled by the `iclang` script, which is set as the compiler in the toolchain file we will specify.
 
-We will first compile `quicksort` with the `R-PDG` configuration from the paper (i.e., applying the PDG Checkpoint Inserter and minimal back-end transformations). This example assumes that LLVM and all the WARio transformations are compiled. Hence we will be starting from the `wario-compiler` docker image.
+We will first compile `quicksort` with the `R-PDG` configuration (i.e., applying the `PDG Checkpoint Inserter` and *minimal back-end transformations*). This example assumes that LLVM and all the WARio transformations are compiled. Hence we will be starting from the `wario-compiler` docker image.
 
 First, run the `wario-compiler` docker image interactively.
 ```
 $ docker run -it --rm wario-compiler
 ```
-
 Next, navigate to the `quicksort` project.
 ```
 $ cd WARio/benchmarks/quicksort
 ```
 
-To set up the environment for a certain configuration (e.g., `R-PDG`, `Loop Write Clusterer` in the paper in Figure 4 and 5), we can use the `WARio/scripts/benchmark-build` script to set all the environment variables associated with the configuration. We can also do this manually, but we will use the script. For details on how to configure the environment variables for `iclang` manually, and their purpose, see the _"`iclang` Configuration"_ section below.
-
-To get all the possible targets of `WARio/scripts/benchmark-build`, open the script, or run `benchmark-build targets`.
+To set up the environment for a certain configuration (e.g., `R-PDG` or `Loop Write Clusterer` as seen in the paper in Figure 4 and 5), we can use the `WARio/scripts/benchmark-build` script to set all the environment variables associated with the configuration. We can also do this manually, but we will use the script instead. For details on how to configure the environment variables for `iclang` manually, and their purpose, see the [`iclang` Configuration](#`iclang` Configuration). To get all the possible targets of `WARio/scripts/benchmark-build`, open the script or run `benchmark-build targets`.
 
 The mapping from the targets to the paper (Figure 4 and 5) is as follows:
-* `uninstrumented` - the plain C version (no intermittent execution support)
+* `uninstrumented` - the plain C version (i.e., no intermittent execution support)
 * `opt-ratchet` - Ratchet
-* `opt-baseline` - R-PDG
-* `opt-reducepop` - Epilog Optimizer
-* `opt-writebuf` - Write Clusterer
-* `opt-loop` - Loop Write Clusterer
+* `opt-baseline` - `R-PDG`
+* `opt-reducepop` - `Epilog Optimizer`
+* `opt-writebuf` - `Write Clusterer`
+* `opt-loop` - `Loop Write Clusterer`
 * `op-all` - WARio
-* `opt-all-expander` - WARio+Expander
+* `opt-all-expander` - `WARio+Expander`
 
 Again, custom configurations are possible by manually setting the environment variables.
 
-As we want to compile `quicksort` using the `R-PDG` configuration, i.e., `opt-baseline`, we will specify this as the build target. From within the `quicksort` directory (i.e., `WARio/benchmarks/quicksort`), run:
+As we want to compile `quicksort` using the `R-PDG` configuration, i.e., `opt-baseline`, we will specify this as the build target. From within the `quicksort` directory (i.e., `WARio/benchmarks/quicksort`), run the following command.
 ```
 $ benchmark-build opt-baseline
 ```
 
-Internally, `benchmark-build` sets the environment variables for `iclang`, creates a build directory, and calls `cmake` in the build directory using the toolchain file (i.e, `cmake -DCMAKE_TOOLCHAIN_FILE="/root/WARio/toolchain-arm/toolchain.cmake" ../`). As a last step, `benchmark-build` calls `make` from within the build directory.
-
-At this point, there should be a directory called `build-opt-baseline` in `WARio/benchmarks/quicksort`. To run the generated `.elf` file in the emulator, we can navigate to the build directory and run `run-elf` (`WARio/scripts/run-elf`) to run the emulator, i.e.:
+Internally, `benchmark-build` sets the environment variables for `iclang`, creates a build directory, and calls `cmake` in the build directory using the toolchain file (i.e, `cmake -DCMAKE_TOOLCHAIN_FILE="/root/WARio/toolchain-arm/toolchain.cmake" ../`). As a last step, `benchmark-build` calls `make` from within the build directory. At this point, there should be a directory called `build-opt-baseline` in `WARio/benchmarks/quicksort`. To run the generated `.elf` file in the emulator, we can navigate to the build directory and run `run-elf` (`WARio/scripts/run-elf`) to run the emulator, i.e.:
 ```
 $ cd build-opt-baseline
 $ run-elf quicksort.elf
 ```
 The output will show that the benchmark took approximately 2837 clock cycles, and there were a total of 25 checkpoints executed. Additionally the breakdown of the checkpoint types are listed.
 
-To close out this quick demonstration, we will also compile quicksort using the WARio configuration, i.e., `opt-all` to show that it contains fewer checkpoints (although, for such a small application, the difference is minimal and just for illustration).
+To close out this quick demonstration, we will also compile quicksort using the WARio configuration, i.e., `opt-all` to show that it contains fewer checkpoints (although, for such a small application, the difference is minimal and is here for the purpose of illustration only).
 
-To compile and run the WARio version of quicksort, navigate to `WARio/benchmarks/quicksort` and execute:
+To compile and run the WARio version of `quicksort`, navigate to `WARio/benchmarks/quicksort` and execute the following commands.
 ```
 $ benchmark-build opt-baseline
 $ cd build-opt-all
 $ run-elf quicksort.elf
 ```
-The output will show that the benchmark took approximately 2361 clock cycles (476 cycles less), and there were 18 checkpoints executed (7 less).
+The output will show that the benchmark took approximately 2361 clock cycles (476 cycles less than the baseline), and there were 18 checkpoints executed (7 less than the baseline).
 
-To run the program intermittently, i.e., with power failures, we can use the `run-powertrace` script (`WARio/scripts/run-powertrace`). This script takes three arguments, the on-time in cycles (i.e., the number of cycles between power failures), a stdev (currently unused), the `.elf` file, and the output directory for the intermittency statistics.
+To run the program intermittently, i.e., with power failures, we can use the `run-powertrace` script (`WARio/scripts/run-powertrace`). This script takes three arguments, the power on time in cycles (i.e., the number of cycles between power failures), a stdev (currently unused), the `.elf` file, and the output directory for the intermittency statistics.
 
-To run our `quicksort` example intermittently with power failures every 500 clock cycles, execute:
+To run our `quicksort` example intermittently with power failures every 500 clock cycles, execute the following commands.
 ```
 $ mkdir powertrace-test
 $ run-powertrace 500 0 quicksort.elf powertrace-test
 ```
 
-The emulator will output how many cycles were executed, including re-execution due to power failures. This example ran for 2780 cycles, compared to 2361 without power failures, this means that the re-execution cost of this example was 419 cycles. Additionally, the emulator will show how many times the system was reset due to power failures, which should be 4 in this example.
+The emulator will output how many cycles were executed, including re-execution due to power failures. This example ran for 2780 cycles, compared to 2361 without power failures. This means that the re-execution cost of this example was 419 cycles. Additionally, the emulator will show how many times the system was reset due to power failures, which should be 4 in this example.
 
 ## Files Generated During Compilation
 WARio (through `iclang`) generates many intermediate files in the `build` directory during compilation. Every time a transformation is performed on the LLVMIR, `iclang` saves the input IR as `<project>-<transformation>-input.ll`, and the IR after the transformation is saved as `<project>-<transformation>.ll`. Additionally, the output generated by the transformation (e.g., statistics) is stored as `<project>-<transformation>.txt`. Note that these files are created even if the transformation is not applied. In this case, the input and output IR are identical.
@@ -337,7 +330,7 @@ The files generated are:
 * `quicksort.elf.instructionprofiling.csv` - Used internally for profiling
 
 ---
-# Source Code Overview
+## Source Code Overview
 
 WARio is a collection of compiler transformations, or "passes, " that optimize code for checkpoint placement and eventually place checkpoints.
 Some of WARio's transformations operate in the middle-end, and some in the back-end, as shown in Figure 2 of the paper.
@@ -428,9 +421,8 @@ Below we listed all the files that are either added or modified to make it easie
 * `llvm/lib/Target/ARM/ARMInstrThumb2.td`
   * Adds idempotent alternative pseudo instructions implemented in
     `ARMBaseInstrInfo` and also used in `FrameLowering`
-    
 
---
+---
 # `iclang` Configuration
 
 `iclang` is the wrapper script for clang that applies different transformations depending on the configuration. This configuration is done by setting environment variables. For an example of __how to use__ `iclang`, please read the "Step By Step Example" section in this README.
