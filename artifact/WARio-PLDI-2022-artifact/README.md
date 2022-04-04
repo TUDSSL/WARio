@@ -415,7 +415,7 @@ Moreover, we have modfified the following files (root is `WARio/llvm/llvm-9.0.1/
 ---
 ## `iclang` Configuration
 
-`iclang` is the wrapper script for clang that applies different transformations depending on the configuration. This configuration is done by setting environment variables. For an example of __how to use__ `iclang`, please read the "Step By Step Example" section in this README.
+`iclang` is the wrapper script for clang that applies different transformations depending on the configuration. This configuration is done by setting environment variables. For an example of __how to use__ `iclang`, please read the (Step By Step Example)[## How to use WARio: A Step By Step Example] section of this README.
 
 These configuration environment variables instruct `iclang` to apply middle-end transformations or enable back-end features by providing command-line options to the modified `clang` build. If an environment variable is either not set or empty, it is ignored by `iclang`.
 
@@ -427,7 +427,7 @@ The possible environment variables are:
   * `-loop-write-clusterer` - enables the transformation
   * `-lwc-loop-unroll` - perform the unroll step
   * `-lwc-loop-unroll-count=8` - unroll candidate loops 8 times
-  * `-lwc-loop-unroll-threshold=400` - don't unroll if the candidate loop exceeds 400 instructions (limit code size growth)
+  * `-lwc-loop-unroll-threshold=400` - do not unroll if the candidate loop exceeds 400 instructions (limit code size growth)
 * `ICLANG_PASS_LOOP_CLUSTER_FLAGS` - enables the write clustering of the _Loop Write Clusterer_ transformation
   * `-loop-write-clusterer` - enables the transformation
   * `-lwc-loop-schedule` - perform the write cluster step
@@ -452,8 +452,7 @@ export ICLANG_PASS_WRITE_BUFFER_FLAGS=""
 export ICLANG_PASS_EXPANDER_FLAGS=""
 export ICLANG_CODEGEN_FLAGS=-mllvm --idemp-force-lr-spill -mllvm --idemp-code-gen -mllvm --idemp-pop -mllvm --idemp-checkpoint-reason-markers 
 ```
-
-And the `iclang` configuration for `WARio+Expander` would be:
+and the `iclang` configuration for `WARio+Expander` would be:
 ```
 export ICLANG_PASS_IDEMP_FLAGS="-idemp"
 export ICLANG_PASS_LOOP_UNROLL_FLAGS="-loop-write-clusterer -lwc-loop-unroll -lwc-loop-unroll-count=8 -lwc-loop-unroll-threshold=400"
@@ -462,5 +461,4 @@ export ICLANG_PASS_WRITE_BUFFER_FLAGS="-write-buffer"
 export ICLANG_PASS_EXPANDER_FLAGS="-expander"
 export ICLANG_CODEGEN_FLAGS="-mllvm --idemp-force-lr-spill -mllvm --idemp-code-gen -mllvm --idemp-pop -mllvm --idemp-checkpoint-reason-markers -mllvm --idemp-stack-spill-hitting-set -mllvm --idemp-disable-interrupt-during-pop"
 ```
-
 To view all the configutations used in the paper, see `WARio/scripts/benchmark-build`.
