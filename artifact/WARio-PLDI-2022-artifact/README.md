@@ -5,23 +5,35 @@ This is the official description of research artifact for a compiler-support run
 
 Please note that the accompanying [WARio GitHub repository](https://github.com/TUDSSL/WARio) is *not needed* to evaluate the artifact presented below.
 
-## Getting Stated Guide: Building WARio through a Docker Container
-The easiest way to start using WARio is through a Docker container. This way all the required WARio dependencies will be handled correctly and Docker will keep WARio's compilation environment seperate from the host machine. For that reason we provide a set of [Dockerfiles](docker) to build WARio (and all its components) from scratch. Additionally, the Docker containers will be used to build and run all the experiments presented in the paper that introduced WARio. We split WARio into three separate [Docker containers](docker) for ease of use: `wario-source`, `wario-compiler` and `wario-experiments`.
+## Getting Stated Guide: Building WARio Through Docker Dontainers
+The easiest way to start using WARio is through a Docker container. This way, all the required WARio dependencies will be handled correctly, and Docker will keep WARio's compilation environment separate from the host machine. For that reason, we provide a set of [Dockerfiles](docker) to build WARio (and all its components) from scratch. Additionally, the Docker containers will be used to build and run all the experiments presented in the paper that introduced WARio. We split WARio into three separate [Docker containers](docker) for ease of use: `wario-source`, `wario-compiler` and `wario-experiments`. For each container, a prebuilt docker image is available.
+
+* `wario-source` Downloads all the source code for WARio and its dependencies, and installs any dependencies needed to compile and run both WARio and all the benchmarks.
+* `wario-compiler` Compiles WARio and its dependencies.
+* `wario-experiments` Compiles and runs the benchmarks in the paper and generates all non-static figures and tables.
 
 We shall now go through each of the steps needed to build WARio: either using Docker containers, or using a clean Linux distribution.
 
 ## System Requirements
-First, to guarantee correct WARio evaluation we recommend using `Ubuntu 20.04` or Docker. The build process should look the same for other Linux distributions but these were not tested. Second, we recommend that a computer executing the WARio artifacts should have a minimum of 16 GB of main memory. This is needed as building WARio from scratch and running all the experiments is time and memory-consuming. That is, the complete process from building WARio to getting all the results will take **up to 12 hours**. For this reason, in addition to the Dockerfile, we provide a prebuild WARio version. Nonetheness, **we recommend using the Dockerfile instead of manual compilation for evaluation** as described below.
+First, to guarantee correct WARio evaluation we recommend using `Ubuntu 20.04` or Docker. The build process should look the same for other Linux distributions but these were not tested. Second, we recommend a minimum of 50GB of free storage to hold all the Docker container images, both the downloaded ones and the images built using Docker. Third, we recommend that a computer executing the WARio artifacts should have a minimum of 16 GB of main memory. This is needed as building WARio from scratch and running all the experiments is time and memory-consuming. That is, the complete process from building WARio to getting all the results will take **up to 12 hours**. For this reason, in addition to the Dockerfile, we provide a prebuild WARio version. Nonetheness, **we recommend using the Dockerfile instead of manual compilation for evaluation** as described below.
 
 ## How to Evaluate this Artifact
 
-To evaluate the artifact, you can start from scratch (i.e. when all resources are downloaded from the [WARio Git repository](https://github.com/TUDSSL/WARio) and the respective code repositiores that WARio needs) by starting with the `wario-source` Docker file. However, we recommend importing the pre-built docker image for `wario-source`: this way all source code is already in the container and nothing needs to be downloaded from the internet.
+Before evaluating the artifact, we need to download the `docker.zip` file from the Zenodo archive. Within the `docker.zip` file, three directories hold the three Dockerfiles (`wario-source`, wario-compiler` and `wario-experiments), their respective prebuild images, and some accompanying bash scripts.
+
+To evaluate the artifact, you can start from scratch (i.e., when all resources are downloaded from the [WARio Git repository](https://github.com/TUDSSL/WARio) and the respective code repositories that WARio needs) by starting with the `wario-source` Docker file. However, we recommend importing the pre-built Docker image for `wario-source`: this way, all source code is already in the container, and nothing needs to be downloaded from the internet.
 
 **Note:** In the [The Docker Containers](#The-Docker-Containers) section of this document we elaborate on the commands executed in each Dockerfile to build the respective docker containers. 
 
+### Preparation: Extracting the Dockerfiles and Images
+After downloading the `docker.zip` file from the Zenodo archive and extract it.
+```
+$ unzip docker.zip
+```
+
 ### Step 1: Import the Docker Container With All the Source Code
 
-Import the `wario-source` image by executing the followig command.
+Import the `wario-source` image by executing the followig command. _[time estimate: 15 min]_
 ```
 $ docker load < docker/wario-source/wario-source.tar.gz
 ```
@@ -34,9 +46,9 @@ which should report the `wario-source` container image.
 
 ### Step 2: Build the WARio Toolchain and Tools used for Evaluation
 
-The WARio toolchain is build in the `wario-compiler` Dockerfile. To evaluate this artifact we recommend building this container from the Docker file. The `wario-compiler` container builds on the `wario-source` container, so that container should be build or imported first.
+The WARio toolchain is built in the `wario-compiler` Dockerfile. The `wario-compiler` container builds on the `wario-source` container, so that container should be built or imported first. We recommend building this container from the Docker file to evaluate this artifact.
 
-To build the `wario-compiler` docker container execute the following command.
+To build the `wario-compiler` docker container execute the following command.  _[time estimate: 30~60 min]_
 ```
 $ cd wario-compiler
 $ ./build.sh
@@ -46,7 +58,7 @@ $ ./build.sh
 
 The evaluation of WARio (including compiling the benchmarks using different configurations of WARio, etc.) is done in the `wario-experiments` Docker file. The `wario-experiments` container builds on the `wario-compiler` container, so that container should be build or imported first.
 
-To build the `wario-experiments` docker container execute the following command.
+To build the `wario-experiments` docker container execute the following command. __[time estimate: 12 hours]__
 ```
 $ cd wario-experiments
 $ ./build.sh
@@ -198,6 +210,14 @@ $ ./build.sh
 ```
 
 ---
+
+## Importing a prebuilt image
+You can load any of the three WARio images availible in the `docker.zip` file (instead of building them).
+```
+$ docker load < docker/wario-source/wario-source.tar.gz
+$ docker load < docker/wario-compiler/wario-compiler.tar.gz
+$ docker load < docker/wario-experiments/wario-experiments.tar.gz
+```
 
 ## Building a Container
 You can build a container by navigating to its directory and running the following command.
