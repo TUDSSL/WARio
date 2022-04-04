@@ -237,9 +237,8 @@ $ ./run.sh
 WARio is a collection of compiler transformations, or "passes, " that optimize code for checkpoint placement and eventually place checkpoints.
 Some of WARio's transformations operate in the middle-end, and some in the back-end, as shown in Figure 2 of the paper.
 
+### The Middle-End Transformations
 Transformations in the middle-end are implemented as "plugins" for LLVM and operate directly on the LLVMIR files; You can build each middle-end transformation by running `make` in the respective root directory (e.g., `WARio/passes/loop-scheduler`), or alternitively, by running the `build.sh` script in `WARio/passes` to build all the transformation at once. 
-
-The middle-end transformations are described below.
 
 ### Loop Write Clusterer
 This transformation clusters write operations in loops together to reduce the number of required checkpoints to resolve all WAR violations.
@@ -270,3 +269,57 @@ You can find the code for this transformation in:
 ```
 WARio/passes/idempotent-regions
 ```
+
+### The Back-End Transformations
+The transformations in the back-end are implemented directly in the ARM back end of LLVM. Its purpose is to place the final checkpoints for WAR violations introduced in the back-end or violations that the middle-end can not handle.
+
+You can find the root of the WARio version of LLVM (with the modified ARM back-end) in:
+```
+WARio/llvm
+```
+Together with two scripts, `download.sh` and `build.sh`. The download script is only used once to retrieve source code for LLVM components that we did not modify (done to reduce the repository size). The build script builds LLVM using the recommended flags.
+Below we listed all the files that are either added or modified to make it easier to find them within the LLVM source code.
+
+### We added the following files to LLVM (root is `WARio/llvm/llvm-9.0.1/`):
+* `llvm/include/llvm/CodeGen/IdempotenceOptions.h`
+* `llvm/lib/CodeGen/IdempotenceOptions.cpp`
+  * Commadline options specific for intermittent code generation
+* `llvm/include/llvm/CodeGen/MachineIdempotentRegions.h`
+* `llvm/lib/CodeGen/MachineIdempotentRegions.cpp`
+
+### We midfified the following files (root is `WARio/llvm/llvm-9.0.1/`):
+* `llvm/include/llvm/CodeGen/ISDOpcodes.h`
+  * Add IDEMP instruction
+* `llvm/include/llvm/CodeGen/Passes.h`
+  * Add MachineIdempotentRegions Pass
+* `llvm/include/llvm/CodeGen/TargetInstrInfo.h`
+  * Add virtual idempotent region helper functions
+* `llvm/include/llvm/IR/Intrinsics.td`
+  * Add the `int_idemp` intrinsic
+* `llvm/include/llvm/InitializePasses.h`
+  * Declare the MachineIdempotentRegions pass
+* `llvm/include/llvm/Target/TargetSelectionDAG.td`
+  * Add the DAG Idemp for lowering
+* `llvm/lib/CodeGen/CMakeLists.txt`
+  * Add the MachineIdempotentRegions.cpp file to the CMakeLists
+* `llvm/lib/CodeGen/CodeGen.cpp`
+  * Initialize the MachineIdempotentRegions pass
+* `llvm/lib/CodeGen/SelectionDAG/SelectionDAGBuilder.cpp`
+  * Convert the idemp intrinsic to a IDEMP instruction
+* `llvm/lib/CodeGen/TargetPassConfig.cpp`
+  * Add the MachineIdempotentRegions pass
+* `llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp`
+  * Implement the virtual functions defined in TargetInstrInfo.h
+  * isIdempBoudary, insertIdempBoundary, insertCheckpoint, replaceWithIdempPop
+* `llvm/lib/Target/ARM/ARMBaseInstrInfo.h`
+  * Declare that we will overwrite the virtual functions in TargetInstrInfo.h
+* `llvm/lib/Target/ARM/ARMInstrFormats.td`
+  * Define the IdempInst instruction format
+* `llvm/lib/Target/ARM/ARMInstrInfo.td`
+  * Define the IDEMP instruction
+* `llvm/lib/Target/ARM/ARMFrameLowering.cpp`
+  * Adds idempotent pops (break ldmia instructions)
+  * Adds checkpoints before stack decreases (return)
+* `llvm/lib/Target/ARM/ARMInstrThumb2.td`
+  * Adds idempotent alternative pseudo instructions implemented in
+    `ARMBaseInstrInfo` and also used in `FrameLowering`
