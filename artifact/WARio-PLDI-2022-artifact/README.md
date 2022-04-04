@@ -1,4 +1,4 @@
-# ACM PLDI 2022 Conference Research Artifact for "WARio: Efficient Code Generation for Intermittent Computing via Compiler Support"
+# ACM PLDI 2022 Conference Research Artifact for "WARio: Efficient Code Generation for Intermittent Computing"
 
 ## Background
 This is the official description of research artifact for a compiler-support runtime for **intermittently-powered** platforms called WARio. WARio has been presented at the ACM PLDI 2022 conference.
