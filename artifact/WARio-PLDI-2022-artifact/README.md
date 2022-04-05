@@ -473,6 +473,6 @@ export ICLANG_CODEGEN_FLAGS="-mllvm --idemp-force-lr-spill -mllvm --idemp-code-g
 To view all the configutations used in the paper, see `WARio/scripts/benchmark-build`.
 
 ---
-## The Consistency of Results
+## The Reproducibility of Results
 During compilation, most transformations do not have any randomness associated with them. However, during the artifact evaluation, we noticed that some transformations in the back-end do experience some randomness (most likely the register allocation, but this is unconfirmed).
 This randomness is usually harmless and not noticeable, but it can sometimes lead to differences in the checkpoint placement for stack-slot-based WAR violations. Again, this is mostly inconsequential. But this could occasionally result in a checkpoint inside a "hot" loop for the `Dijkstra` benchmark. This differently placed checkpoint would then drastically change the execution time of the benchmark. Since then, we have slightly altered the checkpoint placement algorithm for stack slots to eliminate a potential edge-case bug. This change should coincidently also resolve the Dijkstra issue in this particular case. However, although rare, the general notion of a small change that can lead to fastly different execution times for the benchmarks remains and should be considered when using WARio for your applications.
