@@ -338,7 +338,7 @@ Additional files holding statistics are generated in the `build` directory durin
 ---
 ## WARio Source Code Overview
 
-WARio is a collection of compiler transformations, or "passes" that optimize code for checkpoint placement and eventually place checkpoints.
+WARio is a collection of compiler transformations or "passes" that optimize code for checkpoint placement and eventually place checkpoints. You can download the WARio source code, `code.zip` from the Zenodo archive or navigate it by interactively running the `wario-source` docker container.
 Some of WARio's transformations operate in the middle-end, and some in the back-end. Each of the transformations is presented below.
 
 ### The Middle-End Transformations
