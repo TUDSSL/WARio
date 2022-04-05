@@ -5,7 +5,7 @@ This is the official description of research artifact for a compiler-support run
 
 Please note that the accompanying [WARio GitHub repository](https://github.com/TUDSSL/WARio) is *not needed* to evaluate the artifact presented below.
 
-## Getting Stated Guide: Building WARio Through Docker Dontainers
+## Getting Stated Guide: Building WARio Through Docker Containers
 The easiest way to start using WARio is through a Docker container. This way, all the required WARio dependencies will be handled correctly, and Docker will keep WARio's compilation environment separate from the host machine. For that reason, we provide a set of [Dockerfiles](docker) to build WARio (and all its components) from scratch. Additionally, the Docker containers will be used to build and run all the experiments presented in the paper that introduced WARio. We split WARio into three separate [Docker containers](docker) for ease of use: `wario-source`, `wario-compiler` and `wario-experiments`. For each container, a prebuilt docker image is available.
 
 * `wario-source` Downloads all the source code for WARio and its dependencies, and installs any dependencies needed to compile and run both WARio and all the benchmarks.
@@ -140,14 +140,14 @@ This container holds a pre-compiled version of all of WARio's components, namely
 
 The container is build in the following steps.
 
-#### Step 1: Build the ICEmu Emulator
+#### Step 1: Build the ICEmu Emulator __[time estimate: 10 minutes]__
 WARio uses the ICEmu ARM processor architeture emulator, which is built using [Unicorn](https://github.com/unicorn-engine/unicorn). ICEmu uses several custom plugins to WARio's performance without introducing additional code. To build ICEmu execute the following command.
 ```
 $ cd WARio/icemu
 $ ./build.sh
 ```
 
-#### Step 2: Build LLVM
+#### Step 2: Build LLVM __[time estimate: 45 minutes]__
 WARio uses `LLVM version 9.0.1` in combination with a custom backend for ARM Thumb2, where ARM Thumb2 is enabled using several LLVM compiler flags. Additionally, LLVM version 9.0.1 is used to compile [Noelle](https://github.com/scampanoni/noelle) (an LLVM extension) and all the transformations. Parts of LLVM are not in the [WARio GitHub repository](https://github.com/TUDSSL/WARio) repository but are downloaded to keep this repository (relatively) small. To build LLVM execute the following command.
 ```
 $ cd WARio/llvm
@@ -155,14 +155,14 @@ $ ./download.sh
 $ ./build.sh
 ```
 
-#### Step 3: Build Noelle
+#### Step 3: Build Noelle __[time estimate: 10 minutes]__
 [Noelle](https://github.com/scampanoni/noelle) is a set of extensions to LLVM which provide easy access to _"help build advanced code analyses and transformations"_. It is used intensively by WARio, both for memory analysis and to aid with the loop transformations. Execute the following command to build Noelle.
 ```
 $ cd WARio/noelle
 $ ./build.sh
 ```
 
-#### Step 4: Build WARio
+#### Step 4: Build WARio __[time estimate: 5 minutes]__
 WARio consists of several LLVM transformations and the modified LLVM back-end. We already compiled the WARio back-end when we compiled LLVM in the previous step. To compile the transformations execute the following command.
 ```
 $ cd WARio/passes
@@ -174,14 +174,14 @@ This container holds the build versions of all the benchmarks and configurations
 
 The container is build in the following steps.
 
-#### Step 1: Build and Run the Benchmarks
+#### Step 1: Build and Run the Benchmarks  __[time estimate: 10 hours]__
 Building and running the benchmarks in WARio can be done **per benchmark** using the makefiles in [benchmarks/](benchmarks/). Some benchmarks require a significant amount of memory to compile and emulate (primarily `picojpeg`). Because of this, the [`build-run.sh`](benchmarks/build-run.sh) script does not enable multi-threaded compilation. If you have a machine with more than 16 GB of memory, you may consider changing the script's `-j` parameter. The high memory usage results from prioritizing readability and simplicity while developing the transformations and is not a direct effect of the algorithms used by WARio. To build and run the benchmarks execute the following command.
 ```
 $ cd WARio/benchmarks
 $ ./build-run.sh
 ```
 
-#### Step 2: Build and Run the Powertrace Benchmarks
+#### Step 2: Build and Run the Powertrace Benchmarks __[time estimate: 60 minutes]__
 ```
 $ cd WARio/benchmarks
 $ ./benchmark-powertrace.sh
@@ -200,7 +200,7 @@ As this is an "optional" step, and as it requires large packages, we only instal
 $ pip install jupyterlab==3.2.9
 ```
 
-#### Step 5: Plot the Results
+#### Step 5: Plot the Results __[time estimate: 5 minutes]__
 ```
 $ cd WARio/plotting
 $ ./build.sh
@@ -297,11 +297,18 @@ To close out this quick demonstration, we will also compile quicksort using the 
 
 To compile and run the WARio version of `quicksort`, navigate to `WARio/benchmarks/quicksort` and execute the following commands.
 ```
-$ benchmark-build opt-baseline
+$ benchmark-build opt-all
 $ cd build-opt-all
 $ run-elf quicksort.elf
 ```
 The output will show that the benchmark took approximately 2361 clock cycles (476 cycles less than the baseline), and there were 18 checkpoints executed (7 less than the baseline).
+
+Additionally, the emulator will show zero remaining WAR violations detected for both quicksort variations. There should not be any WAR violations in all intermittently executable applications. In contrast, if we run an uninstrumented version of `quicksort`, the emulator will report multiple WAR violations. You can verify this by running the uninstrumented version of quicksort available in both `build` directories. 
+```
+$ cd build-opt-all
+$ run-elf quicksort.uninstr.elf
+```
+During compilation, `iclang` always creates an uninstrumented version of the application using the exact same compiler flags and whole program optimization for a fair comparison.
 
 To run the program intermittently, i.e., with power failures, we can use the `run-powertrace` script (`WARio/scripts/run-powertrace`). This script takes three arguments, the power on time in cycles (i.e., the number of cycles between power failures), a stdev (currently unused), the `.elf` file, and the output directory for the intermittency statistics.
 
@@ -314,7 +321,9 @@ $ run-powertrace 500 0 quicksort.elf powertrace-test
 The emulator will output how many cycles were executed, including re-execution due to power failures. This example ran for 2780 cycles, compared to 2361 without power failures. This means that the re-execution cost of this example was 419 cycles. Additionally, the emulator will show how many times the system was reset due to power failures, which should be 4 in this example.
 
 ## Files Generated During Compilation
-WARio (through `iclang`) generates many intermediate files in the `build` directory during compilation. Every time a transformation is performed on the LLVMIR, `iclang` saves the input IR as `<project>-<transformation>-input.ll`, and the IR after the transformation is saved as `<project>-<transformation>.ll`. Additionally, the output generated by the transformation (e.g., statistics) is stored as `<project>-<transformation>.txt`. Note that these files are created even if the transformation is not applied. In this case, the input and output IR are identical. This way, every step during the compilation is stored, which aids in debugging and understanding of the transformation. You can see the generated files in `WARio/benchmarks/quicksort/build-op-all`. For example, `quicksort-idemp-input.ll` holds the IR before the checkpoint placement, `quicksort-idemp.ll` holds the IR after the checkpoint placement, and `quicksort-idemp.txt` holds all the debug information related to the checkpoint placement. Note that some of these debug files can become very large for the actual benchmarks.
+WARio (through `iclang`) generates many intermediate files in the `build` directory during compilation. Every time a transformation is performed on the LLVMIR, `iclang` saves the input IR as `<project>-<transformation>-input.ll`, and the IR after the transformation is saved as `<project>-<transformation>.ll`. Additionally, the output generated by the transformation (e.g., statistics) is stored as `<project>-<transformation>.txt`. Note that these files are created even if the transformation is not applied. In this case, the input and output IR are identical. This way, every step during the compilation is stored, which aids in debugging and understanding of the transformation. 
+
+You can see the generated files in `WARio/benchmarks/quicksort/build-op-all`. For example, `quicksort-idemp-input.ll` holds the IR before the checkpoint placement, `quicksort-idemp.ll` holds the IR after the checkpoint placement, and `quicksort-idemp.txt` holds all the debug information related to the checkpoint placement. Note that some of these debug files can become very large for the actual benchmarks.
 
 ## Files Generated During Execution
 Additional files holding statistics are generated in the `build` directory during execution by the emulator (`ICEmu`). These files contain data that is eventually used to create the figures. The files generated are:
