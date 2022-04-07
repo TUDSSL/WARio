@@ -1,4 +1,4 @@
-# WARio: Efficient Code Generation for Intermittent Computing via Compiler Support
+# WARio: Efficient Code Generation for Intermittent Computing
 
 ## Background
 This is the official public repository for a compiler-support runtime for **intermittently-powered** platforms called WARio. WARIo has been presented first in the following publication.
