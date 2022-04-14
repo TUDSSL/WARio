@@ -1,0 +1,36 @@
+* Other TODO: Respond to TinyAES claim Reviewer D
+
+* Add a .csv version of the Table? (table 2)
+
+12:17
+
+Todo for artifact readme
+
+# Functional Improvements:
++ How to download the artifact
++ How to import the docker files
++ Disk space requirements
++ Time requirements
+
+# Reusable badge:
++ Instructions on how to run the tool.
++ Thorough end-to-end examples with a detailed description of what is happening and an explanation of the final results.
++ Mapping from Section 4 to the codebase and a high-level description of the source code.
++ Discribe 'icalang'
++ More documentation in your transformation passes and the backend for ARM support.
+* Also please add a minimal example showing the actual transformations.
+
+# Sections:
+Code overview:
+- Download code.zip and Extract, or run wario-source image
++ Two parts, middle-end and back-end
++ Middle end:
+  + Describe passes
+  + Go over each pass in directory and what they do
++ Back end:
+  + List all changed files
+  + Describe what they do
+
+
+TODOL:
+Expand on `common` dir in passes directory
